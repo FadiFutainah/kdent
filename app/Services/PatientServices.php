@@ -1,7 +1,7 @@
 <?php
 namespace App\Services;
 use App\Models\Doctor_Schedules;
-use App\Models\appointment;
+use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -60,7 +60,7 @@ public function getAvailableSlotsForDays($specializationId, $shift = null)
 }
 
         // جلب المحجوز
-        $booked = appointment::where('doctor_id', $doctor->id)
+        $booked = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('appointment_date', $date)
             ->pluck('appointment_date')
             ->map(fn($t) => Carbon::parse($t)->format('H:i'))
@@ -111,7 +111,7 @@ public function getAvailableSlotsForDays($specializationId, $shift = null)
     }
 
     // 5️⃣ تأكد الوقت مو محجوز
-    $exists = appointment::where('doctor_id', $doctor->id)
+    $exists = Appointment::where('doctor_id', $doctor->id)
         ->where('appointment_date', $appointmentDateTime)
         ->exists();
 
@@ -120,7 +120,7 @@ public function getAvailableSlotsForDays($specializationId, $shift = null)
     }
 
     // 6️⃣ إنشاء الموعد
-    return appointment::create([
+    return Appointment::create([
         'patient_id' => $patient->id,
         'doctor_id' => $doctor->id,
         'appointment_date' => $appointmentDateTime,

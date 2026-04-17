@@ -26,4 +26,14 @@ class doctor extends Model
         return $this->hasMany(Doctor_Schedules::class);
     }
 
+    public function treatmentPlans()
+    {
+        return $this->hasMany(Treatment_Plan::class, 'doctor_id');
+    }
+
+    public function treatmentSessions()
+    {
+        return $this->hasMany(Treatment_Session::class, 'doctor_id');
+    }
+
 }

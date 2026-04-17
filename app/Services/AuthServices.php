@@ -5,7 +5,7 @@ use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use App\Models\User;
-use App\Models\patient;
+use App\Models\Patient;
 use Exception;
 
 class AuthServices {
@@ -48,7 +48,8 @@ class AuthServices {
         $otp = rand(1000, 9999); 
         $user->update([
             'otp_code' => $otp, 
-            'otp_expires_at' => now()->addMinutes(15)
+            'otp_expires_at' => now()->addMinutes(15),
+            'last_otp_sent_at' => now(),
         ]);
         
         $this->sendWhatsApp($user->phone_number, $otp);
@@ -103,6 +104,7 @@ class AuthServices {
     $user->update([
         'otp_code' => $otp,
         'otp_expires_at' => now()->addMinutes(15),
+        'last_otp_sent_at' => now()
     ]);
 
     // إرسال واتساب

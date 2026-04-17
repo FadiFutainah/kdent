@@ -50,4 +50,9 @@ class patient extends Model
     {
         return $this->hasMany(appointment::class);
     }
+
+    public function treatmentPlans()
+    {
+        return $this->hasMany(Treatment_Plan::class, 'patient_id');
+    }
 }

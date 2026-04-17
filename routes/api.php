@@ -6,6 +6,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SpecializationController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\TreatmentPlanController;
+use App\Http\Controllers\TreatmentSessionController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -22,6 +24,15 @@ Route::post('/book-appointment', [PatientController::class, 'bookAppointment']);
 });
 Route::middleware(['auth:sanctum', 'role:admin'])
     ->post('/create-employee', [AdminController::class, 'createEmployee']);
+
+Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
+    Route::post('/treatment-plans', [TreatmentPlanController::class, 'store']);
+    Route::put('/treatment-plans/{planId}', [TreatmentPlanController::class, 'update']);
+    Route::get('/patients/{patientId}/treatment-plans', [TreatmentPlanController::class, 'patientPlans']);
+    Route::post('/treatment-sessions', [TreatmentSessionController::class, 'store']);
+    Route::put('/treatment-sessions/{sessionId}', [TreatmentSessionController::class, 'update']);
+    Route::patch('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
+});
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();

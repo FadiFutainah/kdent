@@ -33,7 +33,7 @@ class AuthController {
     public function resendOtp(Request $request)
 {
     $request->validate([
-        'phone' => 'required'
+        'phone_number' => 'required'
     ]);
 
     return response()->json([
