@@ -16,7 +16,6 @@ return new class extends Migration
             $table->decimal('price_syp', 12, 2)->nullable();
             $table->text('target_teeth')->nullable();
             $table->enum('status', ['in_progress', 'completed'])->default('in_progress');
-            $table->unsignedInteger('sequence')->default(1);
             $table->timestamps();
         });
     }

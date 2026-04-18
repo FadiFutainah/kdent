@@ -13,9 +13,9 @@ return new class extends Migration
             $table->foreignId('plan_item_id')->constrained('plan_items')->cascadeOnDelete();
             $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
             $table->foreignId('appointment_id')->nullable()->constrained('appointments')->nullOnDelete();
-            $table->decimal('rprice_usd', 10, 2);
+            $table->decimal('rprice_usd', 10, 2)->nullable();
             $table->decimal('rprice_syp', 12, 2)->nullable();
-            $table->dateTime('session_date');
+            $table->dateTime('session_date')->nullable();
             $table->enum('status', ['in_progress', 'completed'])->default('in_progress');
             $table->text('clinical_notes')->nullable();
             $table->boolean('is_last_session')->default(false);

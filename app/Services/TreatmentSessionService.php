@@ -10,7 +10,7 @@ class TreatmentSessionService
 {
     public function createSession(array $data)
     {
-        $doctor = Auth::user()->doctor;
+        $doctor = Auth::user()->doctor->first();
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -24,22 +24,26 @@ class TreatmentSessionService
             throw new \Exception('لا تملك صلاحية إنشاء جلسة لهذا العنصر');
         }
 
-        return Treatment_Session::create([
+        $session = Treatment_Session::create([
             'plan_item_id' => $planItem->id,
             'doctor_id' => $doctor->id,
             'appointment_id' => $data['appointment_id'] ?? null,
             'rprice_usd' => $data['rprice_usd'] ?? null,
             'rprice_syp' => $data['rprice_syp'] ?? null,
-            'session_date' => $data['session_date'],
+            'session_date' => $data['session_date'] ?? null,
             'status' => $data['status'] ?? 'in_progress',
             'clinical_notes' => $data['clinical_notes'] ?? null,
             'is_last_session' => $data['is_last_session'] ?? false,
         ]);
+
+        $this->syncStatuses($planItem);
+
+        return $session;
     }
 
     public function updateSession(int $sessionId, array $data)
     {
-        $doctor = Auth::user()->doctor;
+        $doctor = Auth::user()->doctor->first();
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -74,12 +78,14 @@ class TreatmentSessionService
             $session->update($updates);
         }
 
-        return $session;
+        $this->syncStatuses($session->planItem);
+
+        return $session->fresh();
     }
 
     public function completeSession(int $sessionId, array $data = [])
     {
-        $doctor = Auth::user()->doctor;
+        $doctor = Auth::user()->doctor->first();
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -105,6 +111,41 @@ class TreatmentSessionService
 
         $session->update($updates);
 
-        return $session;
+        $this->syncStatuses($session->planItem);
+
+        return $session->fresh();
+    }
+
+    private function syncStatuses(Plan_Item $planItem): void
+    {
+        $hasAnySession = Treatment_Session::where('plan_item_id', $planItem->id)->exists();
+
+        if (!$hasAnySession) {
+            $planItem->update(['status' => 'in_progress']);
+        } else {
+            $hasOpenSessions = Treatment_Session::where('plan_item_id', $planItem->id)
+                ->where('status', '!=', 'completed')
+                ->exists();
+
+            $planItem->update([
+                'status' => $hasOpenSessions ? 'in_progress' : 'completed',
+            ]);
+        }
+
+        $plan = $planItem->plan;
+        $hasAnyItems = Plan_Item::where('plan_id', $plan->id)->exists();
+
+        if (!$hasAnyItems) {
+            $plan->update(['status' => 'in_progress']);
+            return;
+        }
+
+        $hasOpenItems = Plan_Item::where('plan_id', $plan->id)
+            ->where('status', '!=', 'completed')
+            ->exists();
+
+        $plan->update([
+            'status' => $hasOpenItems ? 'in_progress' : 'completed',
+        ]);
     }
 }

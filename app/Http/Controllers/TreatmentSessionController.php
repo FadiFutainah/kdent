@@ -14,18 +14,19 @@ class TreatmentSessionController extends Controller
         $this->service = $service;
     }
 
-    public function store(Request $request)
+    public function store(Request $request, int $itemId)
     {
         $data = $request->validate([
-            'plan_item_id' => 'required|exists:plan_items,id',
             'appointment_id' => 'nullable|exists:appointments,id',
             'rprice_usd' => 'nullable|numeric|min:0',
             'rprice_syp' => 'nullable|numeric|min:0',
-            'session_date' => 'required|date',
+            'session_date' => 'nullable|date',
             'status' => 'nullable|in:in_progress,completed',
             'clinical_notes' => 'nullable|string',
             'is_last_session' => 'nullable|boolean',
         ]);
+
+        $data['plan_item_id'] = $itemId;
 
         return response()->json(
             $this->service->createSession($data)

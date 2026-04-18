@@ -15,7 +15,6 @@ class Plan_Item extends Model
         'price_syp',
         'target_teeth',
         'status',
-        'sequence',
     ];
 
     public function plan()

@@ -26,11 +26,15 @@ Route::middleware(['auth:sanctum', 'role:admin'])
     ->post('/create-employee', [AdminController::class, 'createEmployee']);
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
+    Route::post('/treatment-plans/search', [TreatmentPlanController::class, 'search']);
     Route::post('/treatment-plans', [TreatmentPlanController::class, 'store']);
-    Route::put('/treatment-plans/{planId}', [TreatmentPlanController::class, 'update']);
+    Route::post('/treatment-plans/{planId}', [TreatmentPlanController::class, 'update']);
     Route::get('/patients/{patientId}/treatment-plans', [TreatmentPlanController::class, 'patientPlans']);
-    Route::post('/treatment-sessions', [TreatmentSessionController::class, 'store']);
-    Route::put('/treatment-sessions/{sessionId}', [TreatmentSessionController::class, 'update']);
+    Route::post('/treatment-plans/{planId}/items', [TreatmentPlanController::class, 'addItem']);
+    Route::post('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'updateItem']);
+    Route::delete('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'deleteItem']);
+    Route::post('/plan-items/{itemId}/treatment-sessions', [TreatmentSessionController::class, 'store']);
+    Route::post('/treatment-sessions/{sessionId}', [TreatmentSessionController::class, 'update']);
     Route::patch('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
 });
 
