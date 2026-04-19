@@ -39,6 +39,7 @@ class AdminService
             Doctor::create([
                 'user_id' => $user->id,
                 'specialization_id' => $data['specialization_id'],
+                'percentage' => $data['percentage'] ?? 0,
                 'is_active' => true
             ]);
         }

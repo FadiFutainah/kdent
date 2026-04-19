@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Doctor_Payment extends Model
+{
+    protected $table = 'doctor_payments';
+
+    protected $fillable = [
+        'doctor_id',
+        'amount_usd',
+        'amount_syp',
+        'payment_date',
+    ];
+
+    protected $casts = [
+        'payment_date' => 'datetime',
+    ];
+
+    public function doctor()
+    {
+        return $this->belongsTo(doctor::class, 'doctor_id');
+    }
+}

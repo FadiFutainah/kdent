@@ -12,6 +12,7 @@ class Treatment_Session extends Model
         'plan_item_id',
         'doctor_id',
         'appointment_id',
+        'name',
         'rprice_usd',
         'rprice_syp',
         'session_date',
@@ -37,6 +38,11 @@ class Treatment_Session extends Model
 
     public function appointment()
     {
-        return $this->belongsTo(appointment::class, 'appointment_id');
+        return $this->belongsTo(Appointment::class, 'appointment_id');
     }
+    public function earning()
+    {
+        return $this->hasOne(Doctor_Earning::class, 'treatment_session_id');
+    }   
+
 }

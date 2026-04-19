@@ -9,6 +9,7 @@ class doctor extends Model
      protected $fillable = [
         'user_id',
         'specialization_id',
+        'percentage',
         'is_active'
     ];
     public function user()
@@ -35,5 +36,10 @@ class doctor extends Model
     {
         return $this->hasMany(Treatment_Session::class, 'doctor_id');
     }
+    public function earnings()
+    {
+        return $this->hasMany(Doctor_Earning::class, 'doctor_id');
+    }   
+
 
 }

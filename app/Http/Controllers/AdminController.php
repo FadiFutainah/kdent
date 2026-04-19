@@ -22,7 +22,8 @@ class AdminController extends Controller
             'email' => 'nullable|email|unique:users',
             'password' => 'required|min:6',
             'role' => 'required|in:doctor,accountant,secretary,storekeeper',
-            'specialization_id' => 'nullable|exists:specializations,id'
+            'specialization_id' => 'nullable|exists:specializations,id',
+            'percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
         return response()->json(
