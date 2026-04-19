@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Doctor_Earning;
 use App\Models\Plan_Item;
 use App\Models\Treatment_Session;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,7 @@ class TreatmentSessionService
             'plan_item_id' => $planItem->id,
             'doctor_id' => $doctor->id,
             'appointment_id' => $data['appointment_id'] ?? null,
+            'name' => $data['name'] ?? null,
             'rprice_usd' => $data['rprice_usd'] ?? null,
             'rprice_syp' => $data['rprice_syp'] ?? null,
             'session_date' => $data['session_date'] ?? null,
@@ -37,6 +39,7 @@ class TreatmentSessionService
         ]);
 
         $this->syncStatuses($planItem);
+        $this->syncDoctorEarning($session->fresh());
 
         return $session;
     }
@@ -60,6 +63,7 @@ class TreatmentSessionService
         $updates = [];
         $fields = [
             'appointment_id',
+            'name',
             'rprice_usd',
             'rprice_syp',
             'session_date',
@@ -79,11 +83,12 @@ class TreatmentSessionService
         }
 
         $this->syncStatuses($session->planItem);
+        $this->syncDoctorEarning($session->fresh());
 
         return $session->fresh();
     }
 
-    public function completeSession(int $sessionId, array $data = [])
+    public function completeSession(int $sessionId)
     {
         $doctor = Auth::user()->doctor->first();
 
@@ -101,19 +106,45 @@ class TreatmentSessionService
 
         $updates = ['status' => 'completed'];
 
-        if (array_key_exists('clinical_notes', $data)) {
-            $updates['clinical_notes'] = $data['clinical_notes'];
-        }
-
-        if (array_key_exists('is_last_session', $data)) {
-            $updates['is_last_session'] = $data['is_last_session'];
-        }
-
         $session->update($updates);
 
         $this->syncStatuses($session->planItem);
+        $this->syncDoctorEarning($session->fresh());
 
         return $session->fresh();
+    }
+
+    private function syncDoctorEarning(Treatment_Session $session): void
+    {
+        // Keep earnings table consistent with real execution state.
+        if ($session->status !== 'completed') {
+            Doctor_Earning::where('treatment_session_id', $session->id)->delete();
+            return;
+        }
+
+        $doctor = $session->doctor;
+        $percentage = (float) ($doctor->percentage ?? 0);
+
+        $amountUsd = null;
+        if (!is_null($session->rprice_usd)) {
+            $amountUsd = round(((float) $session->rprice_usd * $percentage) / 100, 2);
+        }
+
+        $amountSyp = null;
+        if (!is_null($session->rprice_syp)) {
+            $amountSyp = round(((float) $session->rprice_syp * $percentage) / 100, 2);
+        }
+
+        Doctor_Earning::updateOrCreate(
+            ['treatment_session_id' => $session->id],
+            [
+                'doctor_id' => $session->doctor_id,
+                'percentage' => $percentage,
+                'amount_usd' => $amountUsd ?? 0,
+                'amount_syp' => $amountSyp,
+                'earning_date' => $session->session_date ?? now(),
+            ]
+        );
     }
 
     private function syncStatuses(Plan_Item $planItem): void

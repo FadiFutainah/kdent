@@ -16,4 +16,5 @@ class Treatment_Category extends Model
     {
         return $this->hasMany(Plan_Item::class, 'category_id');
     }
+    
 }

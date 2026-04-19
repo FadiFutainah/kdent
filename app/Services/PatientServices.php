@@ -6,12 +6,11 @@ use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class PatientServices
 {
  
-public function getAvailableSlotsForDays($specializationId, $shift = null)
+public function getAvailableSlotsForDays($specializationId)
 {
     $doctor = Doctor::where('specialization_id', $specializationId)
         ->where('is_active', true)
@@ -31,9 +30,6 @@ public function getAvailableSlotsForDays($specializationId, $shift = null)
         $query = Doctor_Schedules::where('doctor_id', $doctor->id)
             ->where('day', $day);
 
-        if ($shift) {
-            $query->where('shift', $shift);
-        }
 
         $schedules = $query->get();
 
@@ -126,6 +122,14 @@ public function getAvailableSlotsForDays($specializationId, $shift = null)
         'appointment_date' => $appointmentDateTime,
         'status' => 'scheduled'
     ]);
+    // 👇 هون
+app(NotificationService::class)->send(
+    $reception,
+    'موعد جديد',
+    'تم حجز موعد جديد بانتظار التأكيد',
+    'appointment',
+    $appointment->id
+);
 }
 
 }

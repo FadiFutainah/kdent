@@ -17,7 +17,6 @@ return new class extends Migration
             $table->enum('day', ['sun','mon','tue','wed','thu','fri','sat']);
             $table->time('start_time');
             $table->time('end_time');
-            $table->enum('shift', ['morning','evening']);
             $table->timestamps();
         });
     }

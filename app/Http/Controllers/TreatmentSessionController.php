@@ -18,6 +18,7 @@ class TreatmentSessionController extends Controller
     {
         $data = $request->validate([
             'appointment_id' => 'nullable|exists:appointments,id',
+            'name' => 'nullable|string',
             'rprice_usd' => 'nullable|numeric|min:0',
             'rprice_syp' => 'nullable|numeric|min:0',
             'session_date' => 'nullable|date',
@@ -37,6 +38,7 @@ class TreatmentSessionController extends Controller
     {
         $data = $request->validate([
             'appointment_id' => 'nullable|exists:appointments,id',
+            'name' => 'nullable|string',
             'rprice_usd' => 'nullable|numeric|min:0',
             'rprice_syp' => 'nullable|numeric|min:0',
             'session_date' => 'nullable|date',
@@ -52,13 +54,8 @@ class TreatmentSessionController extends Controller
 
     public function complete(Request $request, int $sessionId)
     {
-        $data = $request->validate([
-            'clinical_notes' => 'nullable|string',
-            'is_last_session' => 'nullable|boolean',
-        ]);
-
         return response()->json(
-            $this->service->completeSession($sessionId, $data)
+            $this->service->completeSession($sessionId)
         );
     }
 }

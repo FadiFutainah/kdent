@@ -12,6 +12,7 @@ class Treatment_Session extends Model
         'plan_item_id',
         'doctor_id',
         'appointment_id',
+        'patient_id',
         'rprice_usd',
         'rprice_syp',
         'session_date',
@@ -23,6 +24,7 @@ class Treatment_Session extends Model
     protected $casts = [
         'session_date' => 'datetime',
         'is_last_session' => 'boolean',
+        'session_type' => 'string',
     ];
 
     public function planItem()
@@ -37,6 +39,12 @@ class Treatment_Session extends Model
 
     public function appointment()
     {
-        return $this->belongsTo(appointment::class, 'appointment_id');
+        return $this->belongsTo(Appointment::class, 'appointment_id');
     }
+
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class, 'patient_id');
+    }
+
 }
