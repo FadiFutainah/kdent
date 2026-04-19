@@ -14,6 +14,7 @@ class TreatmentCatSeeder extends Seeder
     public function run(): void
     {
         $names = [
+            'التشخيص',
             'التحضير',
             'حشو',
             'الانهاء',

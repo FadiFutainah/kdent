@@ -9,6 +9,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TreatmentPlanController;
 use App\Http\Controllers\TreatmentSessionController;
 use App\Http\Controllers\DoctorController;
+use App\Http\Controllers\DoctorFinanceController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -40,7 +41,13 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
 
 });
 
+Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () {
+    Route::post('/doctors/{doctorId}/payments', [DoctorFinanceController::class, 'recordPayment']);
+    Route::get('/doctors/{doctorId}/finance/summary', [DoctorFinanceController::class, 'summary']);
+});
+
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
+    Route::get('/my/finance/summary', [DoctorFinanceController::class, 'mySummary']);
     Route::post('/treatment-plans/search', [TreatmentPlanController::class, 'search']);
     Route::post('/treatment-plans', [TreatmentPlanController::class, 'store']);
     Route::post('/treatment-plans/{planId}', [TreatmentPlanController::class, 'update']);

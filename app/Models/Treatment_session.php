@@ -13,6 +13,7 @@ class Treatment_Session extends Model
         'doctor_id',
         'appointment_id',
         'patient_id',
+        'name',
         'rprice_usd',
         'rprice_syp',
         'session_date',
@@ -46,5 +47,9 @@ class Treatment_Session extends Model
     {
         return $this->belongsTo(Patient::class, 'patient_id');
     }
+    public function earning()
+    {
+        return $this->hasOne(Doctor_Earning::class, 'treatment_session_id');
+    }   
 
 }
