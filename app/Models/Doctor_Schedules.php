@@ -12,7 +12,7 @@ class doctor_schedules extends Model
         'day',
         'start_time',
         'end_time',
-        'shift'
+        
     ];
 
     public function doctor()

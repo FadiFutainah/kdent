@@ -8,6 +8,7 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TreatmentPlanController;
 use App\Http\Controllers\TreatmentSessionController;
+use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\DoctorFinanceController;
 use App\Http\Controllers\ExchangeRateController;
 
@@ -17,15 +18,29 @@ Route::post('/resendOtp', [AuthController::class, 'resendOtp']);     // للمر
 Route::post('/login', [AuthController::class, 'login']);       // للجميع مع إرسال الرول
 
 Route::middleware('auth:sanctum')->group(function () {
-Route::post('/logout', [AuthController::class, 'logout']); // تسجيل الخروج
+Route::post('/logout', [AuthController::class, 'logout']); });// تسجيل الخروج
+
+
+Route::middleware(['auth:sanctum', 'role:patient'])->group(function () {
 Route::get('/specializations', [SpecializationController::class,'index'])->middleware('role:patient');//عرض الاختصاصات 
 Route::get('/specializations/{id}', [SpecializationController::class,'show']);//عرض تفاصيل الاختصاص 
 Route::post('/available-slots', [PatientController::class, 'getAvailableSlotsForDays']);
 Route::post('/book-appointment', [PatientController::class, 'bookAppointment']);
-//Route::get('/specializations/{id}/doctor', [SpecializationController::class,'getDoctor']);
 });
-Route::middleware(['auth:sanctum', 'role:admin'])
-    ->post('/create-employee', [AdminController::class, 'createEmployee']);
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
+    Route::post('/create-employee', [AdminController::class, 'createEmployee']);
+});
+
+Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
+    Route::post('/addAvailableTime', [DoctorController::class, 'addAvailableTime']);
+    Route::post('/updateAvailableTime/{id}', [DoctorController::class, 'updateAvailableTime']);
+    Route::delete('/deleteAvailableTime/{id}', [DoctorController::class, 'deleteAvailableTime']);
+    Route::get('/myPatients', [DoctorController::class, 'myPatients']);
+    Route::get('/todayAppointments', [DoctorController::class, 'todayAppointments']);
+    Route::get('/upcomingAppointments', [DoctorController::class, 'upcomingAppointments']);
+
+});
 
 Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () {
     Route::post('/doctors/{doctorId}/payments', [DoctorFinanceController::class, 'recordPayment']);
@@ -48,6 +63,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::post('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'updateItem']);
     Route::delete('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'deleteItem']);
     Route::post('/plan-items/{itemId}/treatment-sessions', [TreatmentSessionController::class, 'store']);
+    Route::post('/diagnostic-sessions', [TreatmentSessionController::class, 'storeDiagnostic']);
     Route::post('/treatment-sessions/{sessionId}', [TreatmentSessionController::class, 'update']);
     Route::patch('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
 });

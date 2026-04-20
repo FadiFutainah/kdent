@@ -20,12 +20,12 @@ class PatientController extends Controller
 {
     $data = $request->validate([
         'specialization_id' => 'required|exists:specializations,id',
-        'shift' => 'nullable|in:morning,evening'
+        
     ]);
 
     $result = $this->service->getAvailableSlotsForDays(
         $data['specialization_id'],
-        $data['shift'] ?? null
+    
     );
 
     return response()->json($result);

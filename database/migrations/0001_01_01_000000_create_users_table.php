@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->timestamp('last_otp_sent_at')->nullable();// لتتبع آخر مرة تم فيها إرسال OTP
+              $table->string('fcm_token')->nullable();
             $table->timestamps();
         });
 

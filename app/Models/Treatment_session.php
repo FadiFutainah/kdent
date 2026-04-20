@@ -13,6 +13,7 @@ class Treatment_Session extends Model
         'doctor_id',
         'appointment_id',
         'exchange_rate_id',
+        'patient_id',
         'name',
         'rprice_usd',
         'rprice_syp',
@@ -27,6 +28,7 @@ class Treatment_Session extends Model
         'is_last_session' => 'boolean',
         'rprice_usd' => 'decimal:2',
         'rprice_syp' => 'decimal:2',
+        'session_type' => 'string',
     ];
 
     public function planItem()
@@ -49,6 +51,10 @@ class Treatment_Session extends Model
         return $this->belongsTo(Exchange_Rate::class, 'exchange_rate_id');
     }
 
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class, 'patient_id');
+    }
     public function earning()
     {
         return $this->hasOne(Doctor_Earning::class, 'treatment_session_id');
