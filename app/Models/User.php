@@ -54,7 +54,7 @@ protected $guard_name = 'api';
     }
  public function doctor()
     {
-        return $this->hasMany(Doctor::class);
+        return $this->hasOne(Doctor::class);
     }
 public function patient()
     {

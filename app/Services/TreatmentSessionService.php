@@ -9,9 +9,13 @@ use Illuminate\Support\Facades\Auth;
 
 class TreatmentSessionService
 {
+    public function __construct(private ExchangeRateService $exchangeRateService)
+    {
+    }
+
     public function createSession(array $data)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -25,17 +29,20 @@ class TreatmentSessionService
             throw new \Exception('لا تملك صلاحية إنشاء جلسة لهذا العنصر');
         }
 
+        $payload = $this->applyExchangeRate($data);
+
         $session = Treatment_Session::create([
             'plan_item_id' => $planItem->id,
             'doctor_id' => $doctor->id,
-            'appointment_id' => $data['appointment_id'] ?? null,
-            'name' => $data['name'] ?? null,
-            'rprice_usd' => $data['rprice_usd'] ?? null,
-            'rprice_syp' => $data['rprice_syp'] ?? null,
-            'session_date' => $data['session_date'] ?? null,
-            'status' => $data['status'] ?? 'in_progress',
-            'clinical_notes' => $data['clinical_notes'] ?? null,
-            'is_last_session' => $data['is_last_session'] ?? false,
+            'appointment_id' => $payload['appointment_id'] ?? null,
+            'exchange_rate_id' => $payload['exchange_rate_id'] ?? null,
+            'name' => $payload['name'] ?? null,
+            'rprice_usd' => $payload['rprice_usd'] ?? null,
+            'rprice_syp' => $payload['rprice_syp'] ?? null,
+            'session_date' => $payload['session_date'] ?? null,
+            'status' => $payload['status'] ?? 'in_progress',
+            'clinical_notes' => $payload['clinical_notes'] ?? null,
+            'is_last_session' => $payload['is_last_session'] ?? false,
         ]);
 
         $this->syncStatuses($planItem);
@@ -46,7 +53,7 @@ class TreatmentSessionService
 
     public function updateSession(int $sessionId, array $data)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -79,6 +86,7 @@ class TreatmentSessionService
         }
 
         if ($updates) {
+            $updates = $this->applyExchangeRate($updates);
             $session->update($updates);
         }
 
@@ -90,7 +98,7 @@ class TreatmentSessionService
 
     public function completeSession(int $sessionId)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -108,10 +116,36 @@ class TreatmentSessionService
 
         $session->update($updates);
 
+        $session = $session->fresh();
+        $session->update($this->applyExchangeRate($session->toArray()));
+
         $this->syncStatuses($session->planItem);
         $this->syncDoctorEarning($session->fresh());
 
         return $session->fresh();
+    }
+
+    private function applyExchangeRate(array $data): array
+    {
+        $hasPriceContext = array_key_exists('rprice_usd', $data) || array_key_exists('rprice_syp', $data);
+
+        if (!$hasPriceContext) {
+            return $data;
+        }
+
+        $rateRecord = $this->exchangeRateService->getCurrentUsdToSypRate();
+        $data['exchange_rate_id'] = $rateRecord->id;
+
+        if (array_key_exists('rprice_usd', $data)) {
+            $usd = $data['rprice_usd'];
+            $sypProvided = array_key_exists('rprice_syp', $data) && !is_null($data['rprice_syp']);
+
+            if (!is_null($usd) && !$sypProvided) {
+                $data['rprice_syp'] = round(((float) $usd) * (float) $rateRecord->rate, 2);
+            }
+        }
+
+        return $data;
     }
 
     private function syncDoctorEarning(Treatment_Session $session): void
@@ -130,15 +164,21 @@ class TreatmentSessionService
             $amountUsd = round(((float) $session->rprice_usd * $percentage) / 100, 2);
         }
 
+        $exchangeRate = $session->exchangeRate ?? ($session->exchange_rate_id ? $session->exchangeRate()->first() : null);
+        if (!$exchangeRate) {
+            $exchangeRate = $this->exchangeRateService->getCurrentUsdToSypRate();
+        }
+
         $amountSyp = null;
-        if (!is_null($session->rprice_syp)) {
-            $amountSyp = round(((float) $session->rprice_syp * $percentage) / 100, 2);
+        if (!is_null($amountUsd)) {
+            $amountSyp = round($amountUsd * (float) $exchangeRate->rate, 2);
         }
 
         Doctor_Earning::updateOrCreate(
             ['treatment_session_id' => $session->id],
             [
                 'doctor_id' => $session->doctor_id,
+                'exchange_rate_id' => $exchangeRate->id,
                 'percentage' => $percentage,
                 'amount_usd' => $amountUsd ?? 0,
                 'amount_syp' => $amountSyp,
