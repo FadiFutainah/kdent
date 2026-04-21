@@ -10,6 +10,8 @@ use App\Http\Controllers\TreatmentPlanController;
 use App\Http\Controllers\TreatmentSessionController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\DoctorFinanceController;
+use App\Http\Controllers\SupplierItemsController;
+use App\Http\Controllers\InventoryTransactionController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -56,11 +58,17 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::post('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'updateItem']);
     Route::delete('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'deleteItem']);
     Route::post('/plan-items/{itemId}/treatment-sessions', [TreatmentSessionController::class, 'store']);
-    Route::post('/diagnostic-sessions', [TreatmentSessionController::class, 'storeDiagnostic']);
     Route::post('/treatment-sessions/{sessionId}', [TreatmentSessionController::class, 'update']);
     Route::patch('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
 });
 
+
+Route::middleware(['auth:sanctum', 'role:storekeeper'])->group(function () {
+    Route::post('/suppliers', [SupplierItemsController::class, 'store']);
+    Route::post('/purchase', [InventoryTransactionController::class, 'purchase']);
+    Route::post('/consume', [InventoryTransactionController::class, 'consume']);
+    Route::post('/storeitems', [SupplierItemsController::class, 'stores']);
+});
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
