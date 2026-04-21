@@ -12,7 +12,7 @@ class TreatmentPlanService
 {
     public function createPlan(array $data)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -36,7 +36,7 @@ class TreatmentPlanService
 
     public function getPatientPlans(int $patientId)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -54,7 +54,7 @@ class TreatmentPlanService
 
     public function searchPlans(array $filters)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -86,7 +86,7 @@ class TreatmentPlanService
 
     public function updatePlan(int $planId, array $data)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -124,7 +124,7 @@ class TreatmentPlanService
 
     public function addPlanItem(int $planId, array $data)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -152,7 +152,7 @@ class TreatmentPlanService
 
     public function updatePlanItem(int $planId, int $itemId, array $data)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');
@@ -197,7 +197,7 @@ class TreatmentPlanService
 
     public function deletePlanItem(int $planId, int $itemId)
     {
-        $doctor = Auth::user()->doctor->first();
+        $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
             throw new \Exception('هذا المستخدم ليس دكتور');

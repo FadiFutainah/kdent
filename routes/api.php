@@ -12,6 +12,7 @@ use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\DoctorFinanceController;
 use App\Http\Controllers\SupplierItemsController;
 use App\Http\Controllers\InventoryTransactionController;
+use App\Http\Controllers\ExchangeRateController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -46,6 +47,12 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
 Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () {
     Route::post('/doctors/{doctorId}/payments', [DoctorFinanceController::class, 'recordPayment']);
     Route::get('/doctors/{doctorId}/finance/summary', [DoctorFinanceController::class, 'summary']);
+    Route::post('/exchange-rates/refresh', [ExchangeRateController::class, 'refresh']);
+});
+
+Route::middleware(['auth:sanctum', 'role:doctor|admin|accountant'])->group(function () {
+    Route::get('/exchange-rates/current', [ExchangeRateController::class, 'current']);
+    Route::get('/exchange-rates/history', [ExchangeRateController::class, 'history']);
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {

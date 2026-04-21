@@ -39,4 +39,9 @@ return [
         'token'    => env('ULTRAMSG_TOKEN'),
     ],
 
+    'lirascope' => [
+        'base_url' => env('LIRASCOPE_BASE_URL', 'https://lirascope.syria-cloud.sy'),
+        'timeout' => env('LIRASCOPE_TIMEOUT', 10),
+    ],
+
 ];

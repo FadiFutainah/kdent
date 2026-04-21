@@ -10,6 +10,7 @@ class Doctor_Payment extends Model
 
     protected $fillable = [
         'doctor_id',
+        'exchange_rate_id',
         'amount_usd',
         'amount_syp',
         'payment_date',
@@ -22,5 +23,10 @@ class Doctor_Payment extends Model
     public function doctor()
     {
         return $this->belongsTo(doctor::class, 'doctor_id');
+    }
+
+    public function exchangeRate()
+    {
+        return $this->belongsTo(Exchange_Rate::class, 'exchange_rate_id');
     }
 }
