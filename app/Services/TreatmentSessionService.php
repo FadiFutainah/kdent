@@ -33,7 +33,6 @@ class TreatmentSessionService
 
         $session = Treatment_Session::create([
             'plan_item_id' => $planItem->id,
-            'doctor_id' => $doctor->id,
             'appointment_id' => $payload['appointment_id'] ?? null,
             'exchange_rate_id' => $payload['exchange_rate_id'] ?? null,
             'name' => $payload['name'] ?? null,
@@ -156,7 +155,13 @@ class TreatmentSessionService
             return;
         }
 
-        $doctor = $session->doctor;
+        $session->loadMissing('planItem.plan.doctor', 'exchangeRate');
+        $doctor = $session->planItem?->plan?->doctor;
+
+        if (!$doctor) {
+            throw new \Exception('تعذر تحديد دكتور الجلسة من الخطة');
+        }
+
         $percentage = (float) ($doctor->percentage ?? 0);
 
         $amountUsd = null;
@@ -177,7 +182,7 @@ class TreatmentSessionService
         Doctor_Earning::updateOrCreate(
             ['treatment_session_id' => $session->id],
             [
-                'doctor_id' => $session->doctor_id,
+                'doctor_id' => $doctor->id,
                 'exchange_rate_id' => $exchangeRate->id,
                 'percentage' => $percentage,
                 'amount_usd' => $amountUsd ?? 0,

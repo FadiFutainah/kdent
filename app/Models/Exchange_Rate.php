@@ -25,4 +25,13 @@ class Exchange_Rate extends Model
     {
         return $this->hasMany(Treatment_Session::class, 'exchange_rate_id');
     }
+
+    public function doctorEarnings()
+    {
+        return $this->hasMany(Doctor_Earning::class, 'exchange_rate_id');
+    }
+    public function doctorPayments()
+    {
+        return $this->hasMany(Doctor_Payment::class, 'exchange_rate_id');
+    }
 }

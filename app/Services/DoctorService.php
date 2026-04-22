@@ -4,7 +4,6 @@ use App\Models\Doctor_Schedules;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Appointment;
 use App\Models\Patient;
-use App\Models\Treatment_session;
 
 class DoctorService
 {
@@ -92,12 +91,14 @@ public function getDoctorPatients()
 {
     $doctorId = Auth::user()->doctor->id;
 
-    $patientIds = Treatment_session::where('doctor_id', $doctorId)
-        ->where('status', 'completed')
-        ->pluck('patient_id')
-        ->unique();
-
-    return Patient::whereIn('id', $patientIds)->get();
+    return Patient::whereHas('treatmentPlans', function ($planQuery) use ($doctorId) {
+        $planQuery->where('doctor_id', $doctorId)
+            ->whereHas('items.sessions', function ($sessionQuery) {
+                $sessionQuery->where('status', 'completed');
+            });
+    })
+        ->distinct()
+        ->get();
 }
 
 public function getTodayAppointments()
