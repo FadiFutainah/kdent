@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('plan_item_id')->constrained('plan_items')->cascadeOnDelete();
             $table->foreignId('appointment_id')->nullable()->constrained('appointments')->nullOnDelete();
+           //$table->foreignId('patient_id')->constrained()->cascadeOnDelete();
             $table->foreignId('exchange_rate_id')->nullable()->constrained('exchange_rates')->nullOnDelete();
             $table->string('name')->nullable();
             $table->decimal('rprice_usd', 10, 2)->nullable();
