@@ -55,12 +55,18 @@ Route::middleware(['auth:sanctum', 'role:doctor|admin|accountant'])->group(funct
     Route::get('/exchange-rates/history', [ExchangeRateController::class, 'history']);
 });
 
+Route::middleware(['auth:sanctum', 'role:patient|doctor'])->group(function () {
+    Route::get('/my/treatment-plans', [TreatmentPlanController::class, 'myPlans']);
+    Route::get('/treatment-plans/show/{planId}', [TreatmentPlanController::class, 'show']);
+    Route::get('/treatment-plans/{planId}/showItem/{itemId}', [TreatmentPlanController::class, 'showItem']);
+    Route::get('/treatment-plans/{planId}/items/{itemId}/showSession/{sessionId}', [TreatmentPlanController::class, 'showSession']);
+});
+
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::get('/my/finance/summary', [DoctorFinanceController::class, 'mySummary']);
     Route::post('/treatment-plans/search', [TreatmentPlanController::class, 'search']);
     Route::post('/treatment-plans', [TreatmentPlanController::class, 'store']);
     Route::post('/treatment-plans/{planId}', [TreatmentPlanController::class, 'update']);
-    Route::get('/patients/{patientId}/treatment-plans', [TreatmentPlanController::class, 'patientPlans']);
     Route::post('/treatment-plans/{planId}/items', [TreatmentPlanController::class, 'addItem']);
     Route::post('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'updateItem']);
     Route::delete('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'deleteItem']);

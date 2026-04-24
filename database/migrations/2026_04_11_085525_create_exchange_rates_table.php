@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('base_currency', 3)->default('USD');
             $table->string('target_currency', 3)->default('SYP');
-            $table->decimal('rate', 18, 6);
+            $table->decimal('rate', 15, 3);
             $table->string('source')->default('lirascope');
             $table->timestamp('fetched_at');
             $table->timestamps();

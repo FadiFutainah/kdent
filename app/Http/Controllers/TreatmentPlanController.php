@@ -28,12 +28,6 @@ class TreatmentPlanController extends Controller
         );
     }
 
-    public function patientPlans(int $patientId)
-    {
-        return response()->json(
-            $this->service->getPatientPlans($patientId)
-        );
-    }
 
     public function search(Request $request)
     {
@@ -50,6 +44,34 @@ class TreatmentPlanController extends Controller
 
         return response()->json(
             $this->service->searchPlans($data)
+        );
+    }
+
+    public function myPlans()
+    {
+        return response()->json(
+            $this->service->getMyPlans()
+        );
+    }
+
+    public function show(int $planId)
+    {
+        return response()->json(
+            $this->service->getPlanDetails($planId)
+        );
+    }
+
+    public function showItem(int $planId, int $itemId)
+    {
+        return response()->json(
+            $this->service->getPlanItemDetails($planId, $itemId)
+        );
+    }
+
+    public function showSession(int $planId, int $itemId, int $sessionId)
+    {
+        return response()->json(
+            $this->service->getSessionDetails($planId, $itemId, $sessionId)
         );
     }
 
@@ -70,8 +92,8 @@ class TreatmentPlanController extends Controller
     {
         $data = $request->validate([
             'category_id' => 'required|exists:treatment_categories,id',
-            'price_usd' => 'required|numeric|min:0',
-            'price_syp' => 'nullable|numeric|min:0',
+            'price_usd' => 'nullable|numeric|min:0|required_without:price_syp',
+            'price_syp' => 'nullable|numeric|min:0|required_without:price_usd',
             'target_teeth' => 'nullable|string',
             'status' => 'nullable|in:in_progress,completed',
         ]);
@@ -85,8 +107,8 @@ class TreatmentPlanController extends Controller
     {
         $data = $request->validate([
             'category_id' => 'nullable|exists:treatment_categories,id',
-            'price_usd' => 'nullable|numeric|min:0',
-            'price_syp' => 'nullable|numeric|min:0',
+            'price_usd' => 'nullable|numeric|min:0|required_without:price_syp',
+            'price_syp' => 'nullable|numeric|min:0|required_without:price_usd',
             'target_teeth' => 'nullable|string',
             'status' => 'nullable|in:in_progress,completed',
         ]);

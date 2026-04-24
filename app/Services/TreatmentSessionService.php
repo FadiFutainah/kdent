@@ -66,6 +66,10 @@ class TreatmentSessionService
             throw new \Exception('لا تملك صلاحية تعديل هذه الجلسة');
         }
 
+        if ($session->status === 'completed') {
+            throw new \DomainException('لا يمكن تعديل الجلسة بعد إنهائها');
+        }
+
         $updates = [];
         $fields = [
             'appointment_id',
@@ -73,7 +77,6 @@ class TreatmentSessionService
             'rprice_usd',
             'rprice_syp',
             'session_date',
-            'status',
             'clinical_notes',
             'is_last_session',
         ];
@@ -111,6 +114,10 @@ class TreatmentSessionService
             throw new \Exception('لا تملك صلاحية إنهاء هذه الجلسة');
         }
 
+        if ($session->status === 'completed') {
+            throw new \DomainException('هذه الجلسة منتهية مسبقا');
+        }
+
         $updates = ['status' => 'completed'];
 
         $session->update($updates);
@@ -132,16 +139,23 @@ class TreatmentSessionService
             return $data;
         }
 
+        $usdProvided = array_key_exists('rprice_usd', $data) && !is_null($data['rprice_usd']);
+        $sypProvided = array_key_exists('rprice_syp', $data) && !is_null($data['rprice_syp']);
+
+        if (!$usdProvided && !$sypProvided) {
+            return $data;
+        }
+
         $rateRecord = $this->exchangeRateService->getCurrentUsdToSypRate();
+        $rate = (float) $rateRecord->rate;
         $data['exchange_rate_id'] = $rateRecord->id;
 
-        if (array_key_exists('rprice_usd', $data)) {
-            $usd = $data['rprice_usd'];
-            $sypProvided = array_key_exists('rprice_syp', $data) && !is_null($data['rprice_syp']);
+        if ($usdProvided && !$sypProvided) {
+            $data['rprice_syp'] = round(((float) $data['rprice_usd']) * $rate, 2);
+        }
 
-            if (!is_null($usd) && !$sypProvided) {
-                $data['rprice_syp'] = round(((float) $usd) * (float) $rateRecord->rate, 2);
-            }
+        if (!$usdProvided && $sypProvided && $rate > 0) {
+            $data['rprice_usd'] = round(((float) $data['rprice_syp']) / $rate, 2);
         }
 
         return $data;
