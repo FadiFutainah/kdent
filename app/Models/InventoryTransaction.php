@@ -8,7 +8,8 @@ class InventoryTransaction extends Model
 {
      protected $fillable = [
         'item_id',
-        'treatment_session_id',
+       // 'treatment_session_id',
+        'doctor_id',
         'supplier_id',
         'type',
         'quantity',
@@ -25,5 +26,10 @@ class InventoryTransaction extends Model
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function doctor()
+    {
+        return $this->belongsTo(Doctor::class);
     }
 }

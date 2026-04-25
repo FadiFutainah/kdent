@@ -14,46 +14,59 @@ class InventoryTransactionController extends Controller
         $this->service = $service;
     }
 
-    // public function purchase(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'item_id' => 'required|exists:items,id',
-    //         'supplier_id' => 'required|exists:suppliers,id',
-    //         'quantity' => 'required|integer|min:1',
-    //         'purchase_price' => 'required|numeric|min:0',
-    //         'notes' => 'nullable|string',
-    //     ]);
-
-    //     $transaction = $this->service->purchase($data);
-
-    //     return response()->json([
-    //         'message' => 'Purchase completed successfully',
-    //         'data' => $transaction
-    //     ]);
-    // }
     public function purchase(Request $request)
-{
-    $data = $request->validate([
-        'supplier_id' => 'required|exists:suppliers,id',
-        'items' => 'required|array|min:1',
-        'items.*.item_id' => 'required|exists:items,id',
-        'items.*.quantity' => 'required|integer|min:1',
-        'items.*.purchase_price' => 'required|numeric|min:0',
-        'notes' => 'nullable|string',
-    ]);
+    {
+        $data = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
 
-    $transaction = $this->service->purchaseBulk($data);
+            'items' => 'required|array|min:1',
+            'items.*.supplier_item_id' => 'required|exists:supplier_items,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.purchase_price' => 'required|numeric|min:0',
 
-    return response()->json([
-        'message' => 'Purchase completed successfully',
-        'data' => $transaction
-    ]);
-}
-//صرف مواد لجلسة محددة 
+            'issued_at' => 'nullable|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        $invoice = $this->service->purchaseBulk($data);
+
+        return response()->json([
+            'message' => 'Purchase & Invoice created successfully',
+            'data' => $invoice
+        ]);
+    }
+    //شراء مواد
+// public function purchase(Request $request)
+// {
+//     $data = $request->validate([
+//         'supplier_id' => 'required|exists:suppliers,id',
+
+//         'discount' => 'nullable|numeric|min:0',
+//         'currency' => 'nullable|string',
+//         'exchange_rate' => 'nullable|numeric',
+
+//         'notes' => 'nullable|string',
+
+//         'items' => 'required|array|min:1',
+//         'items.*.item_id' => 'required|exists:items,id',
+//         'items.*.quantity' => 'required|integer|min:1',
+//         'items.*.purchase_price' => 'required|numeric|min:0',
+//         'issued_at' => 'nullable|date',
+//     ]);
+
+//     $invoice = $this->service->purchaseBulk($data);
+
+//     return response()->json([
+//         'message' => 'Purchase & Invoice created successfully',
+//         'data' => $invoice
+//     ]);
+// }
+//صرف مواد  
 public function consume(Request $request)
 {
     $data = $request->validate([
-        'treatment_session_id' => 'required|exists:treatment_sessions,id',
+       // 'treatment_session_id' => 'required|exists:treatment_sessions,id',
+        'doctor_id' => 'required|exists:doctors,id',
         'items' => 'required|array|min:1',
         'items.*.item_id' => 'required|exists:items,id',
         'items.*.quantity' => 'required|integer|min:1',
@@ -65,6 +78,24 @@ public function consume(Request $request)
     return response()->json([
         'message' => 'Items consumed successfully',
         'data' => $transactions
+    ]);
+}
+//إرجاع مواد
+public function returnItems(Request $request)
+{
+    $data = $request->validate([
+        'doctor_id' => 'required|exists:doctors,id',
+        'items' => 'required|array|min:1',
+        'items.*.item_id' => 'required|exists:items,id',
+        'items.*.quantity' => 'required|integer|min:1',
+        'notes' => 'nullable|string',
+    ]);
+
+    $result = $this->service->returnItems($data);
+
+    return response()->json([
+        'message' => 'Items returned successfully',
+        'data' => $result
     ]);
 }
 

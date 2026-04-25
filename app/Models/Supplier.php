@@ -12,12 +12,12 @@ class Supplier extends Model
     {
         return $this->hasMany(InventoryTransaction::class);
     }
-//     public function supplierItems()
-// {
-//     return $this->hasMany(supplier_items::class);
-// }
-public function items()
+    public function supplierItems()
 {
-    return $this->belongsToMany(Item::class, 'supplier_items');
+    return $this->hasMany(SupplierItem::class);
 }
+// public function items()
+// {
+//     return $this->belongsToMany(Item::class, 'supplier_items');
+// }
 }

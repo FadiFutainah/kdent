@@ -19,13 +19,18 @@ class Item extends Model
     {
         return $this->hasMany(InventoryTransaction::class);
     }
-    // public function supplierItems()
-    // {
-    //     return $this->hasMany(supplier_items::class);
-    // }
-    public function suppliers()
-{
-    return $this->belongsToMany(Supplier::class, 'supplier_items');
-}
+    public function supplierItems()
+    {
+        return $this->hasMany(SupplierItem::class);
+    }
+//     public function suppliers()
+// {
+//     return $this->belongsToMany(Supplier::class, 'supplier_items');
+// }
+
+public function invoice()
+    {
+        return $this->hasMany(Invoice_Item::class);
+    }
 
 }
