@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class doctor extends Model
+class Doctor extends Model
 {
      protected $fillable = [
         'user_id',
@@ -32,10 +32,6 @@ class doctor extends Model
         return $this->hasMany(Treatment_Plan::class, 'doctor_id');
     }
 
-    public function treatmentSessions()
-    {
-        return $this->hasMany(Treatment_Session::class, 'doctor_id');
-    }
     public function earnings()
     {
         return $this->hasMany(Doctor_Earning::class, 'doctor_id');
@@ -43,6 +39,10 @@ class doctor extends Model
     public function inventoryTransactions()
     {
         return $this->hasMany(InventoryTransaction::class, 'doctor_id');
+    }
+    public function payments()
+    {
+        return $this->hasMany(Doctor_Payment::class, 'doctor_id');
     }
 
 

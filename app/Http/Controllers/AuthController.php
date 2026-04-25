@@ -45,8 +45,8 @@ class AuthController {
     public function login(Request $request) {
         try {
            // $token = $this->service->login($request->login_field, $request->password, $request->role);
-           $token = $this->service->login($request->all());
-            return response()->json(['token' => $token]);
+           $result = $this->service->login($request->all());
+            return response()->json($result);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 401);
         }

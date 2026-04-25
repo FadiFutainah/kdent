@@ -39,13 +39,26 @@ class DoctorFinanceService
             }
         }
 
-        return Doctor_Payment::create([
+        $payment = Doctor_Payment::create([
             'doctor_id' => $doctor->id,
             'exchange_rate_id' => $rateRecord->id,
             'amount_usd' => $amountUsd,
             'amount_syp' => $amountSyp ?? round($amountUsd * $rate, 2),
             'payment_date' => $data['payment_date'] ?? now(),
         ]);
+
+        return [
+            'id' => $payment->id,
+            'doctor_id' => $payment->doctor_id,
+            'doctor_name' => $doctor->user?->name,
+            'exchange_rate_id' => $payment->exchange_rate_id,
+            'exchange_rate' => $rateRecord->rate,
+            'amount_usd' => $payment->amount_usd,
+            'amount_syp' => $payment->amount_syp,
+            'payment_date' => $payment->payment_date,
+            'updated_at' => $payment->updated_at,
+            'created_at' => $payment->created_at,
+        ];
     }
 
     public function getDoctorSummary(int $doctorId)

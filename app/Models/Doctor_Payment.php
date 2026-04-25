@@ -22,11 +22,12 @@ class Doctor_Payment extends Model
 
     public function doctor()
     {
-        return $this->belongsTo(doctor::class, 'doctor_id');
+        return $this->belongsTo(Doctor::class, 'doctor_id');
     }
 
     public function exchangeRate()
     {
         return $this->belongsTo(Exchange_Rate::class, 'exchange_rate_id');
     }
+
 }

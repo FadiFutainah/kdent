@@ -183,6 +183,18 @@ public function login($data)
         throw new Exception("بيانات الدخول غير صحيحة");
     }
 
+    // إصلاح بيانات قديمة: إذا كان للمستخدم ملف مريض بدون role نربطه تلقائياً.
+    if ($user->getRoleNames()->isEmpty() && $user->patient()->exists()) {
+        $user->assignRole('patient');
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        $user = $user->fresh();
+    }
+
+    $actualRole = $user->getRoleNames()->first();
+    if (!$actualRole) {
+        throw new Exception("هذا الحساب لا يملك أي role. راجع إنشاء الحساب أو الإسناد.");
+    }
+
     // تحقق تفعيل المريض
     if ($user->hasRole('patient') && !$user->is_verified) {
         throw new Exception("يرجى تفعيل الحساب أولاً.");
@@ -190,33 +202,15 @@ public function login($data)
 
     // 🎯 التحقق من الرول (اختياري)
     if ($role && !$user->hasRole($role)) {
-
-        // 🔥 خيار 1 (الأفضل UX): نرجع الرول الصح بدون توكن
-        return [
-            'success' => false,
-            'message' => "هذا الحساب ليس $role",
-            'actual_role' => $user->getRoleNames()->first()
-        ];
-
-        // 🔥 خيار 2 (أقل أمان): نسمح بالدخول رغم الخطأ
-        /*
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return [
-            'token' => $token,
-            'role' => $user->getRoleNames()->first(),
-            'warning' => "تم تسجيل الدخول لكن الرول المختار غير صحيح"
-        ];
-        */
+        throw new Exception("هذا الحساب ليس {$role}، الدور الصحيح هو {$actualRole}");
     }
 
     // ✅ دخول طبيعي
     $token = $user->createToken('auth_token')->plainTextToken;
 
     return [
-        'success' => true,
         'token'   => $token,
-        'role'    => $user->getRoleNames()->first()
+        'role'    => $actualRole
     ];
 }
 }
