@@ -58,6 +58,7 @@ public function getAvailableSlotsForDays($specializationId)
         // جلب المحجوز
         $booked = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('appointment_date', $date)
+            ->where('status', 'confirmed')
             ->pluck('appointment_date')
             ->map(fn($t) => Carbon::parse($t)->format('H:i'))
             ->toArray();

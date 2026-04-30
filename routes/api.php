@@ -13,6 +13,7 @@ use App\Http\Controllers\DoctorFinanceController;
 use App\Http\Controllers\SupplierItemsController;
 use App\Http\Controllers\InventoryTransactionController;
 use App\Http\Controllers\ExchangeRateController;
+use App\Http\Controllers\AppointmentController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -30,6 +31,11 @@ Route::post('/available-slots', [PatientController::class, 'getAvailableSlotsFor
 Route::post('/book-appointment', [PatientController::class, 'bookAppointment']);
 });
 
+
+Route::middleware(['auth:sanctum', 'role:patient|secretary'])->group(function () {
+Route::get('/specializations', [SpecializationController::class,'index']);//عرض الاختصاصات 
+});
+
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::post('/create-employee', [AdminController::class, 'createEmployee']);
 });
@@ -42,6 +48,15 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
     Route::get('/todayAppointments', [DoctorController::class, 'todayAppointments']);
     Route::get('/upcomingAppointments', [DoctorController::class, 'upcomingAppointments']);
 
+});
+
+Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
+    Route::post('/secretary/doctors', [AppointmentController::class, 'listDoctorsBySpecialization']);
+    Route::post('/secretary/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
+    Route::get('/secretary/appointments/scheduled', [AppointmentController::class, 'listScheduledBySecretary']);
+    Route::get('/secretary/appointments/confirmed', [AppointmentController::class, 'listConfirmedBySecretary']);
+    Route::post('/appointments/secretary', [AppointmentController::class, 'bookBySecretary']);
+    Route::post('/appointments/{appointmentId}/confirm', [AppointmentController::class, 'confirmBySecretary']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () {

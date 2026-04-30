@@ -19,7 +19,7 @@ class ExchangeRateService
             Cache::forget('exchange_rate:usd_syp');
         }
 
-        return Cache::remember('exchange_rate:usd_syp', now()->addMinutes(5), function () {
+        return Cache::remember('exchange_rate:usd_syp', now()->addHours(3), function () {
             $apiRate = $this->fetchUsdToSypFromLiraScope();
 
             if ($apiRate !== null) {
