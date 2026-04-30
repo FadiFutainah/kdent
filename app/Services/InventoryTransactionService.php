@@ -20,119 +20,201 @@ class InventoryTransactionService
         private ExchangeRateService $exchangeService
     ) {}
 
-   
-     public function purchaseBulk(array $data)
-    {
-        return DB::transaction(function () use ($data) {
+   public function purchaseBulk(array $data)
+{
+    return DB::transaction(function () use ($data) {
 
-            $supplier = Supplier::findOrFail($data['supplier_id']);
+        $supplier = Supplier::findOrFail($data['supplier_id']);
 
-            // 💱 سعر الصرف
-            $rateModel = $this->exchangeService->getCurrentUsdToSypRate();
-            $exchangeRate = $rateModel->rate;
+        $rateModel = $this->exchangeService->getCurrentUsdToSypRate();
+        $exchangeRate = $rateModel->rate;
 
-            // 🧾 إنشاء الفاتورة
-            $invoice = Invoice::create([
-                'type' => 'supplier',
-                'supplier_id' => $supplier->id,
-                'discount' => 0,
-                'exchange_rate' => $exchangeRate,
-                'status' => 'draft',
-                'issued_at' => $data['issued_at'] ?? now(),
-            ]);
+        // 🧾 رقم فاتورة unique
+        $invoiceNumber = 'INV-' . date('Ymd') . '-' . strtoupper(uniqid());
 
-            $total = 0;
+        $invoice = Invoice::create([
+            'invoice_number' => $invoiceNumber,
+            'type' => 'supplier',
+            'supplier_id' => $supplier->id,
+            'discount' => 0,
+            'exchange_rate' => $exchangeRate,
+            'status' => 'draft',
+            'paid_amount' => 0,
+            'issued_at' => $data['issued_at'] ?? now(),
+        ]);
 
-            foreach ($data['items'] as $row) {
+        $total = 0;
 
-                // 🔍 جلب مادة المورد
-                $supplierItem = SupplierItem::where('supplier_id', $supplier->id)
-                    ->where('id', $row['supplier_item_id'])
-                    ->firstOrFail();
+        foreach ($data['items'] as $row) {
 
-                /*
-                |--------------------------------------------------------------------------
-                | 🧠 إذا المادة غير موجودة بالمخزن → أنشئها
-                |--------------------------------------------------------------------------
-                */
-                if (!$supplierItem->item_id) {
+            $supplierItem = SupplierItem::where('supplier_id', $supplier->id)
+                ->where('id', $row['supplier_item_id'])
+                ->firstOrFail();
 
-                    // 🔍 منع التكرار
-                    $item = Item::where('name', $supplierItem->name)->first();
+            if (!$supplierItem->item_id) {
 
-                    if (!$item) {
-                        $item = Item::create([
-                            'name' => $supplierItem->name,
-                            'code' => strtoupper(uniqid('ITEM_')),
-                            'unit' => $supplierItem->unit ?? 'unit',
-                            'minimum_stock' => 0,
-                            'current_stock' => 0,
-                        ]);
-                    }
+                $item = Item::firstOrCreate(
+                    ['name' => $supplierItem->name],
+                    [
+                        'code' => strtoupper(uniqid('ITEM_')),
+                        'unit' => $supplierItem->unit ?? 'unit',
+                        'minimum_stock' => 0,
+                        'current_stock' => 0,
+                    ]
+                );
 
-                    // 🔗 ربطها بالمورد
-                    $supplierItem->update([
-                        'item_id' => $item->id
-                    ]);
+                $supplierItem->update(['item_id' => $item->id]);
 
-                } else {
-                    $item = $supplierItem->item;
-                }
-
-                /*
-                |--------------------------------------------------------------------------
-                | 📦 تحديث المخزون
-                |--------------------------------------------------------------------------
-                */
-                $item->increment('current_stock', $row['quantity']);
-
-                $subtotal = $row['quantity'] * $row['purchase_price'];
-                $total += $subtotal;
-
-                /*
-                |--------------------------------------------------------------------------
-                | 🧾 عناصر الفاتورة
-                |--------------------------------------------------------------------------
-                */
-                Invoice_Item::create([
-                    'invoice_id' => $invoice->id,
-                    'item_id' => $item->id,
-                    'description' => $item->name,
-                    'quantity' => $row['quantity'],
-                    'unit_price' => $row['purchase_price'],
-                    'subtotal' => $subtotal,
-                ]);
-
-                /*
-                |--------------------------------------------------------------------------
-                | 📊 تسجيل الحركة
-                |--------------------------------------------------------------------------
-                */
-                InventoryTransaction::create([
-                    'item_id' => $item->id,
-                    'supplier_id' => $supplier->id,
-                    'quantity' => $row['quantity'],
-                    'purchase_price' => $row['purchase_price'],
-                    'type' => 'in',
-                    'issued_at' => now(),
-                ]);
-              
+            } else {
+                $item = $supplierItem->item;
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | 💰 تحديث الفاتورة
-            |--------------------------------------------------------------------------
-            */
-            $invoice->update([
-                'total_amount_USD' => $total,
-                'total_amount_SYP' => $total * $exchangeRate
+            $item->increment('current_stock', $row['quantity']);
+
+            $subtotal = $row['quantity'] * $row['purchase_price'];
+            $total += $subtotal;
+
+            Invoice_Item::create([
+                'invoice_id' => $invoice->id,
+                'item_id' => $item->id,
+                'description' => $item->name,
+                'quantity' => $row['quantity'],
+                'unit_price' => $row['purchase_price'],
+                'subtotal' => $subtotal,
             ]);
 
-            return $invoice->load('items');
-        });
-          event(new InvoiceCreated($invoice));
-    }
+            InventoryTransaction::create([
+                'item_id' => $item->id,
+                'supplier_id' => $supplier->id,
+                'quantity' => $row['quantity'],
+                'purchase_price' => $row['purchase_price'],
+                'type' => 'in',
+                'issued_at' => now(),
+            ]);
+        }
+
+        $invoice->update([
+            'total_amount_USD' => $total,
+            'total_amount_SYP' => $total * $exchangeRate
+        ]);
+
+        event(new InvoiceCreated($invoice));
+
+        return $invoice->load('items.item', 'supplier');
+    });
+}
+//      public function purchaseBulk(array $data)
+//     {
+//         return DB::transaction(function () use ($data) {
+
+//             $supplier = Supplier::findOrFail($data['supplier_id']);
+
+//             // 💱 سعر الصرف
+//             $rateModel = $this->exchangeService->getCurrentUsdToSypRate();
+//             $exchangeRate = $rateModel->rate;
+
+//             // 🧾 إنشاء الفاتورة
+//             $invoice = Invoice::create([
+//                 'type' => 'supplier',
+//                 'supplier_id' => $supplier->id,
+//                 'discount' => 0,
+//                 'exchange_rate' => $exchangeRate,
+//                 'status' => 'draft',
+//                 'issued_at' => $data['issued_at'] ?? now(),
+//             ]);
+
+//             $total = 0;
+
+//             foreach ($data['items'] as $row) {
+
+//                 // 🔍 جلب مادة المورد
+//                 $supplierItem = SupplierItem::where('supplier_id', $supplier->id)
+//                     ->where('id', $row['supplier_item_id'])
+//                     ->firstOrFail();
+
+//                 /*
+//                 |--------------------------------------------------------------------------
+//                 | 🧠 إذا المادة غير موجودة بالمخزن → أنشئها
+//                 |--------------------------------------------------------------------------
+//                 */
+//                 if (!$supplierItem->item_id) {
+
+//                     // 🔍 منع التكرار
+//                     $item = Item::where('name', $supplierItem->name)->first();
+
+//                     if (!$item) {
+//                         $item = Item::create([
+//                             'name' => $supplierItem->name,
+//                             'code' => strtoupper(uniqid('ITEM_')),
+//                             'unit' => $supplierItem->unit ?? 'unit',
+//                             'minimum_stock' => 0,
+//                             'current_stock' => 0,
+//                         ]);
+//                     }
+
+//                     // 🔗 ربطها بالمورد
+//                     $supplierItem->update([
+//                         'item_id' => $item->id
+//                     ]);
+
+//                 } else {
+//                     $item = $supplierItem->item;
+//                 }
+
+//                 /*
+//                 |--------------------------------------------------------------------------
+//                 | 📦 تحديث المخزون
+//                 |--------------------------------------------------------------------------
+//                 */
+//                 $item->increment('current_stock', $row['quantity']);
+
+//                 $subtotal = $row['quantity'] * $row['purchase_price'];
+//                 $total += $subtotal;
+
+//                 /*
+//                 |--------------------------------------------------------------------------
+//                 | 🧾 عناصر الفاتورة
+//                 |--------------------------------------------------------------------------
+//                 */
+//                 Invoice_Item::create([
+//                     'invoice_id' => $invoice->id,
+//                     'item_id' => $item->id,
+//                     'description' => $item->name,
+//                     'quantity' => $row['quantity'],
+//                     'unit_price' => $row['purchase_price'],
+//                     'subtotal' => $subtotal,
+//                 ]);
+
+//                 /*
+//                 |--------------------------------------------------------------------------
+//                 | 📊 تسجيل الحركة
+//                 |--------------------------------------------------------------------------
+//                 */
+//                 InventoryTransaction::create([
+//                     'item_id' => $item->id,
+//                     'supplier_id' => $supplier->id,
+//                     'quantity' => $row['quantity'],
+//                     'purchase_price' => $row['purchase_price'],
+//                     'type' => 'in',
+//                     'issued_at' => now(),
+//                 ]);
+              
+//             }
+
+//             /*
+//             |--------------------------------------------------------------------------
+//             | 💰 تحديث الفاتورة
+//             |--------------------------------------------------------------------------
+//             */
+//             $invoice->update([
+//                 'total_amount_USD' => $total,
+//                 'total_amount_SYP' => $total * $exchangeRate
+//             ]);
+//  event(new InvoiceCreated($invoice));
+//             return $invoice->load('items');
+//         });
+         
+//     }
 // شراء مواد مع إنشاء فاتورة
 //  public function purchaseBulk(array $data)
 //     {

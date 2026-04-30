@@ -36,7 +36,7 @@ use App\Models\Notification;
 //     }
 // }
 
-class SendNotificationJob extends ShouldQueue
+class SendNotificationJob implements ShouldQueue
 {
     public $users;
     public $title;

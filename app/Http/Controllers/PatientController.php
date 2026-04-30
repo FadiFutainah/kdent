@@ -15,7 +15,7 @@ class PatientController extends Controller
     {
         $this->service = $service;
     }
-
+//عرض المواعيد المتاحة لليوم 
    public function getAvailableSlotsForDays(Request $request)
 {
     $data = $request->validate([
@@ -30,6 +30,7 @@ class PatientController extends Controller
 
     return response()->json($result);
 }
+// حجز موعد
  public function bookAppointment(Request $request)
 {
     

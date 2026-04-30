@@ -12,6 +12,7 @@ class DoctorController extends Controller
     {
         $this->service = $service;
     }
+    //اضافة وقت متاح
   public function addAvailableTime(Request $request)
 {
     $data = $request->validate([
@@ -46,17 +47,17 @@ class DoctorController extends Controller
         return response()->json($result);
     }
 ///////////////////////////////////////////////////
-
+//عرض قائمة المرضى
 public function myPatients()
 {
     return response()->json($this->service->getDoctorPatients());
 }
-
+// عرض مواعيد اليوم
 public function todayAppointments()
 {
     return response()->json($this->service->getTodayAppointments());
 }
-
+// عرض المواعيد لعشرة ايام
 public function upcomingAppointments()
 {
     return response()->json($this->service->getUpcomingAppointmentsGrouped());

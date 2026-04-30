@@ -94,9 +94,9 @@ class AuthServices {
         throw new Exception("الكود الحالي ما زال صالح، حاول لاحقاً");
     }
       // 🔥 منع السبام (انتظار 60 ثانية)
-    if ($user->last_otp_sent_at && now()->diffInSeconds($user->last_otp_sent_at) < 60) {
-        throw new Exception("انتظر دقيقة قبل طلب كود جديد");
-    }
+    // if ($user->last_otp_sent_at && now()->diffInSeconds($user->last_otp_sent_at) < 60) {
+    //     throw new Exception("انتظر دقيقة قبل طلب كود جديد");
+    // }
 
     // توليد كود جديد
     $otp = rand(1000, 9999);

@@ -28,7 +28,8 @@ class SendInvoiceNotification
     public function handle($event)
 {
     dispatch(new SendNotificationJob(
-        User::where('role', 'accountant')->pluck('id'),
+        // User::where('role', 'accountant')->pluck('id'),
+          User::role('accountant')->pluck('id'),
         'فاتورة جديدة',
         "تم إنشاء فاتورة جديدة",
         'invoice',

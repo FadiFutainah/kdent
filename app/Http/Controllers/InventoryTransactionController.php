@@ -13,28 +13,50 @@ class InventoryTransactionController extends Controller
     {
         $this->service = $service;
     }
-
     public function purchase(Request $request)
-    {
-        $data = $request->validate([
-            'supplier_id' => 'required|exists:suppliers,id',
+{
+    $data = $request->validate([
+        'supplier_id' => 'required|exists:suppliers,id',
 
-            'items' => 'required|array|min:1',
-            'items.*.supplier_item_id' => 'required|exists:supplier_items,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.purchase_price' => 'required|numeric|min:0',
+        'items' => 'required|array|min:1',
+        'items.*.supplier_item_id' => 'required|exists:supplier_items,id',
+        'items.*.quantity' => 'required|integer|min:1',
+        'items.*.purchase_price' => 'required|numeric|min:0',
 
-            'issued_at' => 'nullable|date',
-            'notes' => 'nullable|string',
-        ]);
+        'issued_at' => 'nullable|date',
+        'notes' => 'nullable|string',
+    ]);
 
-        $invoice = $this->service->purchaseBulk($data);
+    $invoice = $this->service->purchaseBulk($data);
 
-        return response()->json([
-            'message' => 'Purchase & Invoice created successfully',
-            'data' => $invoice
-        ]);
-    }
+    return response()->json([
+        'message' => 'Purchase & Invoice created successfully',
+        'data' => $invoice
+    ]);
+}
+
+    // public function purchase(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'supplier_id' => 'required|exists:suppliers,id',
+
+    //         'items' => 'required|array|min:1',
+    //         'items.*.supplier_item_id' => 'required|exists:supplier_items,id',
+    //         'items.*.quantity' => 'required|integer|min:1',
+    //         'items.*.purchase_price' => 'required|numeric|min:0',
+
+    //         'issued_at' => 'nullable|date',
+    //         'notes' => 'nullable|string',
+    //     ]);
+
+    //     $invoice = $this->service->purchaseBulk($data);
+
+    //     return response()->json([
+    //         'message' => 'Purchase & Invoice created successfully',
+    //         'data' => $invoice
+    //     ]);
+    // }
+
     //شراء مواد
 // public function purchase(Request $request)
 // {

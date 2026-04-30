@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('type'); // supplier | patient | doctor | salary
             $table->foreignId('supplier_id')->constrained();
+            $table->string('invoice_number')->unique()->nullable();
+            $table->decimal('paid_amount', 12, 2)->default(0);
             $table->decimal('total_amount_USD', 12, 2)->default(0);
             $table->decimal('total_amount_SYP', 12, 2)->default(0);
             $table->decimal('discount', 12, 2)->default(0);

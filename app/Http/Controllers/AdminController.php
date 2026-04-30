@@ -19,7 +19,7 @@ class AdminController extends Controller
         $data = $request->validate([
             'name' => 'required|string',
             'phone_number' => 'required|unique:users',
-            'email' => 'nullable|email|unique:users',
+            'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
             'role' => 'required|in:doctor,accountant,secretary,storekeeper',
             'specialization_id' => 'nullable|exists:specializations,id',

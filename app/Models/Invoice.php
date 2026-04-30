@@ -11,6 +11,8 @@ class invoice extends Model
         'supplier_id',
         'total_amount_USD',
         'total_amount_SYP',
+        'invoice_number',
+        'paid_amount',
         'discount',
         'currency',
         'exchange_rate',
@@ -25,8 +27,17 @@ class invoice extends Model
     {
         return $this->hasMany(Invoice_Item::class);
     }
+      public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
+    }
     public function getTotalSypAttribute()
 {
     return $this->total_amount * $this->exchange_rate;
 }
+public function payments()
+{
+    return $this->hasMany(Payment::class);
+}
+
 }

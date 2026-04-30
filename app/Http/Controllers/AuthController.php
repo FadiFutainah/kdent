@@ -1,23 +1,36 @@
 <?php
 namespace App\Http\Controllers;
+
+use App\Http\Requests\LoginRequest;
 use App\Services\AuthServices;
 use Illuminate\Http\Request;
+use App\Http\Requests\RegisterRequest;
+
 
 class AuthController {
     protected $service;
     public function __construct(AuthServices $service) { $this->service = $service; }
 
     // المسار: /register-patient
-    public function register(Request $request) {
-        $this->service->registerPatient($request->all());
-        return response()->json(['message' => 'تم إرسال كود التحقق بنجاح']);
-    }
+    // public function register(Request $request) {
+    //     $this->service->registerPatient($request->all());
+    //     return response()->json(['message' => 'تم إرسال كود التحقق بنجاح']);
+    // }
+public function register(RegisterRequest $request)
+{
+    $data = $request->validated();
 
+    $this->service->registerPatient($data);
+
+    return response()->json([
+        'message' => 'تم إرسال كود التحقق بنجاح'
+    ]);
+}
     // *** المسار الجديد: /verify-otp ***
     public function verify(Request $request) {
         $request->validate([
-            'phone_number' => 'required',
-            'otp_code'     => 'required'
+           'phone_number' => 'required|string|exists:users,phone_number',
+            'otp_code'     => 'required|digits:4'
         ]);
 
         try {
@@ -33,16 +46,16 @@ class AuthController {
     public function resendOtp(Request $request)
 {
     $request->validate([
-        'phone_number' => 'required'
+        'phone_number' => 'required|string|exists:users,phone_number'
     ]);
 
     return response()->json([
-        'message' => $this->service->resendOtp($request->phone)
+        'message' => $this->service->resendOtp($request->phone_number)
     ]);
 }
 
     // المسار: /login
-    public function login(Request $request) {
+    public function login(LoginRequest $request) {
         try {
            // $token = $this->service->login($request->login_field, $request->password, $request->role);
            $result = $this->service->login($request->all());

@@ -23,7 +23,8 @@ class LowStockNotification
     public function handle(object $event): void
     {
          dispatch(new SendNotificationJob(
-        User::where('role', 'warehouse')->pluck('id'),
+        // User::where('role', 'warehouse')->pluck('id'),
+          User::role('storekeeper')->pluck('id'),
         'تنبيه مخزون',
         "⚠️ {$event->item->name} قربت تخلص",
         'low_stock',

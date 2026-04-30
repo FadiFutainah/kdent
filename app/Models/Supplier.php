@@ -16,6 +16,10 @@ class Supplier extends Model
 {
     return $this->hasMany(SupplierItem::class);
 }
+public function invoices()
+{
+    return $this->hasMany(Invoice::class);
+}
 // public function items()
 // {
 //     return $this->belongsToMany(Item::class, 'supplier_items');
