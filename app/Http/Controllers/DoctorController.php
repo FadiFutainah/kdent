@@ -29,7 +29,7 @@ class DoctorController extends Controller
     public function updateAvailableTime(Request $request, $id)
     {
         $data = $request->validate([
-            'day' => 'required|in:sun,mon,tue,wed,thu,fri,sat',
+            'day' => 'required|in:sun,mon,tues,wed,thy,fri,sat',
             'start_time' => 'required',
             'end_time' => 'required',
         ]);

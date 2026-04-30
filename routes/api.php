@@ -52,6 +52,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
 });
 
 Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
+    Route::get('/secretary/doctors/all', [AppointmentController::class, 'listAllDoctorsForSecretary']);
     Route::post('/secretary/doctors', [AppointmentController::class, 'listDoctorsBySpecialization']);
     Route::post('/secretary/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
     Route::get('/secretary/appointments/scheduled', [AppointmentController::class, 'listScheduledBySecretary']);

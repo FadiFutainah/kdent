@@ -13,6 +13,23 @@ use Illuminate\Support\Str;
 
 class AppointmentService
 {
+    public function getAllDoctorsForSecretary(): array
+    {
+        return Doctor::with(['user', 'specialization'])
+            ->orderBy('id')
+            ->where('is_active', true)
+            ->get()
+            ->map(function (Doctor $doctor) {
+                return [
+                    'id' => $doctor->id,
+                    'name' => $doctor->user?->name,
+                    'specialization_name' => $doctor->specialization?->name,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
     public function getActiveDoctorsBySpecialization(int $specializationId): array
     {
         return Doctor::with('user')
@@ -96,7 +113,7 @@ class AppointmentService
 
         for ($i = 0; $i < $daysToCheck; $i++) {
             $date = Carbon::today()->addDays($i);
-            $day = strtolower($date->format('D'));
+            $day = $this->normalizeDay($date);
 
             $schedules = Doctor_Schedules::where('doctor_id', $doctor->id)
                 ->where('day', $day)
@@ -189,7 +206,7 @@ class AppointmentService
             throw new \Exception('لا يمكن حجز موعد في الماضي');
         }
 
-        $day = strtolower($appointmentDateTime->format('D'));
+        $day = $this->normalizeDay($appointmentDateTime);
 
         $schedules = Doctor_Schedules::where('doctor_id', $doctor->id)
             ->where('day', $day)
@@ -235,10 +252,23 @@ class AppointmentService
         return Appointment::create([
             'patient_id' => $patientId,
             'doctor_id' => $doctorId,
-            'day' => strtolower($appointmentDateTime->format('D')),
+            'day' => $this->normalizeDay($appointmentDateTime),
             'appointment_date' => $appointmentDateTime,
             'status' => $status,
         ]);
+    }
+
+    private function normalizeDay(Carbon $date): string
+    {
+        return match ($date->dayOfWeek) {
+            Carbon::SUNDAY => 'sun',
+            Carbon::MONDAY => 'mon',
+            Carbon::TUESDAY => 'tues',
+            Carbon::WEDNESDAY => 'wed',
+            Carbon::THURSDAY => 'thy',
+            Carbon::FRIDAY => 'fri',
+            Carbon::SATURDAY => 'sat',
+        };
     }
 
     private function findOrCreatePatient(string $patientName, ?string $phoneNumber = null): Patient
@@ -255,8 +285,8 @@ class AppointmentService
             $user = User::create([
                 'name' => $patientName,
                 'phone_number' => $phoneNumber,
-                'password' => Hash::make(Str::random(16)),
-                'is_verified' => false,
+                'password' => Hash::make('11111111'),
+                'is_verified' => true,
             ]);
 
             $user->assignRole('patient');

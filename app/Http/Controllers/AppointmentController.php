@@ -15,7 +15,7 @@ class AppointmentController extends Controller
 	{
 		$data = $request->validate([
 			'patient_name' => 'required|string|min:2|max:255',
-			'phone_number' => 'required|string|max:20',
+			'phone_number' => 'required|string|min:10',
 			'doctor_id' => 'required|exists:doctors,id',
 			'date' => 'required|date',
 			'time' => 'required',
@@ -24,6 +24,13 @@ class AppointmentController extends Controller
 		$appointment = $this->service->bookSecretaryAppointment($data);
 
 		return response()->json($appointment);
+	}
+
+	public function listAllDoctorsForSecretary()
+	{
+		$doctors = $this->service->getAllDoctorsForSecretary();
+
+		return response()->json($doctors);
 	}
 
 	public function listDoctorsBySpecialization(Request $request)

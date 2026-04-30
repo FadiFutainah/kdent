@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class appointment extends Model
+class Appointment extends Model
 {
        protected $fillable = [
         'patient_id',
@@ -28,5 +28,11 @@ class appointment extends Model
     public function doctor()
     {
         return $this->belongsTo(Doctor::class);
+    }
+
+
+    public function treatmentSession()
+    {
+        return $this->hasOne(Treatment_Session::class, 'appointment_id');
     }
 }

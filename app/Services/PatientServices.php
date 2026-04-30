@@ -25,7 +25,7 @@ public function getAvailableSlotsForDays($specializationId)
     for ($i = 0; $i < $daysToCheck; $i++) {
 
         $date = Carbon::today()->addDays($i);
-        $day = strtolower($date->format('D'));
+        $day = $this->normalizeDay($date);
 
         $query = Doctor_Schedules::where('doctor_id', $doctor->id)
             ->where('day', $day);
@@ -97,7 +97,7 @@ public function getAvailableSlotsForDays($specializationId)
     }
 
     // 4️⃣ تأكد الوقت ضمن الدوام
-    $day = strtolower($appointmentDateTime->format('D'));
+    $day = $this->normalizeDay($appointmentDateTime);
 
     $hasSchedule = Doctor_Schedules::where('doctor_id', $doctor->id)
         ->where('day', $day)
@@ -132,5 +132,18 @@ app(NotificationService::class)->send(
     $appointment->id
 );
 }
+
+    private function normalizeDay(Carbon $date): string
+    {
+        return match ($date->dayOfWeek) {
+            Carbon::SUNDAY => 'sun',
+            Carbon::MONDAY => 'mon',
+            Carbon::TUESDAY => 'tues',
+            Carbon::WEDNESDAY => 'wed',
+            Carbon::THURSDAY => 'thy',
+            Carbon::FRIDAY => 'fri',
+            Carbon::SATURDAY => 'sat',
+        };
+    }
 
 }

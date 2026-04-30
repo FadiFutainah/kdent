@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('doctor_id')->constrained('doctors')->onDelete('cascade');
             $table->enum('day', ['sun', 'mon', 'tues', 'wed', 'thy', 'fri', 'sat'])->default('sun');
             $table->dateTime('appointment_date');
-            $table->enum('status', [ 'scheduled','confirmed','cancelled','no_show'
+            $table->enum('status', [ 'scheduled','confirmed','completed','no_show'
             ])->default('scheduled');
             $table->boolean('reminder_sent')->default(false);
             $table->timestamps();

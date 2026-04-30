@@ -22,7 +22,7 @@ class Treatment_Session extends Model
     ];
 
     protected $casts = [
-        'session_date' => 'datetime',
+        'session_date' => 'date',
         'is_last_session' => 'boolean',
         'rprice_usd' => 'decimal:2',
         'rprice_syp' => 'decimal:2',

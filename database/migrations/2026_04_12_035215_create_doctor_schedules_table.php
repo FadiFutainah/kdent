@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('doctor_schedules', function (Blueprint $table) {
             $table->id();
             $table->foreignId('doctor_id')->constrained()->cascadeOnDelete();
-            $table->enum('day', ['sun','mon','tue','wed','thu','fri','sat']);
+            $table->enum('day', ['sun','mon','tues','wed','thy','fri','sat']);
             $table->time('start_time');
             $table->time('end_time');
             $table->timestamps();

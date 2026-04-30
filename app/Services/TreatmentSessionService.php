@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Appointment;
 use App\Models\Doctor_Earning;
 use App\Models\Plan_Item;
 use App\Models\Treatment_Session;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class TreatmentSessionService
@@ -33,12 +35,12 @@ class TreatmentSessionService
 
         $session = Treatment_Session::create([
             'plan_item_id' => $planItem->id,
-            'appointment_id' => $payload['appointment_id'] ?? null,
+            'appointment_id' => null,
             'exchange_rate_id' => $payload['exchange_rate_id'] ?? null,
             'name' => $payload['name'] ?? null,
             'rprice_usd' => $payload['rprice_usd'] ?? null,
             'rprice_syp' => $payload['rprice_syp'] ?? null,
-            'session_date' => $payload['session_date'] ?? null,
+            'session_date' => null,
             'status' => $payload['status'] ?? 'in_progress',
             'clinical_notes' => $payload['clinical_notes'] ?? null,
             'is_last_session' => $payload['is_last_session'] ?? false,
@@ -72,11 +74,9 @@ class TreatmentSessionService
 
         $updates = [];
         $fields = [
-            'appointment_id',
             'name',
             'rprice_usd',
             'rprice_syp',
-            'session_date',
             'clinical_notes',
             'is_last_session',
         ];
@@ -118,12 +118,36 @@ class TreatmentSessionService
             throw new \DomainException('هذه الجلسة منتهية مسبقا');
         }
 
-        $updates = ['status' => 'completed'];
+        $appointment = $this->findConfirmedAppointmentForToday($session->planItem);
+
+        if (!$appointment) {
+            throw new \DomainException('لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة');
+        }
+
+        $updates = [
+            'status' => 'completed',
+            'appointment_id' => $appointment->id,
+            'session_date' => $appointment->appointment_date?->toDateString(),
+        ];
 
         $session->update($updates);
 
+        $appointment->update(['status' => 'completed']);
+
         $session = $session->fresh();
-        $session->update($this->applyExchangeRate($session->toArray()));
+        $priceUpdates = [];
+
+        if (!is_null($session->rprice_usd)) {
+            $priceUpdates['rprice_usd'] = $session->rprice_usd;
+        }
+
+        if (!is_null($session->rprice_syp)) {
+            $priceUpdates['rprice_syp'] = $session->rprice_syp;
+        }
+
+        if ($priceUpdates) {
+            $session->update($this->applyExchangeRate($priceUpdates));
+        }
 
         $this->syncStatuses($session->planItem);
         $this->syncDoctorEarning($session->fresh());
@@ -237,5 +261,25 @@ class TreatmentSessionService
         $plan->update([
             'status' => $hasOpenItems ? 'in_progress' : 'completed',
         ]);
+    }
+
+    private function findConfirmedAppointmentForToday(Plan_Item $planItem): ?Appointment
+    {
+        $appointments = Appointment::where('patient_id', $planItem->plan->patient_id)
+            ->where('doctor_id', $planItem->plan->doctor_id)
+            ->whereDate('appointment_date', Carbon::today())
+            ->where('status', 'confirmed')
+            ->orderBy('appointment_date')
+            ->get(['id', 'appointment_date', 'status']);
+
+        foreach ($appointments as $appointment) {
+            $isLinked = Treatment_Session::where('appointment_id', $appointment->id)->exists();
+
+            if (!$isLinked) {
+                return $appointment;
+            }
+        }
+
+        return null;
     }
 }
