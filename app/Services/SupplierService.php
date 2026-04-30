@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\Models\Supplier;
 use App\Models\Item;
+use App\Models\SupplierItem;
 use Illuminate\Support\Facades\DB;
 
 class SupplierService
@@ -48,40 +49,94 @@ public function createBulkItems(array $items)
         return $created;
     });
 }
-//اضافة موردين الى النظام
-// public function createSupplierWithItems(array $data)
-// {
-//     return DB::transaction(function () use ($data) {
-
-//         $supplier = Supplier::create([
-//             'name' => $data['name'],
-//             'phone' => $data['phone'] ?? null,
-//         ]);
-
-//         if (!empty($data['items'])) {
-//             foreach ($data['items'] as $item) {
-//                 $supplier->supplierItems()->create([
-//                     'name' => $item['name'],
-//                     'unit' => $item['unit'] ?? null,
-//                 ]);
-//             }
-//         }
-
-//         return $supplier->load('supplierItems');
-//     });
-// }
  public function createSupplierWithItems(array $data)
     {
-        // 🏗 إنشاء المورد
         $supplier = Supplier::create([
             'name' => $data['name'],
             'phone' => $data['phone'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);
 
-        // 🔗 ربط المواد
-        $supplier->items()->sync($data['items']);
+        foreach ($data['items'] as $row) {
 
-        return $supplier->load('items');
+            // ✔ مادة موجودة
+            if (!empty($row['item_id'])) {
+
+                $item = Item::findOrFail($row['item_id']);
+
+                SupplierItem::create([
+                    'supplier_id' => $supplier->id,
+                    'item_id' => $item->id,
+                    'name' => $item->name,
+                    'unit' => $item->unit,
+                ]);
+
+            } else {
+                // 🆕 مادة جديدة
+
+                SupplierItem::create([
+                    'supplier_id' => $supplier->id,
+                    'item_id' => null,
+                    'name' => $row['name'],
+                    'unit' => $row['unit'] ?? 'unit',
+                ]);
+            }
+        }
+
+        return $supplier->load('supplierItems');
     }
+    
+
+// public function createSupplierWithItems(array $data)
+// {
+//     $supplier = Supplier::create([
+//         'name' => $data['name'],
+//         'phone' => $data['phone'] ?? null,
+//         'notes' => $data['notes'] ?? null,
+//     ]);
+
+//     foreach ($data['items'] as $row) {
+
+//         // إذا المادة موجودة
+//         if (isset($row['item_id'])) {
+
+//             $item = Item::findOrFail($row['item_id']);
+
+//             SupplierItem::create([
+//                 'supplier_id' => $supplier->id,
+//                 'item_id' => $item->id,
+//                 'name' => $item->name,
+//                 'unit' => $item->unit,
+//             ]);
+
+//         } else {
+//             // مادة جديدة من المورد
+
+//             SupplierItem::create([
+//                 'supplier_id' => $supplier->id,
+//                 'item_id' => null,
+//                 'name' => $row['name'],
+//                 'unit' => $row['unit'] ?? 'unit',
+//             ]);
+//         }
+//     }
+
+//     return $supplier->load('supplierItems');
+// }
+    //عرض المواد الموجودة 
+    public function getAvailableItems()
+{
+    return Item::select([
+            'id',
+            'name',
+            'code',
+            'unit',
+            'current_stock'
+        ])
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get();
+}
+
+
 }

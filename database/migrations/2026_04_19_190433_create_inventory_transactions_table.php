@@ -14,8 +14,11 @@ return new class extends Migration
         Schema::create('inventory_transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('item_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('treatment_session_id')->nullable()->constrained('treatment_sessions')->nullOnDelete();
+           // $table->foreignId('treatment_session_id')->nullable()->constrained('treatment_sessions')->nullOnDelete();
+           $table->foreignId('doctor_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();
+// 👇 ربط الحركة الأصلية (للإرجاع)
+            $table->foreignId('reference_id')->nullable()->constrained('inventory_transactions')->nullOnDelete();
             $table->decimal('purchase_price', 10, 2)->nullable();
             $table->enum('type', ['in', 'out', 'return']);
             $table->integer('quantity');

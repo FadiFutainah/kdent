@@ -95,7 +95,9 @@ Route::middleware(['auth:sanctum', 'role:storekeeper'])->group(function () {
     Route::post('/suppliers', [SupplierItemsController::class, 'store']);
     Route::post('/purchase', [InventoryTransactionController::class, 'purchase']);
     Route::post('/consume', [InventoryTransactionController::class, 'consume']);
+    Route::post('/returnItems', [InventoryTransactionController::class, 'returnItems']);
     Route::post('/storeitems', [SupplierItemsController::class, 'stores']);
+    Route::get('/available_items', [SupplierItemsController::class, 'availableItems']);
 });
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
