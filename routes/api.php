@@ -70,6 +70,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
    // Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);//وضع علامة مدفوعة على الفاتورة
     Route::get('/invoices/{id}/print', [InvoiceController::class, 'print']);//طباعة الفاتورة
     Route::post('/invoices/{id}/pay', [InvoiceController::class, 'pay']);//دفع الفاتورة
+    Route::post('/invoices/{id}/apply-discount', [InvoiceController::class, 'applyDiscount']);//تطبيق الخصم
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor|admin|accountant'])->group(function () {

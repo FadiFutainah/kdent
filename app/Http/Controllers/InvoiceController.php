@@ -34,16 +34,7 @@ public function approve($id)
         'data' => $invoice
     ]);
 }
-//وضع علامة مدفوعة على الفاتورة
-// public function markAsPaid($id)
-// {
-//     $invoice = $this->service->markAsPaid($id);
-
-//     return response()->json([
-//         'message' => 'Invoice marked as paid',
-//         'data' => $invoice
-//     ]);
-// }
+// دفع الفاتورة
 public function pay(Request $request, $id)
 {
     $request->validate([
@@ -57,14 +48,19 @@ public function pay(Request $request, $id)
         'data' => $invoice
     ]);
 }
-
+//'طباعة الفاتورة
 public function print($id)
 {
     $invoice = $this->service->getById($id);
 
     $supplierName = $invoice->supplier?->name ?? '-';
 
-    $remaining = $invoice->total_amount_USD - $invoice->paid_amount;
+    // $remaining = $invoice->total_amount_USD - $invoice->paid_amount;
+    $total = $invoice->total_amount_USD_after_discount > 0
+    ? $invoice->total_amount_USD_after_discount
+    : $invoice->total_amount_USD;
+
+$remaining = $total - $invoice->paid_amount;
 
     $html = '
     <html dir="rtl">
@@ -87,15 +83,23 @@ public function print($id)
                 padding: 6px;
                 text-align: center;
             }
+
+            .section {
+                margin-top: 10px;
+            }
         </style>
     </head>
     <body>
 
-        <h2 style="text-align:center;">فاتورة رقم ' . $invoice->invoice_number . '</h2>
-<p>النوع: ' . $invoice->type . '</p>
+        <h2 style="text-align:center;">
+            فاتورة رقم ' . ($invoice->invoice_number ?? 'INV-' . $invoice->id) . '
+        </h2>
+
+        <p>النوع: ' . $invoice->type . '</p>
         <p>المورد: ' . $supplierName . '</p>
         <p>الحالة: ' . $invoice->status . '</p>
         <p>التاريخ: ' . $invoice->issued_at . '</p>
+        <p>سعر الصرف: ' . $invoice->exchange_rate . '</p>
 
         <table>
             <tr>
@@ -111,33 +115,184 @@ public function print($id)
             <tr>
                 <td>' . $item->description . '</td>
                 <td>' . $item->quantity . '</td>
-                <td>' . $item->unit_price . '</td>
-                <td>' . $item->subtotal . '</td>
+                <td>' . number_format($item->unit_price, 2) . '</td>
+                <td>' . number_format($item->subtotal, 2) . '</td>
             </tr>
         ';
     }
 
+    $html .= '</table><br>';
+
+    /*
+    |--------------------------------------------------------------------------
+    | 💰 عرض الإجمالي (مع أو بدون خصم)
+    |--------------------------------------------------------------------------
+    */
+
+    // if (!empty($invoice->discount) && $invoice->discount > 0) {
+
+    //     $before = $invoice->total_before_discount ?? $invoice->total_amount_USD;
+    //     $after  = $invoice->total_after_discount ?? $invoice->total_amount_USD;
+
+    //     $html .= '
+    //         <div class="section">
+    //             <h3>الإجمالي قبل الخصم: ' . number_format($before, 2) . ' USD</h3>
+    //             <h3>الإجمالي قبل الخصم: ' . number_format($before * $invoice->exchange_rate, 2) . ' SYP</h3>
+
+    //             <h3>نسبة الخصم: ' . $invoice->discount . ' %</h3>
+
+    //             <h3>الإجمالي بعد الخصم: ' . number_format($after, 2) . ' USD</h3>
+    //             <h3>الإجمالي بعد الخصم: ' . number_format($after * $invoice->exchange_rate, 2) . ' SYP</h3>
+    //         </div>
+    //     ';
+    if (!empty($invoice->discount) && $invoice->discount > 0) {
+
+    $before = $invoice->total_amount_USD;
+    $after  = $invoice->total_amount_USD_after_discount;
+
     $html .= '
-        </table>
+        <div class="section">
+            <h3>الإجمالي قبل الخصم: ' . number_format($before, 2) . ' USD</h3>
+            <h3>الإجمالي قبل الخصم: ' . number_format($invoice->total_amount_SYP, 2) . ' SYP</h3>
 
-        <br>
+            <h3>نسبة الخصم: ' . $invoice->discount . ' %</h3>
 
-        <h3>الإجمالي بالدولار: ' . $invoice->total_amount_USD . 'USD</h3>
-        <h3>الإجمالي بالليرة: ' . $invoice->total_amount_SYP . ' SYP</h3>
-       <h3>المدفوع: ' . $invoice->paid_amount . ' USD</h3>
-<h3>المتبقي: ' . $remaining . ' USD</h3>
-        <h3>الحالة: ' . $invoice->status . '</h3>
+            <h3>الإجمالي بعد الخصم: ' . number_format($after, 2) . ' USD</h3>
+            <h3>الإجمالي بعد الخصم: ' . number_format($invoice->total_amount_SYP_after_discount, 2) . ' SYP</h3>
+        </div>
+    ';
+}
 
+     else {
+
+        $html .= '
+            <div class="section">
+                <h3>الإجمالي: ' . number_format($invoice->total_amount_USD, 2) . ' USD</h3>
+                <h3>الإجمالي: ' . number_format($invoice->total_amount_SYP, 2) . ' SYP</h3>
+            </div>
+        ';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 💵 الدفع
+    |--------------------------------------------------------------------------
+    */
+
+    $html .= '
+        <div class="section">
+            <h3>المدفوع: ' . number_format($invoice->paid_amount, 2) . ' USD</h3>
+            <h3>المتبقي: ' . number_format($remaining, 2) . ' USD</h3>
+        </div>
+    ';
+
+    $html .= '
     </body>
     </html>
     ';
 
-    $mpdf = new Mpdf();
+    $mpdf = new \Mpdf\Mpdf();
     $mpdf->WriteHTML($html);
 
     return response($mpdf->Output('', 'S'))
         ->header('Content-Type', 'application/pdf');
 }
+public function applyDiscount(Request $request, $id)
+{
+    $request->validate([
+        'discount' => 'required|numeric|min:0|max:100'
+    ]);
+
+    $invoice = $this->service->applyDiscount($id, $request->discount);
+
+    return response()->json([
+        'message' => 'Discount applied successfully',
+        'data' => $invoice
+    ]);
+}
+
+
+// public function print($id)
+// {
+//     $invoice = $this->service->getById($id);
+
+//     $supplierName = $invoice->supplier?->name ?? '-';
+
+//     $remaining = $invoice->total_amount_USD - $invoice->paid_amount;
+
+//     $html = '
+//     <html dir="rtl">
+//     <head>
+//         <meta charset="utf-8">
+//         <style>
+//             body {
+//                 font-family: dejavusans;
+//                 direction: rtl;
+//                 text-align: right;
+//             }
+
+//             table {
+//                 border-collapse: collapse;
+//                 width: 100%;
+//             }
+
+//             th, td {
+//                 border: 1px solid #000;
+//                 padding: 6px;
+//                 text-align: center;
+//             }
+//         </style>
+//     </head>
+//     <body>
+
+//         <h2 style="text-align:center;">فاتورة رقم ' . $invoice->invoice_number . '</h2>
+// <p>النوع: ' . $invoice->type . '</p>
+//         <p>المورد: ' . $supplierName . '</p>
+//         <p>الحالة: ' . $invoice->status . '</p>
+//         <p>التاريخ: ' . $invoice->issued_at . '</p>
+//         <p>سعر الصرف وقت الفاتورة: ' . $invoice->exchange_rate . '</p>
+
+//         <table>
+//             <tr>
+//                 <th>المادة</th>
+//                 <th>الكمية</th>
+//                 <th>سعر القطعة</th>
+//                 <th>الإجمالي</th>
+//             </tr>
+//     ';
+
+//     foreach ($invoice->items as $item) {
+//         $html .= '
+//             <tr>
+//                 <td>' . $item->description . '</td>
+//                 <td>' . $item->quantity . '</td>
+//                 <td>' . $item->unit_price . '</td>
+//                 <td>' . $item->subtotal . '</td>
+//             </tr>
+//         ';
+//     }
+
+//     $html .= '
+//         </table>
+
+//         <br>
+
+//         <h3>الإجمالي بالدولار: ' . $invoice->total_amount_USD . 'USD</h3>
+//         <h3>الإجمالي بالليرة: ' . $invoice->total_amount_SYP . ' SYP</h3>
+//        <h3>المدفوع: ' . $invoice->paid_amount . ' USD</h3>
+// <h3>المتبقي: ' . $remaining . ' USD</h3>
+//         <h3>الحالة: ' . $invoice->status . '</h3>
+
+//     </body>
+//     </html>
+//     ';
+
+//     $mpdf = new Mpdf();
+//     $mpdf->WriteHTML($html);
+
+//     return response($mpdf->Output('', 'S'))
+//         ->header('Content-Type', 'application/pdf');
+// }
 
 // public function print($id)
 // {

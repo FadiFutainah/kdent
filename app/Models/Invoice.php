@@ -14,6 +14,8 @@ class invoice extends Model
         'invoice_number',
         'paid_amount',
         'discount',
+        'total_amount_USD_after_discount',
+        'total_amount_SYP_after_discount',
         'currency',
         'exchange_rate',
         'created_by',

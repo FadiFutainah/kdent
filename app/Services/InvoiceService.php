@@ -28,24 +28,24 @@ public function approve($id)
 
     return $invoice;
 }
-//وضع علامة مدفوعة على الفاتورة
-// public function markAsPaid($id)
-// {
-//     $invoice = Invoice::findOrFail($id);
-
-//     if ($invoice->status !== 'issued') {
-//         throw new \Exception("Invoice must be approved first");
-//     }
-
-//     $invoice->update([
-//         'status' => 'paid'
-//     ]);
-
-//     return $invoice;
-// }
+// دفع الفاتورة
 public function payInvoice($invoiceId, $amount)
 {
     $invoice = Invoice::findOrFail($invoiceId);
+
+    // 🎯 حدد الإجمالي الصحيح
+    
+      $total = $invoice->total_amount_USD_after_discount > 0
+    ? $invoice->total_amount_USD_after_discount
+    : $invoice->total_amount_USD;
+    // 🚨 تحقق قبل أي شي
+    if ($invoice->paid_amount >= $total) {
+        throw new \Exception("Invoice already fully paid");
+    }
+
+    if (($invoice->paid_amount + $amount) > $total) {
+        throw new \Exception("Payment exceeds remaining amount");
+    }
 
     // 💰 سجل الدفع
     Payment::create([
@@ -55,18 +55,16 @@ public function payInvoice($invoiceId, $amount)
         'created_by' => Auth::id(),
     ]);
 
-    // 💰 تحديث الفاتورة
+    // 💰 حدث المدفوع
     $invoice->paid_amount += $amount;
 
-    $total = $invoice->total_amount_USD;
-
-    if ($invoice->paid_amount <= 0) {
-        $invoice->status = 'approved';
+    // 🧠 الحالة
+    if ($invoice->paid_amount == 0) {
+        $invoice->status = 'issued';
     } elseif ($invoice->paid_amount < $total) {
         $invoice->status = 'partial';
     } else {
         $invoice->status = 'paid';
-        $invoice->paid_amount = $total;
     }
 
     $invoice->save();
@@ -79,4 +77,34 @@ public function getById($id)
     return Invoice::with(['items.item', 'supplier'])
         ->findOrFail($id);
 }
+//تطبيق الخصم
+public function applyDiscount($invoiceId, $discount)
+{
+    $invoice = Invoice::findOrFail($invoiceId);
+
+    $invoice->discount = $discount;
+
+    // 💰 لازم نجيب القيمة الأصلية (قبل أي تعديل)
+    $totalBefore = $invoice->getOriginal('total_amount_USD');
+
+    if (!$totalBefore) {
+        $totalBefore = $invoice->total_amount_USD;
+    }
+
+    $discountValue = ($totalBefore * $discount) / 100;
+
+    $totalAfter = $totalBefore - $discountValue;
+
+    // 💾 خزّن بعد الخصم
+    $invoice->total_amount_USD_after_discount = $totalAfter;
+    $invoice->total_amount_SYP_after_discount = $totalAfter * $invoice->exchange_rate;
+
+    // ⚠️ مهم جداً: لا تلمس الأصل
+    // ❌ لا تعدل total_amount_USD
+
+    $invoice->save();
+
+    return $invoice;
+}
+
 }
