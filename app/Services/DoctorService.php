@@ -2,8 +2,14 @@
 namespace App\Services;
 use App\Models\Doctor_Schedules;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Appointment;
 use App\Models\Patient;
+use App\Models\MaterialRequest;
+use App\Models\MaterialRequestItem;
+
+use App\Events\MaterialRequestCreated;
+use App\Models\Doctor;
 
 class DoctorService
 {
@@ -127,4 +133,38 @@ public function getUpcomingAppointmentsGrouped()
             return \Carbon\Carbon::parse($item->appointment_date)->toDateString();
         });
 }
+
+// طلب مواد
+public function createRequest(array $data)
+{
+    return DB::transaction(function () use ($data) {
+
+        // $request = MaterialRequest::create([
+        //     'doctor_id' => Auth::id(),
+        //     'notes' => $data['notes'] ?? null,
+        // ]);
+         $doctor = Doctor::where('user_id', Auth::id())->firstOrFail();
+
+        $request = MaterialRequest::create([
+            'doctor_id' => $doctor->id, // ✅ هون الصح
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        foreach ($data['items'] as $item) {
+
+            MaterialRequestItem::create([
+                'material_request_id' => $request->id,
+                'item_id' => $item['item_id'],
+                'quantity' => $item['quantity'],
+            ]);
+        }
+
+       
+ event(new MaterialRequestCreated($request));
+
+
+        return $request->load('items');
+    });
+}
+
 }

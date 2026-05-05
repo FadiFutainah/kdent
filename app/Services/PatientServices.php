@@ -10,15 +10,15 @@ use Carbon\Carbon;
 class PatientServices
 {
  
-public function getAvailableSlotsForDays($specializationId)
+public function getAvailableSlotsForDays($doctorId)
 {
-    $doctor = Doctor::where('specialization_id', $specializationId)
+    $doctor = Doctor::where('id', $doctorId)
         ->where('is_active', true)
-        ->first();
+         ->firstOrFail();
 
-    if (!$doctor) {
-        return [];
-    }
+    // if (!$doctor) {
+    //     return [];
+    // }
     $daysToCheck = 10;
     $result = [];
 
@@ -27,11 +27,11 @@ public function getAvailableSlotsForDays($specializationId)
         $date = Carbon::today()->addDays($i);
         $day = $this->normalizeDay($date);
 
-        $query = Doctor_Schedules::where('doctor_id', $doctor->id)
-            ->where('day', $day);
+        $schedules = Doctor_Schedules::where('doctor_id', $doctor->id)
+            ->where('day', $day) ->get();
 
 
-        $schedules = $query->get();
+        // $schedules = $query->get();
 
         $slots = [];
 
@@ -78,60 +78,108 @@ public function getAvailableSlotsForDays($specializationId)
 }
 
 
-  public function bookAppointment($userId, $data)
-{
-    // 1️⃣ نجيب المريض
+//   public function bookAppointment($userId, $data)
+// {
+//     // 1️⃣ نجيب المريض
    
-   $patient = Auth::user()->patient;
-    // 2️⃣ نجيب الدكتور
-    $doctor = Doctor::where('specialization_id', $data['specialization_id'])
-        ->where('is_active', true)
-        ->firstOrFail();
+//    $patient = Auth::user()->patient;
+//     // 2️⃣ نجيب الدكتور
+//     $doctor = Doctor::where('specialization_id', $data['specialization_id'])
+//         ->where('is_active', true)
+//         ->firstOrFail();
 
-    // 3️⃣ نركب datetime
-    $appointmentDateTime = Carbon::parse($data['date'] . ' ' . $data['time']);
+//     // 3️⃣ نركب datetime
+//     $appointmentDateTime = Carbon::parse($data['date'] . ' ' . $data['time']);
 
-    // ❌ منع الحجز بالماضي
-    if ($appointmentDateTime->lt(Carbon::now())) {
-        throw new \Exception("لا يمكن حجز موعد في الماضي");
+//     // ❌ منع الحجز بالماضي
+//     if ($appointmentDateTime->lt(Carbon::now())) {
+//         throw new \Exception("لا يمكن حجز موعد في الماضي");
+//     }
+
+//     // 4️⃣ تأكد الوقت ضمن الدوام
+//     $day = $this->normalizeDay($appointmentDateTime);
+
+//     $hasSchedule = Doctor_Schedules::where('doctor_id', $doctor->id)
+//         ->where('day', $day)
+//         ->exists();
+
+//     if (!$hasSchedule) {
+//         throw new \Exception("الدكتور لا يعمل بهذا اليوم");
+//     }
+
+//     // 5️⃣ تأكد الوقت مو محجوز
+//     $exists = Appointment::where('doctor_id', $doctor->id)
+//         ->where('appointment_date', $appointmentDateTime)
+//         ->exists();
+
+//     if ($exists) {
+//         throw new \Exception("هذا الموعد محجوز مسبقاً");
+//     }
+
+//     // 6️⃣ إنشاء الموعد
+//     return Appointment::create([
+//         'patient_id' => $patient->id,
+//         'doctor_id' => $doctor->id,
+//         'appointment_date' => $appointmentDateTime,
+//         'status' => 'scheduled'
+//     ]);
+//     // 👇 هون
+// app(NotificationService::class)->send(
+//     $reception,
+//     'موعد جديد',
+//     'تم حجز موعد جديد بانتظار التأكيد',
+//     'appointment',
+//     $appointment->id
+// );
+// }
+    public function bookAppointment($patientId, $data)
+    {
+        $doctor = Doctor::where('id', $data['doctor_id'])
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $appointmentDateTime = Carbon::parse($data['date'] . ' ' . $data['time']);
+
+        if ($appointmentDateTime->lt(Carbon::now())) {
+            throw new \Exception("لا يمكن حجز موعد في الماضي");
+        }
+
+        $day = $this->normalizeDay($appointmentDateTime);
+
+        $hasSchedule = Doctor_Schedules::where('doctor_id', $doctor->id)
+            ->where('day', $day)
+            ->exists();
+
+        if (!$hasSchedule) {
+            throw new \Exception("الدكتور لا يعمل بهذا اليوم");
+        }
+
+        $exists = Appointment::where('doctor_id', $doctor->id)
+            ->where('appointment_date', $appointmentDateTime)
+            ->exists();
+
+        if ($exists) {
+            throw new \Exception("هذا الموعد محجوز مسبقاً");
+        }
+
+        $appointment = Appointment::create([
+            'patient_id' => $patientId,
+            'doctor_id' => $doctor->id,
+            'appointment_date' => $appointmentDateTime,
+            'status' => 'scheduled'
+        ]);
+
+        // notification (لازم قبل return)
+        app(NotificationService::class)->send(
+            $doctor,
+            'موعد جديد',
+            'تم حجز موعد جديد',
+            'appointment',
+            $appointment->id
+        );
+
+        return $appointment;
     }
-
-    // 4️⃣ تأكد الوقت ضمن الدوام
-    $day = $this->normalizeDay($appointmentDateTime);
-
-    $hasSchedule = Doctor_Schedules::where('doctor_id', $doctor->id)
-        ->where('day', $day)
-        ->exists();
-
-    if (!$hasSchedule) {
-        throw new \Exception("الدكتور لا يعمل بهذا اليوم");
-    }
-
-    // 5️⃣ تأكد الوقت مو محجوز
-    $exists = Appointment::where('doctor_id', $doctor->id)
-        ->where('appointment_date', $appointmentDateTime)
-        ->exists();
-
-    if ($exists) {
-        throw new \Exception("هذا الموعد محجوز مسبقاً");
-    }
-
-    // 6️⃣ إنشاء الموعد
-    return Appointment::create([
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'appointment_date' => $appointmentDateTime,
-        'status' => 'scheduled'
-    ]);
-    // 👇 هون
-app(NotificationService::class)->send(
-    $reception,
-    'موعد جديد',
-    'تم حجز موعد جديد بانتظار التأكيد',
-    'appointment',
-    $appointment->id
-);
-}
 
     private function normalizeDay(Carbon $date): string
     {

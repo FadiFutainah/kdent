@@ -20,6 +20,10 @@ class Treatment_Plan extends Model
     protected $appends = [
         'progress_percent',
     ];
+    public function invoice()
+{
+    return $this->hasOne(Invoice::class, 'plan_id');
+}
 
     public function patient()
     {

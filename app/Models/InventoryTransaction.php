@@ -32,4 +32,9 @@ class InventoryTransaction extends Model
     {
         return $this->belongsTo(Doctor::class);
     }
+       // 🔗 الطلب (اختياري لكن مهم)
+    public function request()
+    {
+        return $this->belongsTo(MaterialRequest::class, 'request_id');
+    }
 }

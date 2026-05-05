@@ -10,6 +10,7 @@ class Payment extends Model
         'invoice_id',
         'amount',
         'method',
+        'exchange_rate',
         'created_by'
     ];
 

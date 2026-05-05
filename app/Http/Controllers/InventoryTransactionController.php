@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\InventoryTransactionService;
+use App\Models\MaterialRequest;
 
 class InventoryTransactionController extends Controller
 {
@@ -117,6 +118,33 @@ public function returnItems(Request $request)
 
     return response()->json([
         'message' => 'Items returned successfully',
+        'data' => $result
+    ]);
+}
+//رفض طلب المواد
+public function reject($id)
+{
+    $request = MaterialRequest::findOrFail($id);
+
+    $request->update([
+        'status' => 'rejected'
+    ]);
+
+    return $request;
+}
+// الموافقة على طلب المواد
+public function approve(Request $request, $id)
+{
+    $data = $request->validate([
+        'items' => 'nullable|array',
+        'items.*.item_id' => 'required_with:items|exists:items,id',
+        'items.*.approved_quantity' => 'nullable|integer|min:0'
+    ]);
+
+    $result = $this->service->approveRequest($id, $data['items'] ?? null);
+
+    return response()->json([
+        'message' => 'Request processed successfully',
         'data' => $result
     ]);
 }

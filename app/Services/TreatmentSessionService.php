@@ -7,12 +7,14 @@ use App\Models\Doctor_Earning;
 use App\Models\Plan_Item;
 use App\Models\Treatment_Session;
 use Carbon\Carbon;
+use App\Models\Invoice;
 use Illuminate\Support\Facades\Auth;
 
 class TreatmentSessionService
 {
     public function __construct(private ExchangeRateService $exchangeRateService)
     {
+        
     }
 
     public function createSession(array $data)
@@ -151,6 +153,14 @@ class TreatmentSessionService
 
         $this->syncStatuses($session->planItem);
         $this->syncDoctorEarning($session->fresh());
+        ///////////////
+        $invoice = Invoice::where('plan_id', $session->planItem->plan_id)->first();
+      if ($invoice && $invoice->type === 'patient') {
+              app(\App\Services\InvoiceService::class)
+            ->addSession($invoice, $session);
+}
+
+/////////////////////
 
         return $session->fresh();
     }

@@ -40,6 +40,12 @@ class Doctor extends Model
     {
         return $this->hasMany(InventoryTransaction::class, 'doctor_id');
     }
+     // 📦 طلبات المواد
+    public function materialRequests()
+    {
+        return $this->hasMany(MaterialRequest::class, 'doctor_id');
+    }
+
     public function payments()
     {
         return $this->hasMany(Doctor_Payment::class, 'doctor_id');

@@ -24,6 +24,13 @@ class InvoiceController extends Controller
 
     return response()->json($invoices);
 } 
+  public function indexs()
+{
+    $invoices = $this->service->getAllPatientInvoices();
+
+    return response()->json($invoices);
+} 
+
 //اعتماد الفاتورة
 public function approve($id)
 {
@@ -48,19 +55,453 @@ public function pay(Request $request, $id)
         'data' => $invoice
     ]);
 }
-//'طباعة الفاتورة
+// //'طباعة الفاتورة
+// public function print($id)
+// {
+//     $invoice = $this->service->getById($id);
+
+//     $supplierName = $invoice->supplier?->name ?? '-';
+
+//     // $remaining = $invoice->total_amount_USD - $invoice->paid_amount;
+//     $total = $invoice->total_amount_USD_after_discount > 0
+//     ? $invoice->total_amount_USD_after_discount
+//     : $invoice->total_amount_USD;
+
+// $remaining = $total - $invoice->paid_amount;
+
+//     $html = '
+//     <html dir="rtl">
+//     <head>
+//         <meta charset="utf-8">
+//         <style>
+//             body {
+//                 font-family: dejavusans;
+//                 direction: rtl;
+//                 text-align: right;
+//             }
+
+//             table {
+//                 border-collapse: collapse;
+//                 width: 100%;
+//             }
+
+//             th, td {
+//                 border: 1px solid #000;
+//                 padding: 6px;
+//                 text-align: center;
+//             }
+
+//             .section {
+//                 margin-top: 10px;
+//             }
+//         </style>
+//     </head>
+//     <body>
+
+//         <h2 style="text-align:center;">
+//             فاتورة رقم ' . ($invoice->invoice_number ?? 'INV-' . $invoice->id) . '
+//         </h2>
+
+//         <p>النوع: ' . $invoice->type . '</p>
+//         <p>المورد: ' . $supplierName . '</p>
+//         <p>الحالة: ' . $invoice->status . '</p>
+//         <p>التاريخ: ' . $invoice->issued_at . '</p>
+//         <p>سعر الصرف: ' . $invoice->exchange_rate . '</p>
+
+//         <table>
+//             <tr>
+//                 <th>المادة</th>
+//                 <th>الكمية</th>
+//                 <th>سعر القطعة</th>
+//                 <th>الإجمالي</th>
+//             </tr>
+//     ';
+
+//     foreach ($invoice->items as $item) {
+//         $html .= '
+//             <tr>
+//                 <td>' . $item->description . '</td>
+//                 <td>' . $item->quantity . '</td>
+//                 <td>' . number_format($item->unit_price, 2) . '</td>
+//                 <td>' . number_format($item->subtotal, 2) . '</td>
+//             </tr>
+//         ';
+//     }
+
+//     $html .= '</table><br>';
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 💰 عرض الإجمالي (مع أو بدون خصم)
+//     |--------------------------------------------------------------------------
+//     */
+
+//     // if (!empty($invoice->discount) && $invoice->discount > 0) {
+
+//     //     $before = $invoice->total_before_discount ?? $invoice->total_amount_USD;
+//     //     $after  = $invoice->total_after_discount ?? $invoice->total_amount_USD;
+
+//     //     $html .= '
+//     //         <div class="section">
+//     //             <h3>الإجمالي قبل الخصم: ' . number_format($before, 2) . ' USD</h3>
+//     //             <h3>الإجمالي قبل الخصم: ' . number_format($before * $invoice->exchange_rate, 2) . ' SYP</h3>
+
+//     //             <h3>نسبة الخصم: ' . $invoice->discount . ' %</h3>
+
+//     //             <h3>الإجمالي بعد الخصم: ' . number_format($after, 2) . ' USD</h3>
+//     //             <h3>الإجمالي بعد الخصم: ' . number_format($after * $invoice->exchange_rate, 2) . ' SYP</h3>
+//     //         </div>
+//     //     ';
+//     if (!empty($invoice->discount) && $invoice->discount > 0) {
+
+//     $before = $invoice->total_amount_USD;
+//     $after  = $invoice->total_amount_USD_after_discount;
+
+//     $html .= '
+//         <div class="section">
+//             <h3>الإجمالي قبل الخصم: ' . number_format($before, 2) . ' USD</h3>
+//             <h3>الإجمالي قبل الخصم: ' . number_format($invoice->total_amount_SYP, 2) . ' SYP</h3>
+
+//             <h3>نسبة الخصم: ' . $invoice->discount . ' %</h3>
+
+//             <h3>الإجمالي بعد الخصم: ' . number_format($after, 2) . ' USD</h3>
+//             <h3>الإجمالي بعد الخصم: ' . number_format($invoice->total_amount_SYP_after_discount, 2) . ' SYP</h3>
+//         </div>
+//     ';
+// }
+
+//      else {
+
+//         $html .= '
+//             <div class="section">
+//                 <h3>الإجمالي: ' . number_format($invoice->total_amount_USD, 2) . ' USD</h3>
+//                 <h3>الإجمالي: ' . number_format($invoice->total_amount_SYP, 2) . ' SYP</h3>
+//             </div>
+//         ';
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 💵 الدفع
+//     |--------------------------------------------------------------------------
+//     */
+
+//     $html .= '
+//         <div class="section">
+//             <h3>المدفوع: ' . number_format($invoice->paid_amount, 2) . ' USD</h3>
+//             <h3>المتبقي: ' . number_format($remaining, 2) . ' USD</h3>
+//         </div>
+//     ';
+
+//     $html .= '
+//     </body>
+//     </html>
+//     ';
+
+//     $mpdf = new \Mpdf\Mpdf();
+//     $mpdf->WriteHTML($html);
+
+//     return response($mpdf->Output('', 'S'))
+//         ->header('Content-Type', 'application/pdf');
+// }
+
+// public function print($id)
+// {
+//     $invoice = $this->service->getById($id);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 🧠 تحديد الطرف حسب النوع
+//     |--------------------------------------------------------------------------
+//     */
+
+//     $supplierName = $invoice->supplier?->name ?? '-';
+//     $patientName  = $invoice->patient?->name ?? '-';
+//    // $planName = $invoice->plan?->name ?? '-';
+//     $label = 'المورد';
+//     $partyName = $supplierName;
+
+//     if ($invoice->type === 'patient') {
+//         $label = 'المريض';
+//         $partyName = $patientName;
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 💰 حساب الإجمالي والمتبقي
+//     |--------------------------------------------------------------------------
+//     */
+
+//     $total = $invoice->total_amount_USD_after_discount > 0
+//         ? $invoice->total_amount_USD_after_discount
+//         : $invoice->total_amount_USD;
+
+//     $remaining = $total - $invoice->paid_amount;
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 🧾 بداية HTML
+//     |--------------------------------------------------------------------------
+//     */
+
+//     $html = '
+//     <html dir="rtl">
+//     <head>
+//         <meta charset="utf-8">
+//         <style>
+//             body {
+//                 font-family: dejavusans;
+//                 direction: rtl;
+//                 text-align: right;
+//             }
+
+//             table {
+//                 border-collapse: collapse;
+//                 width: 100%;
+//             }
+
+//             th, td {
+//                 border: 1px solid #000;
+//                 padding: 6px;
+//                 text-align: center;
+//             }
+
+//             .section {
+//                 margin-top: 10px;
+//             }
+//         </style>
+//     </head>
+//     <body>
+
+//         <h2 style="text-align:center;">
+//             فاتورة رقم ' . ($invoice->invoice_number ?? 'INV-' . $invoice->id) . '
+//         </h2>
+
+//         <p>النوع: ' . $invoice->type . '</p>
+//         <p>' . $label . ': ' . $partyName . '</p>
+//         <p>الحالة: ' . $invoice->status . '</p>
+//         <p>التاريخ: ' . $invoice->issued_at . '</p>
+//         <p>سعر الصرف: ' . $invoice->exchange_rate . '</p>
+//     ';
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 🦷 خطة العلاج (فقط للمريض)
+//     |--------------------------------------------------------------------------
+//     */
+
+//     if ($invoice->type === 'patient') {
+//         $html .= '
+//         <p>الخطة العلاجية: ' . ($invoice->plans?->name ?? '-') . '</p>
+//         ';
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 📦 جدول العناصر
+//     |--------------------------------------------------------------------------
+//     */
+
+//     // $html .= '
+//     //     <table>
+//     //         <tr>
+//     //             <th>المادة</th>
+//     //             <th>الكمية</th>
+//     //             <th>سعر القطعة</th>
+//     //             <th>الإجمالي</th>
+//     //         </tr>
+//     // ';
+
+//    if ($invoice->type === 'patient') {
+
+//     $html .= '
+//     <table>
+//         <tr>
+//             <th>الجلسة</th>
+//             <th>التاريخ</th>
+//             <th>السعر (USD)</th>
+//         </tr>
+//     ';
+
+//     if ($invoice->items->count() > 0) {
+
+//         foreach ($invoice->items as $item) {
+//             $html .= '
+//             <tr>
+//                 <td>' . $item->description . '</td>
+//                 <td>' . ($item->created_at ? \Carbon\Carbon::parse($item->created_at)->format('Y-m-d') : '-') . '</td>
+//                 <td>' . number_format($item->unit_price, 2) . '</td>
+//             </tr>
+//             ';
+//         }
+
+//     } else {
+//         $html .= '
+//         <tr>
+//             <td colspan="3">لا توجد جلسات</td>
+//         </tr>
+//         ';
+//     }
+
+// } else {
+
+//     $html .= '
+//     <table>
+//         <tr>
+//             <th>المادة</th>
+//             <th>الكمية</th>
+//             <th>سعر القطعة</th>
+//             <th>الإجمالي</th>
+//         </tr>
+//     ';
+
+//     if ($invoice->items->count() > 0) {
+
+//         foreach ($invoice->items as $item) {
+//             $html .= '
+//             <tr>
+//                 <td>' . $item->description . '</td>
+//                 <td>' . $item->quantity . '</td>
+//                 <td>' . number_format($item->unit_price, 2) . '</td>
+//                 <td>' . number_format($item->subtotal, 2) . '</td>
+//             </tr>
+//             ';
+//         }
+
+//     } else {
+//         $html .= '
+//         <tr>
+//             <td colspan="4">لا توجد مواد</td>
+//         </tr>
+//         ';
+//     }
+// }
+
+// $html .= '</table><br>';
+//     foreach ($invoice->items as $item) {
+//         $html .= '
+//         <tr>
+//             <td>' . $item->description . '</td>
+//             <td>' . $item->quantity . '</td>
+//             <td>' . number_format($item->unit_price, 2) . '</td>
+//             <td>' . number_format($item->subtotal, 2) . '</td>
+//         </tr>
+//         ';
+//     }
+
+//     foreach ($invoice->items as $item) {
+//         $html .= '
+//             <tr>
+//                 <td>' . $item->description . '</td>
+//                 <td>' . $item->quantity . '</td>
+//                 <td>' . number_format($item->unit_price, 2) . '</td>
+//                 <td>' . number_format($item->subtotal, 2) . '</td>
+//             </tr>
+//         ';
+//     }
+
+//     $html .= '</table><br>';
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 💸 الخصم
+//     |--------------------------------------------------------------------------
+//     */
+
+//     if (!empty($invoice->discount) && $invoice->discount > 0) {
+
+//         $before = $invoice->total_amount_USD;
+//         $after  = $invoice->total_amount_USD_after_discount;
+
+//         $html .= '
+//         <div class="section">
+//             <h3>الإجمالي قبل الخصم: ' . number_format($before, 2) . ' USD</h3>
+//             <h3>الإجمالي قبل الخصم: ' . number_format($invoice->total_amount_SYP, 2) . ' SYP</h3>
+
+//             <h3>نسبة الخصم: ' . $invoice->discount . ' %</h3>
+
+//             <h3>الإجمالي بعد الخصم: ' . number_format($after, 2) . ' USD</h3>
+//             <h3>الإجمالي بعد الخصم: ' . number_format($invoice->total_amount_SYP_after_discount, 2) . ' SYP</h3>
+//         </div>
+//         ';
+//     } else {
+
+//         $html .= '
+//         <div class="section">
+//             <h3>الإجمالي: ' . number_format($invoice->total_amount_USD, 2) . ' USD</h3>
+//             <h3>الإجمالي: ' . number_format($invoice->total_amount_SYP, 2) . ' SYP</h3>
+//         </div>
+//         ';
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 💵 الدفع
+//     |--------------------------------------------------------------------------
+//     */
+
+//     $html .= '
+//         <div class="section">
+//             <h3>المدفوع: ' . number_format($invoice->paid_amount, 2) . ' USD</h3>
+//             <h3>المتبقي: ' . number_format($remaining, 2) . ' USD</h3>
+//         </div>
+//     ';
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | 🔚 نهاية HTML
+//     |--------------------------------------------------------------------------
+//     */
+
+//     $html .= '
+//     </body>
+//     </html>
+//     ';
+
+//     $mpdf = new \Mpdf\Mpdf();
+//     $mpdf->WriteHTML($html);
+
+//     // return response($mpdf->Output('', 'S'))
+//     //     ->header('Content-Type', 'application/pdf');
+//     return response($mpdf->Output('invoice.pdf', 'D'), 200)
+//     ->header('Content-Type', 'application/pdf');
+// }
+
+
+
+// public function applyDiscount(Request $request, $id)
+// {
+//     $request->validate([
+//         'discount' => 'required|numeric|min:0|max:100'
+//     ]);
+
+//     $invoice = $this->service->applyDiscount($id, $request->discount);
+
+//     return response()->json([
+//         'message' => 'Discount applied successfully',
+//         'data' => $invoice
+//     ]);
+// }
 public function print($id)
 {
     $invoice = $this->service->getById($id);
 
     $supplierName = $invoice->supplier?->name ?? '-';
+    $patientName  = $invoice->patient?->name ?? '-';
 
-    // $remaining = $invoice->total_amount_USD - $invoice->paid_amount;
+    $label = 'المورد';
+    $partyName = $supplierName;
+
+    if ($invoice->type === 'patient') {
+        $label = 'المريض';
+        $partyName = $patientName;
+    }
+
     $total = $invoice->total_amount_USD_after_discount > 0
-    ? $invoice->total_amount_USD_after_discount
-    : $invoice->total_amount_USD;
+        ? $invoice->total_amount_USD_after_discount
+        : $invoice->total_amount_USD;
 
-$remaining = $total - $invoice->paid_amount;
+    $remaining = $total - $invoice->paid_amount;
 
     $html = '
     <html dir="rtl">
@@ -93,14 +534,62 @@ $remaining = $total - $invoice->paid_amount;
 
         <h2 style="text-align:center;">
             فاتورة رقم ' . ($invoice->invoice_number ?? 'INV-' . $invoice->id) . '
+             
         </h2>
+    
 
         <p>النوع: ' . $invoice->type . '</p>
-        <p>المورد: ' . $supplierName . '</p>
+        <p>' . $label . ': ' . $partyName . '</p>
         <p>الحالة: ' . $invoice->status . '</p>
         <p>التاريخ: ' . $invoice->issued_at . '</p>
         <p>سعر الصرف: ' . $invoice->exchange_rate . '</p>
+    ';
 
+    // ✅ الخطة للمريض
+    if ($invoice->type === 'patient') {
+        $html .= '
+        <p>الخطة العلاجية: ' . ($invoice->plans?->name ?? '-') . '</p>
+        ';
+    }
+
+    // ==============================
+    // 📦 جدول العناصر
+    // ==============================
+
+    if ($invoice->type === 'patient') {
+
+        $html .= '
+        <table>
+            <tr>
+                <th>الجلسة</th>
+                <th>التاريخ</th>
+                <th>السعر (USD)</th>
+            </tr>
+        ';
+
+        if ($invoice->items->count() > 0) {
+            foreach ($invoice->items as $item) {
+                $html .= '
+                <tr>
+                    <td>' . $item->description . '</td>
+                    <td>' . ($item->created_at ? \Carbon\Carbon::parse($item->created_at)->format('Y-m-d') : '-') . '</td>
+                    <td>' . number_format($item->unit_price ?? 0, 2) . '</td>
+                </tr>
+                ';
+            }
+        } else {
+            $html .= '
+            <tr>
+                <td colspan="3">لا توجد جلسات</td>
+            </tr>
+            ';
+        }
+
+        $html .= '</table><br>';
+
+    } else {
+
+        $html .= '
         <table>
             <tr>
                 <th>المادة</th>
@@ -108,49 +597,40 @@ $remaining = $total - $invoice->paid_amount;
                 <th>سعر القطعة</th>
                 <th>الإجمالي</th>
             </tr>
-    ';
-
-    foreach ($invoice->items as $item) {
-        $html .= '
-            <tr>
-                <td>' . $item->description . '</td>
-                <td>' . $item->quantity . '</td>
-                <td>' . number_format($item->unit_price, 2) . '</td>
-                <td>' . number_format($item->subtotal, 2) . '</td>
-            </tr>
         ';
+
+        if ($invoice->items->count() > 0) {
+            foreach ($invoice->items as $item) {
+                $html .= '
+                <tr>
+                    <td>' . $item->description . '</td>
+                    <td>' . $item->quantity . '</td>
+                    <td>' . number_format($item->unit_price ?? 0, 2) . '</td>
+                    <td>' . number_format($item->subtotal ?? 0, 2) . '</td>
+                </tr>
+                ';
+            }
+        } else {
+            $html .= '
+            <tr>
+                <td colspan="4">لا توجد مواد</td>
+            </tr>
+            ';
+        }
+
+        $html .= '</table><br>';
     }
 
-    $html .= '</table><br>';
+    // ==============================
+    // 💸 الخصم
+    // ==============================
 
-    /*
-    |--------------------------------------------------------------------------
-    | 💰 عرض الإجمالي (مع أو بدون خصم)
-    |--------------------------------------------------------------------------
-    */
-
-    // if (!empty($invoice->discount) && $invoice->discount > 0) {
-
-    //     $before = $invoice->total_before_discount ?? $invoice->total_amount_USD;
-    //     $after  = $invoice->total_after_discount ?? $invoice->total_amount_USD;
-
-    //     $html .= '
-    //         <div class="section">
-    //             <h3>الإجمالي قبل الخصم: ' . number_format($before, 2) . ' USD</h3>
-    //             <h3>الإجمالي قبل الخصم: ' . number_format($before * $invoice->exchange_rate, 2) . ' SYP</h3>
-
-    //             <h3>نسبة الخصم: ' . $invoice->discount . ' %</h3>
-
-    //             <h3>الإجمالي بعد الخصم: ' . number_format($after, 2) . ' USD</h3>
-    //             <h3>الإجمالي بعد الخصم: ' . number_format($after * $invoice->exchange_rate, 2) . ' SYP</h3>
-    //         </div>
-    //     ';
     if (!empty($invoice->discount) && $invoice->discount > 0) {
 
-    $before = $invoice->total_amount_USD;
-    $after  = $invoice->total_amount_USD_after_discount;
+        $before = $invoice->total_amount_USD;
+        $after  = $invoice->total_amount_USD_after_discount;
 
-    $html .= '
+        $html .= '
         <div class="section">
             <h3>الإجمالي قبل الخصم: ' . number_format($before, 2) . ' USD</h3>
             <h3>الإجمالي قبل الخصم: ' . number_format($invoice->total_amount_SYP, 2) . ' SYP</h3>
@@ -160,24 +640,20 @@ $remaining = $total - $invoice->paid_amount;
             <h3>الإجمالي بعد الخصم: ' . number_format($after, 2) . ' USD</h3>
             <h3>الإجمالي بعد الخصم: ' . number_format($invoice->total_amount_SYP_after_discount, 2) . ' SYP</h3>
         </div>
-    ';
-}
-
-     else {
+        ';
+    } else {
 
         $html .= '
-            <div class="section">
-                <h3>الإجمالي: ' . number_format($invoice->total_amount_USD, 2) . ' USD</h3>
-                <h3>الإجمالي: ' . number_format($invoice->total_amount_SYP, 2) . ' SYP</h3>
-            </div>
+        <div class="section">
+            <h3>الإجمالي: ' . number_format($invoice->total_amount_USD, 2) . ' USD</h3>
+            <h3>الإجمالي: ' . number_format($invoice->total_amount_SYP, 2) . ' SYP</h3>
+        </div>
         ';
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 💵 الدفع
-    |--------------------------------------------------------------------------
-    */
+    // ==============================
+    // 💵 الدفع
+    // ==============================
 
     $html .= '
         <div class="section">
@@ -194,21 +670,8 @@ $remaining = $total - $invoice->paid_amount;
     $mpdf = new \Mpdf\Mpdf();
     $mpdf->WriteHTML($html);
 
-    return response($mpdf->Output('', 'S'))
+    return response($mpdf->Output('invoice.pdf', 'D'), 200)
         ->header('Content-Type', 'application/pdf');
-}
-public function applyDiscount(Request $request, $id)
-{
-    $request->validate([
-        'discount' => 'required|numeric|min:0|max:100'
-    ]);
-
-    $invoice = $this->service->applyDiscount($id, $request->discount);
-
-    return response()->json([
-        'message' => 'Discount applied successfully',
-        'data' => $invoice
-    ]);
 }
 
 

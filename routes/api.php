@@ -28,7 +28,8 @@ Route::post('/logout', [AuthController::class, 'logout']); });// تسجيل ال
 Route::middleware(['auth:sanctum', 'role:patient'])->group(function () {
 Route::get('/specializations', [SpecializationController::class,'index'])->middleware('role:patient');//عرض الاختصاصات 
 Route::get('/specializations/{id}', [SpecializationController::class,'show']);//عرض تفاصيل الاختصاص 
-Route::post('/available-slots', [PatientController::class, 'getAvailableSlotsForDays']);
+Route::get('/specializations/{id}/doctors', [SpecializationController::class,'getDoctorsBySpecialization']);//عرض الأطباء حسب الاختصاص
+Route::get('/available-slots/{doctorId}', [PatientController::class, 'getAvailableSlotsForDays']);
 Route::post('/book-appointment', [PatientController::class, 'bookAppointment']);
 });
 
@@ -48,6 +49,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
     Route::get('/myPatients', [DoctorController::class, 'myPatients']);
     Route::get('/todayAppointments', [DoctorController::class, 'todayAppointments']);
     Route::get('/upcomingAppointments', [DoctorController::class, 'upcomingAppointments']);
+    Route::post('/material-requests', [DoctorController::class, 'store']);
 
 });
 
@@ -107,6 +109,9 @@ Route::middleware(['auth:sanctum', 'role:storekeeper'])->group(function () {
     Route::post('/returnItems', [InventoryTransactionController::class, 'returnItems']);
     Route::post('/storeitems', [SupplierItemsController::class, 'stores']);
     Route::get('/available_items', [SupplierItemsController::class, 'availableItems']);
+    Route::post('/{id}/approve', [InventoryTransactionController::class, 'approve']);
+    Route::post('/{id}/reject', [InventoryTransactionController::class, 'reject']);
+
 });
 // Route::get('/user', function (Request $request) {
 //     return $request->user();

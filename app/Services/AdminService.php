@@ -4,36 +4,38 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\Doctor;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class AdminService
 {
     public function createEmployee($data)
     {
-        // 1️⃣ تحقق من الرول
+         return DB::transaction(function () use ($data) {
+
         $allowedRoles = ['doctor', 'accountant','secretary','storekeeper'];
 
         if (!in_array($data['role'], $allowedRoles)) {
-            throw new Exception("نوع المستخدم غير صالح");
+            throw new \Exception("نوع المستخدم غير صالح");
         }
 
-        // 2️⃣ إنشاء User
+        // 1️⃣ إنشاء User
         $user = User::create([
             'name' => $data['name'],
             'phone_number' => $data['phone_number'],
             'email' => $data['email'] ?? null,
             'password' => Hash::make($data['password']),
-            'is_verified' => true // الموظفين ما بدهم OTP
+            'is_verified' => true
         ]);
 
-        // 3️⃣ إعطاء Role
+        // 2️⃣ assign role
         $user->assignRole($data['role']);
 
-        // 4️⃣ إذا Doctor → ننشئ سجل doctor
+        // 3️⃣ doctor profile
         if ($data['role'] === 'doctor') {
 
             if (empty($data['specialization_id'])) {
-                throw new Exception("يجب تحديد الاختصاص للطبيب");
+                throw new \Exception("يجب تحديد الاختصاص للطبيب");
             }
 
             Doctor::create([
@@ -49,6 +51,6 @@ class AdminService
             'user_id' => $user->id,
             'role' => $data['role']
         ];
-    }
+    });
 
-}
+}}

@@ -27,7 +27,11 @@ class Item extends Model
 // {
 //     return $this->belongsToMany(Supplier::class, 'supplier_items');
 // }
-
+  // 📦 علاقته مع طلبات المواد
+    public function materialRequestItems()
+    {
+        return $this->hasMany(MaterialRequestItem::class);
+    }
 public function invoice()
     {
         return $this->hasMany(Invoice_Item::class);

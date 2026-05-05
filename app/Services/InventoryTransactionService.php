@@ -1,15 +1,14 @@
 <?php
 namespace App\Services;
-
 use App\Models\Item;
 use App\Models\Supplier;
 use App\Models\SupplierItem;
 use App\Models\InventoryTransaction;
 use App\Models\Invoice;
 use App\Models\Invoice_Item;
+use App\Models\MaterialRequest;
 use Illuminate\Support\Facades\DB;
 use App\Services\ExchangeRateService;
-use Illuminate\Support\Facades\Http;
 use App\Models\Notification;
 use App\Events\InvoiceCreated;
 use App\Events\LowStockDetected;
@@ -42,6 +41,10 @@ class InventoryTransactionService
             'paid_amount' => 0,
             'issued_at' => $data['issued_at'] ?? now(),
         ]);
+         // ✅ تحقق من النوع
+        if ($invoice->type !== 'supplier') {
+            throw new \Exception('Invoice type must be supplier');
+        }
 
         $total = 0;
 
@@ -68,8 +71,12 @@ class InventoryTransactionService
             } else {
                 $item = $supplierItem->item;
             }
+                // 🔥 هذا منطق المورد فقط
+            if ($invoice->type === 'supplier') {
+                $item->increment('current_stock', $row['quantity']);
+            }
 
-            $item->increment('current_stock', $row['quantity']);
+           // $item->increment('current_stock', $row['quantity']);
 
             $subtotal = $row['quantity'] * $row['purchase_price'];
             $total += $subtotal;
@@ -82,7 +89,7 @@ class InventoryTransactionService
                 'unit_price' => $row['purchase_price'],
                 'subtotal' => $subtotal,
             ]);
-
+  if ($invoice->type === 'supplier') {
             InventoryTransaction::create([
                 'item_id' => $item->id,
                 'supplier_id' => $supplier->id,
@@ -91,232 +98,20 @@ class InventoryTransactionService
                 'type' => 'in',
                 'issued_at' => now(),
             ]);
-        }
-
+        }}
+  // 🔥 تحديث المجموع فقط للمورد
+        if ($invoice->type === 'supplier') {
         $invoice->update([
             'total_amount_USD' => $total,
             'total_amount_SYP' => $total * $exchangeRate
         ]);
-
+        }
         event(new InvoiceCreated($invoice));
 
         return $invoice->load('items.item', 'supplier');
     });
 }
-//      public function purchaseBulk(array $data)
-//     {
-//         return DB::transaction(function () use ($data) {
 
-//             $supplier = Supplier::findOrFail($data['supplier_id']);
-
-//             // 💱 سعر الصرف
-//             $rateModel = $this->exchangeService->getCurrentUsdToSypRate();
-//             $exchangeRate = $rateModel->rate;
-
-//             // 🧾 إنشاء الفاتورة
-//             $invoice = Invoice::create([
-//                 'type' => 'supplier',
-//                 'supplier_id' => $supplier->id,
-//                 'discount' => 0,
-//                 'exchange_rate' => $exchangeRate,
-//                 'status' => 'draft',
-//                 'issued_at' => $data['issued_at'] ?? now(),
-//             ]);
-
-//             $total = 0;
-
-//             foreach ($data['items'] as $row) {
-
-//                 // 🔍 جلب مادة المورد
-//                 $supplierItem = SupplierItem::where('supplier_id', $supplier->id)
-//                     ->where('id', $row['supplier_item_id'])
-//                     ->firstOrFail();
-
-//                 /*
-//                 |--------------------------------------------------------------------------
-//                 | 🧠 إذا المادة غير موجودة بالمخزن → أنشئها
-//                 |--------------------------------------------------------------------------
-//                 */
-//                 if (!$supplierItem->item_id) {
-
-//                     // 🔍 منع التكرار
-//                     $item = Item::where('name', $supplierItem->name)->first();
-
-//                     if (!$item) {
-//                         $item = Item::create([
-//                             'name' => $supplierItem->name,
-//                             'code' => strtoupper(uniqid('ITEM_')),
-//                             'unit' => $supplierItem->unit ?? 'unit',
-//                             'minimum_stock' => 0,
-//                             'current_stock' => 0,
-//                         ]);
-//                     }
-
-//                     // 🔗 ربطها بالمورد
-//                     $supplierItem->update([
-//                         'item_id' => $item->id
-//                     ]);
-
-//                 } else {
-//                     $item = $supplierItem->item;
-//                 }
-
-//                 /*
-//                 |--------------------------------------------------------------------------
-//                 | 📦 تحديث المخزون
-//                 |--------------------------------------------------------------------------
-//                 */
-//                 $item->increment('current_stock', $row['quantity']);
-
-//                 $subtotal = $row['quantity'] * $row['purchase_price'];
-//                 $total += $subtotal;
-
-//                 /*
-//                 |--------------------------------------------------------------------------
-//                 | 🧾 عناصر الفاتورة
-//                 |--------------------------------------------------------------------------
-//                 */
-//                 Invoice_Item::create([
-//                     'invoice_id' => $invoice->id,
-//                     'item_id' => $item->id,
-//                     'description' => $item->name,
-//                     'quantity' => $row['quantity'],
-//                     'unit_price' => $row['purchase_price'],
-//                     'subtotal' => $subtotal,
-//                 ]);
-
-//                 /*
-//                 |--------------------------------------------------------------------------
-//                 | 📊 تسجيل الحركة
-//                 |--------------------------------------------------------------------------
-//                 */
-//                 InventoryTransaction::create([
-//                     'item_id' => $item->id,
-//                     'supplier_id' => $supplier->id,
-//                     'quantity' => $row['quantity'],
-//                     'purchase_price' => $row['purchase_price'],
-//                     'type' => 'in',
-//                     'issued_at' => now(),
-//                 ]);
-              
-//             }
-
-//             /*
-//             |--------------------------------------------------------------------------
-//             | 💰 تحديث الفاتورة
-//             |--------------------------------------------------------------------------
-//             */
-//             $invoice->update([
-//                 'total_amount_USD' => $total,
-//                 'total_amount_SYP' => $total * $exchangeRate
-//             ]);
-//  event(new InvoiceCreated($invoice));
-//             return $invoice->load('items');
-//         });
-         
-//     }
-// شراء مواد مع إنشاء فاتورة
-//  public function purchaseBulk(array $data)
-//     {
-//         return DB::transaction(function () use ($data) {
-
-//             $supplier = Supplier::findOrFail($data['supplier_id']);
-
-//             // 💱 هون السحر 👇
-//             $rateModel = $this->exchangeService->getCurrentUsdToSypRate();
-
-//             $exchangeRate = $rateModel->rate;
-
-//             // 🧾 إنشاء الفاتورة
-//             $invoice = Invoice::create([
-//                 'type' => 'supplier',
-//                 'supplier_id' => $supplier->id,
-//                 'discount' => 0,
-//                 //'currency' => 'USD',
-//                 'exchange_rate' => $exchangeRate,
-//                 //'created_by' => auth()->id(),
-//                 'status' => 'draft',
-//                 'issued_at' => $data['issued_at'] ?? now(),
-//             ]);
-
-//             $total = 0;
-
-//             foreach ($data['items'] as $row) {
-
-//                 $allowed = $supplier->items()
-//                     ->where('item_id', $row['item_id'])
-//                     ->exists();
-
-//                 if (!$allowed) {
-//                     throw new \Exception("Supplier does not provide item ID: {$row['item_id']}");
-//                 }
-
-//                 $item = Item::findOrFail($row['item_id']);
-
-//                 $item->increment('current_stock', $row['quantity']);
-
-//                 $subtotal = $row['quantity'] * $row['purchase_price'];
-//                 $total += $subtotal;
-
-//                 Invoice_Item::create([
-//                     'invoice_id' => $invoice->id,
-//                     'item_id' => $item->id,
-//                     'description' => $item->name,
-//                     'quantity' => $row['quantity'],
-//                     'unit_price' => $row['purchase_price'],
-//                     'subtotal' => $subtotal,
-//                 ]);
-
-//                 InventoryTransaction::create([
-//                     'item_id' => $item->id,
-//                     'supplier_id' => $supplier->id,
-//                     'quantity' => $row['quantity'],
-//                     'purchase_price' => $row['purchase_price'],
-//                     'type' => 'in',
-//                 ]);
-//             }
-
-//             $invoice->update([
-//                 'total_amount_USD' => $total,
-//                 'total_amount_SYP' => $total * $exchangeRate
-//             ]);
-
-//             return $invoice->load('items');
-//         });
-//     }
-
-// صرف مواد لجلسة محددة
-// public function consumeMultiple(array $data)
-// {
-//     return DB::transaction(function () use ($data) {
-
-//         $transactions = [];
-
-//         foreach ($data['items'] as $entry) {
-
-//             $item = Item::findOrFail($entry['item_id']);
-
-//             // ❌ تحقق من الكمية
-//             if ($item->current_stock < $entry['quantity']) {
-//                 throw new \Exception("Not enough stock for item: " . $item->name);
-//             }
-
-//             // 📉 نقص المخزون
-//             $item->decrement('current_stock', $entry['quantity']);
-
-//             // 🧾 سجل الحركة
-//             $transactions[] = InventoryTransaction::create([
-//                 'item_id' => $item->id,
-//                 'session_id' => $data['session_id'],
-//                 'quantity' => $entry['quantity'],
-//                 'type' => 'out',
-//                 'notes' => $data['notes'] ?? null,
-//             ]);
-//         }
-
-//         return $transactions;
-//     });
-// }
 //صرف مواد 
 public function consumeMultiple(array $data)
 {
@@ -448,6 +243,94 @@ public function returnItems(array $data)
         }
 
         return $transactions;
+    });
+}
+
+public function approveRequest($requestId, $itemsInput = null)
+{
+    return DB::transaction(function () use ($requestId, $itemsInput) {
+
+        $request = MaterialRequest::with('items.item')->findOrFail($requestId);
+
+        if ($request->status !== 'pending') {
+            throw new \Exception('Request already processed');
+        }
+
+        $consumeData = [
+            'doctor_id' => $request->doctor_id,
+            'notes' => 'صرف من طلب #' . $request->id,
+            'items' => []
+        ];
+
+        foreach ($request->items as $row) {
+
+            // 🔥 إذا ما في itemsInput → موافقة كاملة
+            if (!$itemsInput) {
+
+                $approvedQty = $row->quantity;
+
+            } else {
+
+                // 🔍 دور على هالعنصر بالـ input
+                $input = collect($itemsInput)
+                    ->firstWhere('item_id', $row->item_id);
+
+                // ❌ إذا مو موجود → مرفوض
+                if (!$input) {
+                    $row->update([
+                        'status' => 'rejected',
+                        'approved_quantity' => 0
+                    ]);
+                    continue;
+                }
+
+                $approvedQty = $input['approved_quantity'] ?? $row->quantity;
+
+                if ($approvedQty <= 0) {
+                    $row->update([
+                        'status' => 'rejected',
+                        'approved_quantity' => 0
+                    ]);
+                    continue;
+                }
+            }
+
+            // 🔥 تحقق من المخزون
+            if ($row->item->current_stock < $approvedQty) {
+                throw new \Exception("Not enough stock for {$row->item->name}");
+            }
+
+            // ✅ تحديث
+            $row->update([
+                'status' => 'approved',
+                'approved_quantity' => $approvedQty
+            ]);
+
+            // 🔥 حضر للصرف
+            $consumeData['items'][] = [
+                'item_id' => $row->item_id,
+                'quantity' => $approvedQty
+            ];
+        }
+
+        // 🔥 صرف فعلي
+        if (!empty($consumeData['items'])) {
+            $this->consumeMultiple($consumeData);
+        }
+
+        // 🧠 تحديد حالة الطلب
+        $approvedCount = $request->items()->where('status', 'approved')->count();
+
+        if ($approvedCount == 0) {
+            $request->status = 'rejected';
+        } elseif ($approvedCount == $request->items->count()) {
+            $request->status = 'approved';
+        } else {
+            $request->status = 'approved'; // 🔥 مهم جداً
+        }
+        $request->save();
+
+        return $request->load('items.item');
     });
 }
 }
