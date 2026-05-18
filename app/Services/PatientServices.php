@@ -3,12 +3,28 @@ namespace App\Services;
 use App\Models\Doctor_Schedules;
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class PatientServices
 {
+
+public function getAllPatients()
+{
+    return Patient::with('user')
+        ->orderBy('id')
+        ->get()
+        ->map(function (Patient $patient) {
+            return [
+                'id' => $patient->id,
+                'name' => $patient->user?->name,
+                'phone_number' => $patient->user?->phone_number,
+            ];
+        })
+        ->values();
+}
  
 public function getAvailableSlotsForDays($doctorId)
 {
@@ -58,7 +74,7 @@ public function getAvailableSlotsForDays($doctorId)
         // جلب المحجوز
         $booked = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('appointment_date', $date)
-            ->where('status', 'confirmed')
+            ->whereIn('status', ['scheduled', 'confirmed', 'completed'])
             ->pluck('appointment_date')
             ->map(fn($t) => Carbon::parse($t)->format('H:i'))
             ->toArray();
@@ -156,6 +172,7 @@ public function getAvailableSlotsForDays($doctorId)
 
         $exists = Appointment::where('doctor_id', $doctor->id)
             ->where('appointment_date', $appointmentDateTime)
+            ->whereIn('status', ['scheduled', 'confirmed', 'completed'])
             ->exists();
 
         if ($exists) {

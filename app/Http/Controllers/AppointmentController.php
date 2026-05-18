@@ -104,7 +104,7 @@ class AppointmentController extends Controller
 		$this->service->cancelAppointmentBySecretary($appointmentId);
 
 		return response()->json([
-			'message' => 'الرجاء الحجز بموعد اخر او الاتصال بالمركز',
+			'message' => 'تم إلغاء الموعد بنجاح'
 		]);
 	}
 }

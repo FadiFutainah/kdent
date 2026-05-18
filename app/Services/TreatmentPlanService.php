@@ -332,14 +332,30 @@ class TreatmentPlanService
             if (!$patient) throw new \Exception('هذا المستخدم ليس مريض');
             return ['role' => 'patient', 'column' => 'patient_id', 'id' => $patient->id];
         }
+            if ($user->hasRole('secretary')) {
+
+        return [
+            'role' => 'secretary'
+        ];
+    }
 
         throw new \Exception('ليس لديك صلاحية للوصول إلى الخطط العلاجية');
     }
-
     private function scopedPlansQuery(array $scope): Builder
     {
-        return Treatment_Plan::query()->where($scope['column'], $scope['id']);
+        $query = Treatment_Plan::query();
+
+        if ($scope['role'] === 'secretary') {
+            return $query;
+        }
+
+        return $query->where($scope['column'], $scope['id']);
     }
+
+    /*private function scopedPlansQuery(array $scope): Builder
+    {
+        return Treatment_Plan::query()->where($scope['column'], $scope['id']);
+    }*/
 
 
     private function syncDoctorEarning(Treatment_Plan $plan): void

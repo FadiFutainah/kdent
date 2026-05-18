@@ -17,6 +17,7 @@ use App\Http\Controllers\ExchangeRateController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\MedicalReportController;
 use App\Http\Controllers\MedicalRecordController;
+use App\Http\Controllers\SecretaryController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -42,6 +43,8 @@ Route::get('/specializations', [SpecializationController::class,'index']);//عر
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::post('/create-employee', [AdminController::class, 'createEmployee']);
+    Route::get('/Allpatients', [PatientController::class, 'listAllPatients']);
+
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
@@ -55,6 +58,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
 
 });
 
+
 /*Route::middleware(['auth:sanctum', 'role:secretary|patient'])->group(function () {
 
     Route::get('/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
@@ -63,7 +67,9 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
 Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
     Route::get('/secretary/doctors/all', [AppointmentController::class, 'listAllDoctorsForSecretary']);
     Route::get('/secretary/doctors', [AppointmentController::class, 'listDoctorsBySpecialization']);
-    Route::post('/secretary/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
+    Route::get('/secretary/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
+    Route::get('/secretary/doctors/{doctorId}/patients', [SecretaryController::class, 'doctorPatients']);
+    Route::get('/secretary/doctors/{doctorId}/appointments/today', [SecretaryController::class, 'doctorTodayAppointments']);
     Route::get('/secretary/appointments/scheduled', [AppointmentController::class, 'listScheduledBySecretary']);
     Route::get('/secretary/appointments/confirmed', [AppointmentController::class, 'listConfirmedBySecretary']);
     Route::post('/appointments/secretary', [AppointmentController::class, 'bookBySecretary']);
@@ -94,7 +100,7 @@ Route::middleware(['auth:sanctum', 'role:doctor|admin|accountant'])->group(funct
 
 });
 
-Route::middleware(['auth:sanctum', 'role:patient|doctor'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:patient|doctor|secretary'])->group(function () {
     Route::get('/my/treatment-plans', [TreatmentPlanController::class, 'myPlans']);
     Route::get('/treatment-plans/show/{planId}', [TreatmentPlanController::class, 'show']);
     Route::get('/treatment-plans/{planId}/showItem/{itemId}', [TreatmentPlanController::class, 'showItem']);

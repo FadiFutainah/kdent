@@ -16,6 +16,12 @@ class PatientController extends Controller
     {
         $this->service = $service;
     }
+    public function listAllPatients()
+{
+    return response()->json(
+        $this->service->getAllPatients()
+    );
+}
     public function getAvailableSlotsForDays($doctorId)
 {
     return response()->json(

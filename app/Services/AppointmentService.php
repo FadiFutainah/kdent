@@ -107,6 +107,7 @@ class AppointmentService
         return $query->firstOrFail();
     }
 
+   /*
     public function getAvailableSlotsForDoctor(Doctor $doctor, int $daysToCheck = 10): array
     {
         $result = [];
@@ -141,7 +142,7 @@ class AppointmentService
 
             $booked = Appointment::where('doctor_id', $doctor->id)
                 ->whereDate('appointment_date', $date)
-                ->where('status', '!=', 'cancelled')
+                ->whereIn('status', ['scheduled', 'confirmed', 'completed'])
                 ->pluck('appointment_date')
                 ->map(fn($t) => Carbon::parse($t)->format('H:i'))
                 ->toArray();
@@ -156,8 +157,75 @@ class AppointmentService
         }
 
         return $result;
-    }
+    }*/
 
+   public function getAvailableSlotsForDoctor(Doctor $doctor, int $daysToCheck = 10): array
+    {
+        $result = [];
+
+        for ($i = 0; $i < $daysToCheck; $i++) {
+
+            $date = Carbon::today()->addDays($i);
+            $day = $this->normalizeDay($date);
+
+            $schedules = Doctor_Schedules::where('doctor_id', $doctor->id)
+                ->where('day', $day)
+                ->get();
+
+            // تجاهل الأيام التي لا يوجد فيها دوام
+            if ($schedules->isEmpty()) {
+                continue;
+            }
+
+            $slots = [];
+
+            foreach ($schedules as $schedule) {
+
+                $start = Carbon::parse($schedule->start_time);
+                $end = Carbon::parse($schedule->end_time);
+
+                while ($start < $end) {
+
+                    $slots[] = $start->format('H:i');
+                    $start->addMinutes(30);
+                }
+            }
+
+            // حذف الأوقات الماضية لليوم الحالي
+            if ($i === 0) {
+
+                $now = Carbon::now();
+
+                $slots = array_filter($slots, function ($slot) use ($now, $date) {
+
+                    $slotDateTime = Carbon::parse(
+                        $date->toDateString() . ' ' . $slot
+                    );
+
+                    return $slotDateTime->gt($now);
+                });
+            }
+
+            // جلب المواعيد المحجوزة
+            $booked = Appointment::where('doctor_id', $doctor->id)
+                ->whereDate('appointment_date', $date)
+                ->whereIn('status', ['scheduled', 'confirmed', 'completed'])
+                ->pluck('appointment_date')
+                ->map(fn($t) => Carbon::parse($t)->format('H:i'))
+                ->toArray();
+
+            // حذف المحجوز من المتاح
+            $available = array_values(array_diff($slots, $booked));
+
+            $result[] = [
+                'date' => $date->toDateString(),
+                'day' => $day,
+                'slots' => $available,
+            ];
+        }
+
+        return $result;
+    }
     public function bookPatientAppointment(int $patientId, array $data): Appointment
     {
         $doctor = $this->resolveDoctorForSpecialization(
@@ -253,7 +321,7 @@ class AppointmentService
 
         $exists = Appointment::where('doctor_id', $doctor->id)
             ->where('appointment_date', $appointmentDateTime)
-            ->where('status', '!=', 'cancelled')
+            ->whereIn('status', ['scheduled', 'confirmed', 'completed'])
             ->exists();
 
         if ($exists) {
