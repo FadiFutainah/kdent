@@ -113,7 +113,7 @@ public function getAvailableSlotsForDays($specializationId)
         ->exists();
 
     if ($exists) {
-        throw new \Exception("هذا الموعد محجوز مسبقاً");
+        throw new \Exception("الرجاء اختيار موعد اخر او الاتصال بالمركز");
     }
 
     // 6️⃣ إنشاء الموعد

@@ -21,10 +21,6 @@ class Exchange_Rate extends Model
         'fetched_at' => 'datetime',
     ];
 
-    public function treatmentSessions()
-    {
-        return $this->hasMany(Treatment_Session::class, 'exchange_rate_id');
-    }
 
     public function doctorEarnings()
     {
@@ -34,4 +30,10 @@ class Exchange_Rate extends Model
     {
         return $this->hasMany(Doctor_Payment::class, 'exchange_rate_id');
     }
+
+    public function treatmentPlans()
+    {
+        return $this->hasMany(Treatment_Plan::class, 'exchange_rate_id');
+    }
+
 }

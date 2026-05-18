@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Plan_Item;
 use App\Models\Treatment_Plan;
 use App\Models\Treatment_Session;
+use App\Models\Doctor_Earning;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -23,22 +24,81 @@ class TreatmentPlanService
             throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
-        return DB::transaction(function () use ($data, $doctor) {
-            $plan = Treatment_Plan::create([
-                'patient_id' => $data['patient_id'],
-                'doctor_id' => $doctor->id,
-                'name' => $data['name'],
-                'start_date' => $data['start_date'],
-                'notes' => $data['notes'] ?? null,
-            ]);
+        $usdProvided = !empty($data['price_usd']);
+        $sypProvided = !empty($data['price_syp']);
 
-            return $plan->load([
-                'items.category',
-                'items.sessions',
+        if (!$usdProvided && !$sypProvided) {
+            throw new \Exception('يجب إدخال سعر الخطة بالدولار أو الليرة');
+        }
+
+        $rateRecord = $this->exchangeRateService->getCurrentUsdToSypRate();
+        $rate = (float) $rateRecord->rate;
+
+        if ($usdProvided && !$sypProvided) {
+            $data['price_syp'] = round((float) $data['price_usd'] * $rate, 2);
+        } elseif (!$usdProvided && $sypProvided && $rate > 0) {
+            $data['price_usd'] = round((float) $data['price_syp'] / $rate, 2);
+        }
+
+        return DB::transaction(function () use ($data, $doctor, $rateRecord) {
+            $plan = Treatment_Plan::create([
+                'patient_id'       => $data['patient_id'],
+                'doctor_id'        => $doctor->id,
+                'name'             => $data['name'],
+                'start_date'       => $data['start_date'],
+                'exchange_rate_id' => $rateRecord->id,
+                'price_usd'        => $data['price_usd'],
+                'price_syp'        => $data['price_syp'],
+                'target_teeth'     => $data['target_teeth'] ?? null,
             ]);
+            $this->syncDoctorEarning($plan);
+            return $plan->load('items.category', 'items.sessions')
+                ->makeHidden('doctor');
         });
     }
 
+    public function updatePlan(int $planId, array $data)
+    {
+        $doctor = Auth::user()->doctor;
+
+        if (!$doctor) {
+            throw new \Exception('هذا المستخدم ليس دكتور');
+        }
+
+        $plan = Treatment_Plan::where('id', $planId)
+            ->where('doctor_id', $doctor->id)
+            ->firstOrFail();
+
+        return DB::transaction(function () use ($plan, $data) {
+            $updates = [];
+
+            foreach (['name', 'start_date', 'target_teeth'] as $field) {
+                if (array_key_exists($field, $data)) {
+                    $updates[$field] = $data[$field];
+                }
+            }
+
+            $usdProvided = array_key_exists('price_usd', $data) && !is_null($data['price_usd']);
+            $sypProvided = array_key_exists('price_syp', $data) && !is_null($data['price_syp']);
+
+            if ($usdProvided || $sypProvided) {
+                $rateRecord = $this->exchangeRateService->getCurrentUsdToSypRate();
+                $rate = (float) $rateRecord->rate;
+
+                $updates['exchange_rate_id'] = $rateRecord->id;
+                $updates['price_usd'] = $usdProvided ? $data['price_usd'] : round((float) $data['price_syp'] / $rate, 2);
+                $updates['price_syp'] = $sypProvided ? $data['price_syp'] : round((float) $data['price_usd'] * $rate, 2);
+            }
+
+            if ($updates) {
+                $plan->update($updates);
+                $this->syncDoctorEarning($plan->fresh());
+            }
+
+            return $plan->load('items.category', 'items.sessions')
+                ->makeHidden('doctor');
+        });
+    }
 
     public function searchPlans(array $filters)
     {
@@ -61,14 +121,12 @@ class TreatmentPlanService
         return $query
             ->orderByDesc('start_date')
             ->get()
-            ->map(function (Treatment_Plan $plan) {
-                return [
-                    'id' => $plan->id,
-                    'name' => $plan->name,
-                    'status' => $plan->status,
-                    'progress_percent' => $plan->progress_percent,
-                ];
-            })
+            ->map(fn(Treatment_Plan $plan) => [
+                'id'               => $plan->id,
+                'name'             => $plan->name,
+                'status'           => $plan->status,
+                'progress_percent' => $plan->progress_percent,
+            ])
             ->values();
     }
 
@@ -79,14 +137,12 @@ class TreatmentPlanService
         return $this->scopedPlansQuery($scope)
             ->orderByDesc('start_date')
             ->get()
-            ->map(function (Treatment_Plan $plan) {
-                return [
-                    'id' => $plan->id,
-                    'name' => $plan->name,
-                    'status' => $plan->status,
-                    'progress_percent' => $plan->progress_percent,
-                ];
-            })
+            ->map(fn(Treatment_Plan $plan) => [
+                'id'               => $plan->id,
+                'name'             => $plan->name,
+                'status'           => $plan->status,
+                'progress_percent' => $plan->progress_percent,
+            ])
             ->values();
     }
 
@@ -94,24 +150,27 @@ class TreatmentPlanService
     {
         $scope = $this->resolvePlanAccessScope();
 
-        $plan = Treatment_Plan::with(['items.category'])
+        $plan = Treatment_Plan::with('items.category')
             ->where($scope['column'], $scope['id'])
             ->where('id', $planId)
             ->firstOrFail();
 
         return [
-            'id' => $plan->id,
-            'name' => $plan->name,
-            'status' => $plan->status,
+            'id'               => $plan->id,
+            'name'             => $plan->name,
+            'status'           => $plan->status,
+            'price_usd'        => $plan->price_usd,
+            'price_syp'        => $plan->price_syp,
+            'target_teeth'     => $plan->target_teeth,
+            'start_date'       => $plan->start_date,
             'progress_percent' => $plan->progress_percent,
-            'items' => $plan->items->map(function (Plan_Item $item) {
-                return [
-                    'id' => $item->id,
-                    'category_id' => $item->category_id,
-                    'category_name' => $item->category?->name,
-                    'status' => $item->status,
-                ];
-            })->values(),
+            'items'            => $plan->items->map(fn(Plan_Item $item) => [
+                'id'            => $item->id,
+                'category_id'   => $item->category_id,
+                'category_name' => $item->category?->name,
+                'notes'         => $item->notes,
+                'status'        => $item->status,
+            ])->values(),
         ];
     }
 
@@ -123,26 +182,22 @@ class TreatmentPlanService
             ->where('id', $planId)
             ->firstOrFail();
 
-        $item = Plan_Item::with(['category', 'sessions'])
+        $item = Plan_Item::with('category', 'sessions')
             ->where('plan_id', $plan->id)
             ->where('id', $itemId)
             ->firstOrFail();
 
         return [
-            'id' => $item->id,
-            'category_id' => $item->category_id,
+            'id'            => $item->id,
+            'category_id'   => $item->category_id,
             'category_name' => $item->category?->name,
-            'price_usd' => $item->price_usd,
-            'price_syp' => $item->price_syp,
-            'target_teeth' => $item->target_teeth,
-            'status' => $item->status,
-            'sessions' => $item->sessions->map(function (Treatment_Session $session) {
-                return [
-                    'id' => $session->id,
-                    'name' => $session->name,
-                    'status' => $session->status,
-                ];
-            })->values(),
+            'notes'         => $item->notes,
+            'status'        => $item->status,
+            'sessions'      => $item->sessions->map(fn(Treatment_Session $session) => [
+                'id'     => $session->id,
+                'name'   => $session->name,
+                'status' => $session->status,
+            ])->values(),
         ];
     }
 
@@ -158,70 +213,22 @@ class TreatmentPlanService
             ->where('id', $itemId)
             ->firstOrFail();
 
-        $session = Treatment_Session::with(['exchangeRate', 'earning'])
+        $session = Treatment_Session::with('appointment')
             ->where('plan_item_id', $item->id)
             ->where('id', $sessionId)
             ->firstOrFail();
 
         return [
-            'id' => $session->id,
-            'name' => $session->name,
-            'status' => $session->status,
+            'id'           => $session->id,
+            'name'         => $session->name,
+            'status'       => $session->status,
             'session_date' => $session->session_date,
-            'rprice_usd' => $session->rprice_usd,
-            'rprice_syp' => $session->rprice_syp,
-            'clinical_notes' => $session->clinical_notes,
-            'is_last_session' => $session->is_last_session,
-            'exchange_rate' => $session->exchangeRate ? [
-                'id' => $session->exchangeRate->id,
-                'rate' => $session->exchangeRate->rate,
-                'fetched_at' => $session->exchangeRate->fetched_at,
-            ] : null,
-            'earning' => $session->earning ? [
-                'id' => $session->earning->id,
-                'amount_usd' => $session->earning->amount_usd,
-                'amount_syp' => $session->earning->amount_syp,
-                'percentage' => $session->earning->percentage,
+            'appointment'  => $session->appointment ? [
+                'id'               => $session->appointment->id,
+                'appointment_date' => $session->appointment->appointment_date,
+                'status'           => $session->appointment->status,
             ] : null,
         ];
-    }
-
-    public function updatePlan(int $planId, array $data)
-    {
-        $doctor = Auth::user()->doctor;
-
-        if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
-        }
-
-        $plan = Treatment_Plan::where('id', $planId)
-            ->where('doctor_id', $doctor->id)
-            ->firstOrFail();
-
-        return DB::transaction(function () use ($plan, $data) {
-            $planUpdates = [];
-
-            if (array_key_exists('name', $data)) {
-                $planUpdates['name'] = $data['name'];
-            }
-
-            if (array_key_exists('start_date', $data)) {
-                $planUpdates['start_date'] = $data['start_date'];
-            }
-
-            if (array_key_exists('notes', $data)) {
-                $planUpdates['notes'] = $data['notes'];
-            }
-
-            if ($planUpdates) {
-                $plan->update($planUpdates);
-            }
-
-            return $plan->load([
-                'items.category',
-                'items.sessions',
-            ]);
-        });
     }
 
     public function addPlanItem(int $planId, array $data)
@@ -236,22 +243,11 @@ class TreatmentPlanService
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
-        $usdProvided = array_key_exists('price_usd', $data) && !is_null($data['price_usd']);
-        $sypProvided = array_key_exists('price_syp', $data) && !is_null($data['price_syp']);
-
-        if (empty($data['category_id']) || (!$usdProvided && !$sypProvided)) {
-            throw new \Exception('يجب تحديد اسم العلاج والسعر المتوقع');
-        }
-
-        $payload = $this->applyItemExchangeRate($data);
-
         $item = Plan_Item::create([
-            'plan_id' => $plan->id,
-            'category_id' => $payload['category_id'],
-            'price_usd' => $payload['price_usd'],
-            'price_syp' => $payload['price_syp'] ?? null,
-            'target_teeth' => $payload['target_teeth'] ?? null,
-            'status' => $payload['status'] ?? 'in_progress',
+            'plan_id'     => $plan->id,
+            'category_id' => $data['category_id'],
+            'notes'       => $data['notes'] ?? null,
+            'status'      => 'in_progress',
         ]);
 
         return $item->load('category', 'sessions');
@@ -275,28 +271,10 @@ class TreatmentPlanService
 
         $updates = [];
 
-        if (array_key_exists('category_id', $data)) {
-            $updates['category_id'] = $data['category_id'];
-        }
-
-        if (array_key_exists('price_usd', $data)) {
-            $updates['price_usd'] = $data['price_usd'];
-        }
-
-        if (array_key_exists('price_syp', $data)) {
-            $updates['price_syp'] = $data['price_syp'];
-        }
-
-        if (array_key_exists('target_teeth', $data)) {
-            $updates['target_teeth'] = $data['target_teeth'];
-        }
-
-        if (array_key_exists('status', $data)) {
-            $updates['status'] = $data['status'];
-        }
-
-        if ($updates) {
-            $updates = $this->applyItemExchangeRate($updates);
+        foreach (['category_id', 'notes', 'status'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $updates[$field] = $data[$field];
+            }
         }
 
         if ($updates) {
@@ -318,42 +296,12 @@ class TreatmentPlanService
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
-        $item = Plan_Item::where('plan_id', $plan->id)
+        Plan_Item::where('plan_id', $plan->id)
             ->where('id', $itemId)
-            ->firstOrFail();
-
-        $item->delete();
+            ->firstOrFail()
+            ->delete();
 
         return ['message' => 'تم حذف المرحلة بنجاح'];
-    }
-
-    private function applyItemExchangeRate(array $data): array
-    {
-        $hasPriceContext = array_key_exists('price_usd', $data) || array_key_exists('price_syp', $data);
-
-        if (!$hasPriceContext) {
-            return $data;
-        }
-
-        $usdProvided = array_key_exists('price_usd', $data) && !is_null($data['price_usd']);
-        $sypProvided = array_key_exists('price_syp', $data) && !is_null($data['price_syp']);
-
-        if (!$usdProvided && !$sypProvided) {
-            return $data;
-        }
-
-        $rateRecord = $this->exchangeRateService->getCurrentUsdToSypRate();
-        $rate = (float) $rateRecord->rate;
-
-        if ($usdProvided && !$sypProvided) {
-            $data['price_syp'] = round(((float) $data['price_usd']) * $rate, 2);
-        }
-
-        if (!$usdProvided && $sypProvided && $rate > 0) {
-            $data['price_usd'] = round(((float) $data['price_syp']) / $rate, 2);
-        }
-
-        return $data;
     }
 
     private function resolvePlanAccessScope(): array
@@ -362,28 +310,14 @@ class TreatmentPlanService
 
         if ($user->hasRole('doctor')) {
             $doctor = $user->doctor;
-            if (!$doctor) {
-                throw new \Exception('هذا المستخدم ليس دكتور');
-            }
-
-            return [
-                'role' => 'doctor',
-                'column' => 'doctor_id',
-                'id' => $doctor->id,
-            ];
+            if (!$doctor) throw new \Exception('هذا المستخدم ليس دكتور');
+            return ['role' => 'doctor', 'column' => 'doctor_id', 'id' => $doctor->id];
         }
 
-        else if ($user->hasRole('patient')) {
+        if ($user->hasRole('patient')) {
             $patient = $user->patient;
-            if (!$patient) {
-                throw new \Exception('هذا المستخدم ليس مريض');
-            }
-
-            return [
-                'role' => 'patient',
-                'column' => 'patient_id',
-                'id' => $patient->id,
-            ];
+            if (!$patient) throw new \Exception('هذا المستخدم ليس مريض');
+            return ['role' => 'patient', 'column' => 'patient_id', 'id' => $patient->id];
         }
 
         throw new \Exception('ليس لديك صلاحية للوصول إلى الخطط العلاجية');
@@ -392,5 +326,31 @@ class TreatmentPlanService
     private function scopedPlansQuery(array $scope): Builder
     {
         return Treatment_Plan::query()->where($scope['column'], $scope['id']);
+    }
+
+
+    private function syncDoctorEarning(Treatment_Plan $plan): void
+    {
+        $doctor = $plan->doctor;
+
+        if (!$doctor) return;
+
+        $percentage = (float) ($doctor->percentage ?? 0);
+        $amountUsd  = round(((float) $plan->price_usd) * $percentage / 100, 2);
+        $amountSyp  = !is_null($plan->price_syp)
+            ? round(((float) $plan->price_syp) * $percentage / 100, 2)
+            : null;
+
+        Doctor_Earning::updateOrCreate(
+            ['treatment_plans_id' => $plan->id],
+            [
+                'doctor_id'        => $doctor->id,
+                'exchange_rate_id' => $plan->exchange_rate_id,
+                'percentage'       => $percentage,
+                'amount_usd'       => $amountUsd,
+                'amount_syp'       => $amountSyp,
+                'earning_date'     => $plan->start_date ?? now(),
+            ]
+        );
     }
 }

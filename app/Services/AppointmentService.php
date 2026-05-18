@@ -200,6 +200,20 @@ class AppointmentService
         return $appointment;
     }
 
+    public function cancelAppointmentBySecretary(int $appointmentId): Appointment
+    {
+        $appointment = Appointment::findOrFail($appointmentId);
+
+        if ($appointment->status !== 'scheduled') {
+            throw new \Exception('لا يمكن إلغاء هذا الموعد إلا إذا كان مجدولاً');
+        }
+
+        $appointment->status = 'cancelled';
+        $appointment->save();
+
+        return $appointment;
+    }
+
     private function ensureSlotAvailable(Doctor $doctor, Carbon $appointmentDateTime): void
     {
         if ($appointmentDateTime->lt(Carbon::now())) {
@@ -243,7 +257,7 @@ class AppointmentService
             ->exists();
 
         if ($exists) {
-            throw new \Exception('هذا الموعد محجوز مسبقاً');
+            throw new \Exception('الرجاء اختيار موعد اخر او الاتصال بالمركز');
         }
     }
 

@@ -13,8 +13,17 @@ class Treatment_Plan extends Model
         'doctor_id',
         'name',
         'start_date',
-        'notes',
+        'exchange_rate_id',
+        'price_usd',
+        'price_syp',
+        'target_teeth',
         'status',
+    ];
+
+    protected $casts = [
+        'start_date' => 'datetime',
+        'price_usd' => 'decimal:2',
+        'price_syp' => 'decimal:2',
     ];
 
     protected $appends = [
@@ -54,4 +63,15 @@ class Treatment_Plan extends Model
 
         return (int) round(($completed / $total) * 100);
     }
+
+        public function exchangeRate()
+    {
+        return $this->belongsTo(Exchange_Rate::class, 'exchange_rate_id');
+    }
+
+    public function earning()
+    {
+        return $this->hasOne(Doctor_Earning::class, 'treatment_plans_id');
+    }  
+
 }

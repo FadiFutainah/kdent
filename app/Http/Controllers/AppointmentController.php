@@ -98,4 +98,13 @@ class AppointmentController extends Controller
 
 		return response()->json($appointment);
 	}
+
+	public function cancelBySecretary(int $appointmentId)
+	{
+		$this->service->cancelAppointmentBySecretary($appointmentId);
+
+		return response()->json([
+			'message' => 'الرجاء الحجز بموعد اخر او الاتصال بالمركز',
+		]);
+	}
 }
