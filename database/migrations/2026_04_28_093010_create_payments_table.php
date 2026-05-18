@@ -16,6 +16,7 @@ return new class extends Migration
         $table->foreignId('invoice_id')->constrained()->onDelete('cascade');
         $table->decimal('amount', 12, 2);
         $table->enum('method', ['cash', 'bank', 'card'])->default('cash');
+        $table->decimal('exchange_rate', 12, 4)->nullable();
         $table->foreignId('created_by')->nullable()->constrained('users');
         $table->timestamps();
         });

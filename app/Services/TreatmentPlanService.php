@@ -54,6 +54,36 @@ class TreatmentPlanService
             $this->syncDoctorEarning($plan);
             return $plan->load('items.category', 'items.sessions')
                 ->makeHidden('doctor');
+        return DB::transaction(function () use ($data, $doctor) {
+            $plan = Treatment_Plan::create([
+                'patient_id' => $data['patient_id'],
+                'doctor_id' => $doctor->id,
+                'name' => $data['name'],
+                'start_date' => $data['start_date'],
+                'notes' => $data['notes'] ?? null,
+            ]);
+              // 2. إنشاء الفاتورة تلقائيًا
+        $invoice = app(\App\Services\InvoiceService::class)
+            ->createForPatient([
+        'patient_id' => $plan->patient_id,
+        'plan_id' => $plan->id,
+        // اختياري:
+        //'issued_at' => now()
+    ]);
+  // ✅ تأكيد النوع (احتياط)
+        if ($invoice->type !== 'patient') {
+            throw new \Exception('Invoice type must be patient');
+        }
+        return $plan->load([
+            'items.category',
+            'items.sessions'
+        ])->setRelation('invoice', $invoice);
+
+            // return $plan->load([
+            //     'items.category',
+            //     'items.sessions',
+            // ]);
+
         });
     }
 

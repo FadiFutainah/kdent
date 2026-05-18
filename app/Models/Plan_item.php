@@ -29,4 +29,8 @@ class Plan_Item extends Model
     {
         return $this->hasMany(Treatment_Session::class, 'plan_item_id');
     }
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'plan_id');
+    }
 }

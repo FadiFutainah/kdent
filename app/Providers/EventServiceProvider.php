@@ -19,6 +19,9 @@ class EventServiceProvider extends ServiceProvider
 \App\Events\LowStockDetected::class => [
         \App\Listeners\LowStockNotification::class,
     ],
+      \App\Events\MaterialRequestCreated::class => [
+        \App\Listeners\SendRequestNotification::class,
+    ],
     ];
 
     public function boot(): void

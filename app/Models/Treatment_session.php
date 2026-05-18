@@ -31,4 +31,18 @@ class Treatment_Session extends Model
     }
  
 
+    public function exchangeRate()
+    {
+        return $this->belongsTo(Exchange_Rate::class, 'exchange_rate_id');
+    }
+
+    public function earning()
+    {
+        return $this->hasOne(Doctor_Earning::class, 'treatment_session_id');
+    }  
+    public function invoiceItems()
+    {
+        return $this->hasMany(Invoice_Item::class, 'treatment_session_id');
+    } 
+
 }

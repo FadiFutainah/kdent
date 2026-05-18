@@ -22,21 +22,44 @@ class SpecializationService
         $specialization = Specialization::findOrFail($id);
 
         // جلب الدكتور مع اليوزر
-        $doctor = Doctor::with('user')
+        $doctors = Doctor::with('user')
             ->where('specialization_id', $id)
             ->where('is_active', true)
-            ->first();
+               ->get();
 
         return [
             'id' => $specialization->id,
             'name' => $specialization->name,
             'description' => $specialization->description,
 
-            'doctor' => $doctor ? [
-                'id' => $doctor->id,
-                'name' => $doctor->user->name,
-            ] : null
+            // 'doctor' => $doctor ? [
+            //     'id' => $doctor->id,
+            //     'name' => $doctor->user->name,
+            // ] : null
+            'doctors' => $doctors->map(function ($doctor) {
+                return [
+                    'id' => $doctor->id,
+                    'name' => $doctor->user->name,
+                ];
+            })
         ];
+    }
+    //عرض اطباء اختصاص محدد
+    public function getDoctorsBySpecialization($id)
+    {
+         $specialization = Specialization::findOrFail($id);
+        $doctors = Doctor::with('user')
+            ->where('specialization_id', $id)
+            ->where('is_active', true)
+            ->get();
+        return $doctors->map(function ($doctor) 
+        {
+                return [
+                    'id' => $doctor->id,
+                    'name' => $doctor->user->name,
+                ];
+            });
+            
     }
 
     /**
@@ -58,27 +81,48 @@ class SpecializationService
     /**
      * (اختياري 🔥) جلب كل الاختصاصات مع الدكتور
      */
+    // public function getSpecializationsWithDoctors()
+    // {
+    //     $specializations = Specialization::all();
+
+    //     return $specializations->map(function ($spec) {
+
+    //         $doctor = Doctor::with('user')
+    //             ->where('specialization_id', $spec->id)
+    //             ->where('is_active', true)
+    //             ->first();
+
+    //         return [
+    //             'id' => $spec->id,
+    //             'name' => $spec->name,
+    //             'doctor' => $doctor ? [
+    //                 'id' => $doctor->id,
+    //                 'name' => $doctor->user->name,
+    //             ] : null
+    //         ];
+    //     });
+    // }
+
     public function getSpecializationsWithDoctors()
     {
-        $specializations = Specialization::all();
-
-        return $specializations->map(function ($spec) {
-
-            $doctor = Doctor::with('user')
-                ->where('specialization_id', $spec->id)
-                ->where('is_active', true)
-                ->first();
+        return Specialization::with(['doctors.user'])->get()->map(function ($spec) {
 
             return [
                 'id' => $spec->id,
                 'name' => $spec->name,
-                'doctor' => $doctor ? [
-                    'id' => $doctor->id,
-                    'name' => $doctor->user->name,
-                ] : null
+
+                'doctors' => $spec->doctors
+                    ->where('is_active', true)
+                    ->map(function ($doctor) {
+                        return [
+                            'id' => $doctor->id,
+                            'name' => $doctor->user->name,
+                        ];
+                    })->values()
             ];
         });
     }
+    
     //  public function getSchedules($doctorId, $shift = null)
     // {
     //     $query = DoctorSchedule::where('doctor_id', $doctorId);

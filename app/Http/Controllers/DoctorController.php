@@ -73,4 +73,22 @@ public function searchPatients(Request $request)
         $this->service->searchPatientsByName($data['name'])
     );
 }
+//طلب مواد من المخزن
+public function store(Request $request)
+{
+    $data = $request->validate([
+        'items' => 'required|array|min:1',
+        'items.*.item_id' => 'required|exists:items,id',
+        'items.*.quantity' => 'required|integer|min:1',
+        'notes' => 'nullable|string'
+    ]);
+
+    $req = $this->service->createRequest($data);
+
+    return response()->json([
+        'message' => 'Request created successfully',
+        'data' => $req
+    ]);
+}
+
 }

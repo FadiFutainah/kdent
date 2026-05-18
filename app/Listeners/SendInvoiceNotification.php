@@ -36,4 +36,5 @@ class SendInvoiceNotification
         ['invoice_id' => $event->invoice->id]
     ));
 }
+
 }

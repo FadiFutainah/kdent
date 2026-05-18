@@ -13,13 +13,17 @@ return new class extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-            $table->string('type'); // supplier | patient | doctor | salary
-            $table->foreignId('supplier_id')->constrained();
+           $table->enum('type', ['supplier', 'patient', 'doctor', 'salary'])->default('supplier');
+            $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('patient_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('plan_id')->nullable()->constrained('treatment_plans')->nullOnDelete();
             $table->string('invoice_number')->unique()->nullable();
             $table->decimal('paid_amount', 12, 2)->default(0);
             $table->decimal('total_amount_USD', 12, 2)->default(0);
             $table->decimal('total_amount_SYP', 12, 2)->default(0);
             $table->decimal('discount', 12, 2)->default(0);
+             $table->decimal('total_amount_USD_after_discount', 12, 2)->default(0)->nullable();
+            $table->decimal('total_amount_SYP_after_discount', 12, 2)->default(0)->nullable();
             $table->string('currency')->default('USD');
             $table->decimal('exchange_rate', 12, 4)->default(1);
             $table->unsignedBigInteger('created_by')->nullable();
