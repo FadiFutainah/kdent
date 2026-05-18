@@ -181,43 +181,6 @@ public function getAvailableSlotsForDays($doctorId)
         return $appointment;
     }
 
-    // 4️⃣ تأكد الوقت ضمن الدوام
-    $day = $this->normalizeDay($appointmentDateTime);
-
-    $hasSchedule = Doctor_Schedules::where('doctor_id', $doctor->id)
-        ->where('day', $day)
-        ->exists();
-
-    if (!$hasSchedule) {
-        throw new \Exception("الدكتور لا يعمل بهذا اليوم");
-    }
-
-    // 5️⃣ تأكد الوقت مو محجوز
-    $exists = Appointment::where('doctor_id', $doctor->id)
-        ->where('appointment_date', $appointmentDateTime)
-        ->exists();
-
-    if ($exists) {
-        throw new \Exception("الرجاء اختيار موعد اخر او الاتصال بالمركز");
-    }
-
-    // 6️⃣ إنشاء الموعد
-    return Appointment::create([
-        'patient_id' => $patient->id,
-        'doctor_id' => $doctor->id,
-        'appointment_date' => $appointmentDateTime,
-        'status' => 'scheduled'
-    ]);
-    // 👇 هون
-app(NotificationService::class)->send(
-    $reception,
-    'موعد جديد',
-    'تم حجز موعد جديد بانتظار التأكيد',
-    'appointment',
-    $appointment->id
-);
-}
-
     private function normalizeDay(Carbon $date): string
     {
         return match ($date->dayOfWeek) {
