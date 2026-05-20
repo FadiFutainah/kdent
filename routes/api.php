@@ -27,6 +27,8 @@ Route::post('/login', [AuthController::class, 'login']);       // للجميع �
 Route::middleware('auth:sanctum')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout']); });// تسجيل الخروج
 
+Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::class, 'checkToken']
+);
 
 Route::middleware(['auth:sanctum', 'role:patient'])->group(function () {
 Route::get('/specializations', [SpecializationController::class,'index'])->middleware('role:patient');//عرض الاختصاصات 
@@ -68,6 +70,7 @@ Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
     Route::get('/secretary/doctors/all', [AppointmentController::class, 'listAllDoctorsForSecretary']);
     Route::post('/secretary/doctors', [AppointmentController::class, 'listDoctorsBySpecialization']);
     Route::post('/secretary/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
+    Route::get('/secretary/doctors/{doctorId}/available-slots7', [AppointmentController::class, 'availableSlotsByDoctor7Days']);
     Route::get('/secretary/doctors/{doctorId}/patients', [SecretaryController::class, 'doctorPatients']);
     Route::get('/secretary/doctors/{doctorId}/appointments/today', [SecretaryController::class, 'doctorTodayAppointments']);
     Route::get('/secretary/appointments/scheduled', [AppointmentController::class, 'listScheduledBySecretary']);
@@ -75,6 +78,7 @@ Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
     Route::post('/appointments/secretary', [AppointmentController::class, 'bookBySecretary']);
     Route::post('/appointments/{appointmentId}/confirm', [AppointmentController::class, 'confirmBySecretary']);
     Route::post('/appointments/{appointmentId}/cancel', [AppointmentController::class, 'cancelBySecretary']);
+
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor|secretary'])->group(function () {
@@ -101,10 +105,10 @@ Route::middleware(['auth:sanctum', 'role:doctor|admin|accountant'])->group(funct
 });
 
 Route::middleware(['auth:sanctum', 'role:patient|doctor|secretary'])->group(function () {
-    Route::get('/my/treatment-plans', [TreatmentPlanController::class, 'myPlans']);
-    Route::get('/treatment-plans/show/{planId}', [TreatmentPlanController::class, 'show']);
-    Route::get('/treatment-plans/{planId}/showItem/{itemId}', [TreatmentPlanController::class, 'showItem']);
-    Route::get('/treatment-plans/{planId}/items/{itemId}/showSession/{sessionId}', [TreatmentPlanController::class, 'showSession']);
+    Route::get('/patients/{patientId}/plans', [TreatmentPlanController::class, 'myPlans']);
+    Route::get('/plans/{planId}', [TreatmentPlanController::class, 'show']);
+    Route::get('/items/{itemId}', [TreatmentPlanController::class, 'showItem']);
+    Route::get('/sessions/{sessionId}', [TreatmentPlanController::class, 'showSession']);
     Route::get('/medical-reports', [MedicalReportController::class, 'index']);
     Route::get('/medical-reports/{reportId}', [MedicalReportController::class, 'show']);
     Route::get('/medical-records/{patientId}', [MedicalRecordController::class, 'show']);
@@ -112,7 +116,6 @@ Route::middleware(['auth:sanctum', 'role:patient|doctor|secretary'])->group(func
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::get('/my/finance/summary', [DoctorFinanceController::class, 'mySummary']);
-    Route::post('/treatment-plans/search', [TreatmentPlanController::class, 'search']);
     Route::post('/treatment-plans', [TreatmentPlanController::class, 'store']);
     Route::post('/treatment-plans/{planId}', [TreatmentPlanController::class, 'update']);
     Route::post('/treatment-plans/{planId}/items', [TreatmentPlanController::class, 'addItem']);
@@ -120,7 +123,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::delete('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'deleteItem']);
     Route::post('/plan-items/{itemId}/treatment-sessions', [TreatmentSessionController::class, 'store']);
     Route::post('/treatment-sessions/{sessionId}', [TreatmentSessionController::class, 'update']);
-    Route::patch('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
+    Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
     Route::post('/medical-reports', [MedicalReportController::class, 'store']);
     Route::post('/medical-records/{patientId}', [MedicalRecordController::class, 'update']);
 });

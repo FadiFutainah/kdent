@@ -56,6 +56,13 @@ class AppointmentController extends Controller
 		return response()->json($slots);
 	}
 
+	public function availableSlotsByDoctor7Days(int $doctorId)
+	{
+		$slots = $this->service->getAvailableSlotsForDoctorId($doctorId, 7);
+
+		return response()->json($slots);
+	}
+
 	public function listScheduledBySecretary(Request $request)
 	{
 		$data = $request->validate([

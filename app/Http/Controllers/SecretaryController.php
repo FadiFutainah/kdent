@@ -23,4 +23,5 @@ class SecretaryController extends Controller
             $this->service->getDoctorTodayAppointments($doctorId)
         );
     }
+
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\Patient;
 use Carbon\Carbon;
+use App\Models\Doctor_Schedules;
 
 class SecretaryService
 {
@@ -44,4 +45,6 @@ class SecretaryService
             })
             ->values();
     }
+
+
 }

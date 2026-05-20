@@ -41,9 +41,9 @@ class TreatmentPlanController extends Controller
         return response()->json($this->service->searchPlans($data));
     }
 
-    public function myPlans()
+    public function myPlans(int $patientId)
     {
-        return response()->json($this->service->getMyPlans());
+        return response()->json($this->service->getPatientPlans($patientId));
     }
 
     public function show(int $planId)
@@ -51,14 +51,14 @@ class TreatmentPlanController extends Controller
         return response()->json($this->service->getPlanDetails($planId));
     }
 
-    public function showItem(int $planId, int $itemId)
+    public function showItem(int $itemId)
     {
-        return response()->json($this->service->getPlanItemDetails($planId, $itemId));
+        return response()->json($this->service->getPlanItemDetails($itemId));
     }
 
-    public function showSession(int $planId, int $itemId, int $sessionId)
+    public function showSession(int $sessionId)
     {
-        return response()->json($this->service->getSessionDetails($planId, $itemId, $sessionId));
+        return response()->json($this->service->getSessionDetails($sessionId));
     }
 
     public function update(Request $request, int $planId)

@@ -32,39 +32,50 @@ class MedicalReportService
     {
         $scope = $this->resolveAccessScope();
 
-        return Medical_Report::with(['patient.user', 'doctor.user'])
-            ->where($scope['column'], $scope['id'])
-            ->orderByDesc('report_date')
+        $query = Medical_Report::with(['patient.user', 'doctor.user']);
+
+        if ($scope['role'] === 'doctor') {
+            $query->where('doctor_id', $scope['doctor_id']);
+        }
+
+        if ($scope['role'] === 'patient') {
+            $query->where('patient_id', $scope['patient_id']);
+        }
+
+        return $query->orderByDesc('report_date')
             ->get()
-            ->map(function (Medical_Report $report) {
-                return [
-                    'id' => $report->id,
-                    'patient_name' => $report->patient?->user?->name,
-                    'doctor_name' => $report->doctor?->user?->name,
-                    'report_date' => optional($report->report_date)->toDateTimeString(),
-                ];
-            })
-            ->values();
+            ->map(fn($r) => [
+                'id'            => $r->id,
+                'patient_name'  => $r->patient?->user?->name,
+                'doctor_name'   => $r->doctor?->user?->name,
+                'report_date'   => $r->report_date,
+            ]);
     }
 
     public function getReportDetails(int $reportId)
     {
         $scope = $this->resolveAccessScope();
 
-        $report = Medical_Report::with(['patient.user', 'doctor.user'])
-            ->where($scope['column'], $scope['id'])
-            ->where('id', $reportId)
-            ->firstOrFail();
+        $query = Medical_Report::with(['patient.user', 'doctor.user'])
+            ->where('id', $reportId);
+
+        if ($scope['role'] === 'doctor') {
+            $query->where('doctor_id', $scope['doctor_id']);
+        }
+
+        if ($scope['role'] === 'patient') {
+            $query->where('patient_id', $scope['patient_id']);
+        }
+
+        $report = $query->firstOrFail();
 
         return [
-            'id' => $report->id,
-            'patient_id' => $report->patient_id,
-            'patient_name' => $report->patient?->user?->name,
-            'doctor_id' => $report->doctor_id,
-            'doctor_name' => $report->doctor?->user?->name,
-            'report_date' => optional($report->report_date)->toDateTimeString(),
-            'content' => $report->content,
-            'attachments' => $report->attachments,
+            'id'            => $report->id,
+            'patient_name'  => $report->patient?->user?->name,
+            'doctor_name'   => $report->doctor?->user?->name,
+            'content'       => $report->content,
+            'attachments'   => $report->attachments,
+            'report_date'   => $report->report_date,
         ];
     }
 
@@ -100,17 +111,25 @@ class MedicalReportService
     private function resolveAccessScope(): array
     {
         $user = Auth::user();
-        $doctor = $user?->doctor;
-        $patient = $user?->patient;
 
-        if ($doctor) {
-            return ['column' => 'doctor_id', 'id' => $doctor->id];
+        if ($user->hasRole('secretary')) {
+            return ['role' => 'secretary'];
         }
 
-        if ($patient) {
-            return ['column' => 'patient_id', 'id' => $patient->id];
+        if ($user->hasRole('doctor')) {
+            return [
+                'role' => 'doctor',
+                'doctor_id' => $user->doctor->id
+            ];
         }
 
-        throw new \Exception('لا تملك صلاحية الوصول للتقارير');
+        if ($user->hasRole('patient')) {
+            return [
+                'role' => 'patient',
+                'patient_id' => $user->patient->id
+            ];
+        }
+
+        throw new \Exception('غير مصرح');
     }
 }

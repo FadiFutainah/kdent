@@ -213,4 +213,16 @@ public function login($data)
         'role'    => $actualRole
     ];
 }
+    public function checkToken(): array
+    {
+        $user = auth()->user();
+
+        return [
+            'authenticated' => true,
+            'user_id' => $user->id,
+            'name' => $user->name,
+        ];
+    }
+
+
 }

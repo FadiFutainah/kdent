@@ -143,11 +143,12 @@ class TreatmentPlanService
             ->values();
     }
 
-    public function getMyPlans()
-    {
-        $scope = $this->resolvePlanAccessScope();
 
-        return $this->scopedPlansQuery($scope)
+    public function getPatientPlans(int $patientId)
+    {
+        $this->authorizePatientAccess($patientId);
+
+        return Treatment_Plan::where('patient_id', $patientId)
             ->orderByDesc('start_date')
             ->get()
             ->map(fn(Treatment_Plan $plan) => [
@@ -158,15 +159,12 @@ class TreatmentPlanService
             ])
             ->values();
     }
-
     public function getPlanDetails(int $planId)
     {
-        $scope = $this->resolvePlanAccessScope();
-
         $plan = Treatment_Plan::with('items.category')
-            ->where($scope['column'], $scope['id'])
-            ->where('id', $planId)
-            ->firstOrFail();
+            ->findOrFail($planId);
+
+        $this->authorizePatientAccess($plan->patient_id);
 
         return [
             'id'               => $plan->id,
@@ -177,28 +175,20 @@ class TreatmentPlanService
             'target_teeth'     => $plan->target_teeth,
             'start_date'       => $plan->start_date,
             'progress_percent' => $plan->progress_percent,
-            'items'            => $plan->items->map(fn(Plan_Item $item) => [
+
+            'items' => $plan->items->map(fn(Plan_Item $item) => [
                 'id'            => $item->id,
-                'category_id'   => $item->category_id,
                 'category_name' => $item->category?->name,
-                'notes'         => $item->notes,
                 'status'        => $item->status,
             ])->values(),
         ];
     }
-
-    public function getPlanItemDetails(int $planId, int $itemId)
+    public function getPlanItemDetails(int $itemId)
     {
-        $scope = $this->resolvePlanAccessScope();
+        $item = Plan_Item::with('category', 'sessions', 'plan')
+            ->findOrFail($itemId);
 
-        $plan = Treatment_Plan::where($scope['column'], $scope['id'])
-            ->where('id', $planId)
-            ->firstOrFail();
-
-        $item = Plan_Item::with('category', 'sessions')
-            ->where('plan_id', $plan->id)
-            ->where('id', $itemId)
-            ->firstOrFail();
+        $this->authorizePatientAccess($item->plan->patient_id);
 
         return [
             'id'            => $item->id,
@@ -206,156 +196,77 @@ class TreatmentPlanService
             'category_name' => $item->category?->name,
             'notes'         => $item->notes,
             'status'        => $item->status,
-            'sessions'      => $item->sessions->map(fn(Treatment_Session $session) => [
-                'id'     => $session->id,
-                'name'   => $session->name,
-                'status' => $session->status,
-            ])->values(),
+
+            'sessions' => $item->sessions->map(
+                fn(Treatment_Session $session) => [
+                    'id'     => $session->id,
+                    'name'   => $session->name,
+                    'status' => $session->status,
+                ]
+            )->values(),
         ];
     }
-
-    public function getSessionDetails(int $planId, int $itemId, int $sessionId)
+    public function getSessionDetails(int $sessionId)
     {
-        $scope = $this->resolvePlanAccessScope();
+        $session = Treatment_Session::with(
+            'appointment',
+            'planItem.plan'
+        )->findOrFail($sessionId);
 
-        $plan = Treatment_Plan::where($scope['column'], $scope['id'])
-            ->where('id', $planId)
-            ->firstOrFail();
-
-        $item = Plan_Item::where('plan_id', $plan->id)
-            ->where('id', $itemId)
-            ->firstOrFail();
-
-        $session = Treatment_Session::with('appointment')
-            ->where('plan_item_id', $item->id)
-            ->where('id', $sessionId)
-            ->firstOrFail();
+        $this->authorizePatientAccess(
+            $session->planItem->plan->patient_id
+        );
 
         return [
             'id'           => $session->id,
             'name'         => $session->name,
             'status'       => $session->status,
             'session_date' => $session->session_date,
-            'appointment'  => $session->appointment ? [
+
+            'appointment' => $session->appointment ? [
                 'id'               => $session->appointment->id,
                 'appointment_date' => $session->appointment->appointment_date,
                 'status'           => $session->appointment->status,
             ] : null,
         ];
     }
-
-    public function addPlanItem(int $planId, array $data)
-    {
-        $doctor = Auth::user()->doctor;
-
-        if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
-        }
-
-        $plan = Treatment_Plan::where('id', $planId)
-            ->where('doctor_id', $doctor->id)
-            ->firstOrFail();
-
-        $item = Plan_Item::create([
-            'plan_id'     => $plan->id,
-            'category_id' => $data['category_id'],
-            'notes'       => $data['notes'] ?? null,
-            'status'      => 'in_progress',
-        ]);
-
-        return $item->load('category', 'sessions');
-    }
-
-    public function updatePlanItem(int $planId, int $itemId, array $data)
-    {
-        $doctor = Auth::user()->doctor;
-
-        if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
-        }
-
-        $plan = Treatment_Plan::where('id', $planId)
-            ->where('doctor_id', $doctor->id)
-            ->firstOrFail();
-
-        $item = Plan_Item::where('plan_id', $plan->id)
-            ->where('id', $itemId)
-            ->firstOrFail();
-
-        $updates = [];
-
-        foreach (['category_id', 'notes', 'status'] as $field) {
-            if (array_key_exists($field, $data)) {
-                $updates[$field] = $data[$field];
-            }
-        }
-
-        if ($updates) {
-            $item->update($updates);
-        }
-
-        return $item->fresh()->load('category', 'sessions');
-    }
-
-    public function deletePlanItem(int $planId, int $itemId)
-    {
-        $doctor = Auth::user()->doctor;
-
-        if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
-        }
-
-        $plan = Treatment_Plan::where('id', $planId)
-            ->where('doctor_id', $doctor->id)
-            ->firstOrFail();
-
-        Plan_Item::where('plan_id', $plan->id)
-            ->where('id', $itemId)
-            ->firstOrFail()
-            ->delete();
-
-        return ['message' => 'تم حذف المرحلة بنجاح'];
-    }
-
-    private function resolvePlanAccessScope(): array
+    private function authorizePatientAccess(int $patientId): void
     {
         $user = Auth::user();
 
-        if ($user->hasRole('doctor')) {
-            $doctor = $user->doctor;
-            if (!$doctor) throw new \Exception('هذا المستخدم ليس دكتور');
-            return ['role' => 'doctor', 'column' => 'doctor_id', 'id' => $doctor->id];
+        // secretary => كل المرضى
+        if ($user->hasRole('secretary')) {
+            return;
         }
 
+        // patient => ملفه فقط
         if ($user->hasRole('patient')) {
-            $patient = $user->patient;
-            if (!$patient) throw new \Exception('هذا المستخدم ليس مريض');
-            return ['role' => 'patient', 'column' => 'patient_id', 'id' => $patient->id];
-        }
-            if ($user->hasRole('secretary')) {
 
-        return [
-            'role' => 'secretary'
-        ];
-    }
+            if ($user->patient?->id !== $patientId) {
+                throw new \Exception('لا تملك صلاحية الوصول');
+            }
 
-        throw new \Exception('ليس لديك صلاحية للوصول إلى الخطط العلاجية');
-    }
-    private function scopedPlansQuery(array $scope): Builder
-    {
-        $query = Treatment_Plan::query();
-
-        if ($scope['role'] === 'secretary') {
-            return $query;
+            return;
         }
 
-        return $query->where($scope['column'], $scope['id']);
-    }
+        // doctor => مرضاه فقط
+        if ($user->hasRole('doctor')) {
 
-    /*private function scopedPlansQuery(array $scope): Builder
-    {
-        return Treatment_Plan::query()->where($scope['column'], $scope['id']);
-    }*/
+            $doctorId = $user->doctor?->id;
+
+            $hasAccess = Treatment_Plan::where('doctor_id', $doctorId)
+                ->where('patient_id', $patientId)
+                ->exists();
+
+            if (!$hasAccess) {
+                throw new \Exception('هذا المريض ليس من مرضاك');
+            }
+
+            return;
+        }
+
+        throw new \Exception('غير مصرح');
+    }
 
 
     private function syncDoctorEarning(Treatment_Plan $plan): void

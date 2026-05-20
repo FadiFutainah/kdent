@@ -11,8 +11,18 @@ class MedicalRecordService
     {
         $scope = $this->resolveAccessScope();
 
-        if ($scope['role'] === 'patient' && $scope['id'] !== $patientId) {
-            throw new \Exception('لا تملك صلاحية الوصول لهذا السجل');
+        if ($scope['role'] === 'patient' && $scope['patient_id'] !== $patientId) {
+            throw new \Exception('غير مصرح');
+        }
+
+        if ($scope['role'] === 'doctor') {
+            $exists = \App\Models\Treatment_Plan::where('doctor_id', $scope['doctor_id'])
+                ->where('patient_id', $patientId)
+                ->exists();
+
+            if (!$exists) {
+                throw new \Exception('هذا المريض ليس من مرضاك');
+            }
         }
 
         $patient = Patient::with('user')->findOrFail($patientId);
@@ -113,17 +123,19 @@ class MedicalRecordService
     private function resolveAccessScope(): array
     {
         $user = Auth::user();
-        $doctor = $user?->doctor;
-        $patient = $user?->patient;
 
-        if ($doctor) {
-            return ['role' => 'doctor', 'id' => $doctor->id];
+        if ($user->hasRole('secretary')) {
+            return ['role' => 'secretary'];
         }
 
-        if ($patient) {
-            return ['role' => 'patient', 'id' => $patient->id];
+        if ($user->hasRole('doctor')) {
+            return ['role' => 'doctor', 'doctor_id' => $user->doctor->id];
         }
 
-        throw new \Exception('لا تملك صلاحية الوصول للسجل');
+        if ($user->hasRole('patient')) {
+            return ['role' => 'patient', 'patient_id' => $user->patient->id];
+        }
+
+        throw new \Exception('غير مصرح');
     }
 }
