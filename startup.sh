@@ -1,9 +1,9 @@
 #!/bin/bash
 
-sed -i 's#root /home/site/wwwroot;#root /home/site/wwwroot/public;#g' /etc/nginx/sites-available/default
+echo "Starting app..."
 
-service nginx reload
+cd /home/site/wwwroot
 
-php /home/site/wwwroot/artisan storage:link
+php artisan storage:link
 
 php-fpm
