@@ -188,11 +188,13 @@ class AppointmentService
 
     public function confirmAppointmentBySecretary(int $appointmentId): Appointment
     {
-        $appointment = Appointment::findOrFail($appointmentId);
+         $appointment = Appointment::findOrFail($appointmentId);
 
         if ($appointment->status !== 'scheduled') {
+          
             throw new \Exception('لا يمكن تأكيد هذا الموعد');
         }
+     
 
         $appointment->status = 'confirmed';
         $appointment->save();
@@ -200,10 +202,15 @@ class AppointmentService
         return $appointment;
     }
 
-    private function ensureSlotAvailable(Doctor $doctor, Carbon $appointmentDateTime): void
+    private function ensureSlotAvailable(Doctor $doctor, Carbon $appointmentDateTime)
     {
         if ($appointmentDateTime->lt(Carbon::now())) {
-            throw new \Exception('لا يمكن حجز موعد في الماضي');
+            return[
+                'success' => false,
+                'message' => "لا يمكن حجز موعد في الماضي"
+            ];
+
+           // throw new \Exception('لا يمكن حجز موعد في الماضي');
         }
 
         $day = $this->normalizeDay($appointmentDateTime);
@@ -213,7 +220,11 @@ class AppointmentService
             ->get();
 
         if ($schedules->isEmpty()) {
-            throw new \Exception('الدكتور لا يعمل بهذا اليوم');
+            return [
+                'success' => false,
+                'message' => "الدكتور لا يعمل بهذا اليوم"
+            ];
+           // throw new \Exception('الدكتور لا يعمل بهذا اليوم');
         }
 
         $isInSchedule = false;
@@ -234,7 +245,11 @@ class AppointmentService
         }
 
         if (!$isInSchedule) {
-            throw new \Exception('الوقت المختار غير متاح ضمن دوام الطبيب');
+                return [
+                    'success' => false,
+                    'message' => "الوقت المختار غير متاح ضمن دوام الطبيب"
+                ];
+           // throw new \Exception('الوقت المختار غير متاح ضمن دوام الطبيب');
         }
 
         $exists = Appointment::where('doctor_id', $doctor->id)
@@ -243,9 +258,14 @@ class AppointmentService
             ->exists();
 
         if ($exists) {
-            throw new \Exception('هذا الموعد محجوز مسبقاً');
+                return [
+                    'success' => false,
+                    'message' => "هذا الموعد محجوز مسبقاً"
+                ];
+          //  throw new \Exception('هذا الموعد محجوز مسبقاً');
         }
     }
+
 
     private function createAppointment(int $patientId, int $doctorId, Carbon $appointmentDateTime, string $status): Appointment
     {
@@ -274,6 +294,7 @@ class AppointmentService
     private function findOrCreatePatient(string $patientName, ?string $phoneNumber = null): Patient
     {
         if (!$phoneNumber) {
+            
             throw new \Exception('رقم الهاتف مطلوب لإنشاء ملف مريض جديد');
         }
 

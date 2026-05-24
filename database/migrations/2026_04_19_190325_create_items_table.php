@@ -15,9 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('code')->unique();
-            $table->string('unit'); // مثل: pcs, box
+            $table->string('unit'); // مثل: pcs, 
             $table->integer('minimum_stock')->default(0);
             $table->integer('current_stock')->default(0);
+            //$table->integer('reorder_point')->default(0);
+            $table->integer('max_stock')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

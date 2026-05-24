@@ -3,8 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\InventoryTransaction;
 use App\Services\InventoryTransactionService;
 use App\Models\MaterialRequest;
+use App\Models\Audit;
+use App\Models\AuditItem;
+use App\Models\Inventory;
+use App\Models\Item;
+use App\Models\Disposal;
+use App\Models\DisposalItem;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+
 
 class InventoryTransactionController extends Controller
 {
@@ -14,6 +24,7 @@ class InventoryTransactionController extends Controller
     {
         $this->service = $service;
     }
+
     public function purchase(Request $request)
 {
     $data = $request->validate([
@@ -24,9 +35,15 @@ class InventoryTransactionController extends Controller
         'items.*.quantity' => 'required|integer|min:1',
         'items.*.purchase_price' => 'required|numeric|min:0',
 
-        'issued_at' => 'nullable|date',
+        'items.*.batch_number' => 'nullable|string|max:100',
+        'items.*.expiry_date' => 'nullable|date',
+        'items.*.storage_location' => 'nullable|string|max:255',
+       // 'items.*.unit_cost' => 'nullable|numeric|min:0',
+
+        //'issued_at' => 'nullable|date',
         'notes' => 'nullable|string',
     ]);
+    $data['issued_at'] = now();
 
     $invoice = $this->service->purchaseBulk($data);
 
@@ -36,117 +53,888 @@ class InventoryTransactionController extends Controller
     ]);
 }
 
-    // public function purchase(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'supplier_id' => 'required|exists:suppliers,id',
+////انشاء طلب موادمن الدكتور
+    public function storee(Request $request)
+    {
+        $data = $request->validate([
+            'items' => 'required|array|min:1',
 
-    //         'items' => 'required|array|min:1',
-    //         'items.*.supplier_item_id' => 'required|exists:supplier_items,id',
-    //         'items.*.quantity' => 'required|integer|min:1',
-    //         'items.*.purchase_price' => 'required|numeric|min:0',
+            'items.*.item_id' =>
+                'required|exists:items,id',
 
-    //         'issued_at' => 'nullable|date',
-    //         'notes' => 'nullable|string',
-    //     ]);
+            'items.*.quantity' =>
+                'required|integer|min:1',
 
-    //     $invoice = $this->service->purchaseBulk($data);
+            'notes' => 'nullable|string',
+        ]);
 
-    //     return response()->json([
-    //         'message' => 'Purchase & Invoice created successfully',
-    //         'data' => $invoice
-    //     ]);
-    // }
+        // الدكتور من التوكين
+        $doctorId = Auth::user()->doctor->id;
 
-    //شراء مواد
-// public function purchase(Request $request)
+        $materialRequest = $this->service->create(
+            $doctorId,
+            $data
+        );
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إنشاء الطلب',
+            'data' => $materialRequest
+        ], 201);
+    }
+// //إرجاع مواد
+// public function returnItems(Request $request)
 // {
 //     $data = $request->validate([
-//         'supplier_id' => 'required|exists:suppliers,id',
-
-//         'discount' => 'nullable|numeric|min:0',
-//         'currency' => 'nullable|string',
-//         'exchange_rate' => 'nullable|numeric',
-
-//         'notes' => 'nullable|string',
-
+//         'doctor_id' => 'required|exists:doctors,id',
 //         'items' => 'required|array|min:1',
 //         'items.*.item_id' => 'required|exists:items,id',
 //         'items.*.quantity' => 'required|integer|min:1',
-//         'items.*.purchase_price' => 'required|numeric|min:0',
-//         'issued_at' => 'nullable|date',
+//         'notes' => 'nullable|string',
 //     ]);
 
-//     $invoice = $this->service->purchaseBulk($data);
+//     $result = $this->service->returnItems($data);
 
 //     return response()->json([
-//         'message' => 'Purchase & Invoice created successfully',
-//         'data' => $invoice
+//         'message' => 'Items returned successfully',
+//         'data' => $result
 //     ]);
 // }
-//صرف مواد  
-public function consume(Request $request)
-{
-    $data = $request->validate([
-       // 'treatment_session_id' => 'required|exists:treatment_sessions,id',
-        'doctor_id' => 'required|exists:doctors,id',
-        'items' => 'required|array|min:1',
-        'items.*.item_id' => 'required|exists:items,id',
-        'items.*.quantity' => 'required|integer|min:1',
-        'notes' => 'nullable|string',
-    ]);
+// //رفض طلب المواد
+// public function reject($id)
+// {
+//     $request = MaterialRequest::findOrFail($id);
 
-    $transactions = $this->service->consumeMultiple($data);
+//     $request->update([
+//         'status' => 'rejected'
+//     ]);
 
-    return response()->json([
-        'message' => 'Items consumed successfully',
-        'data' => $transactions
-    ]);
-}
-//إرجاع مواد
-public function returnItems(Request $request)
-{
-    $data = $request->validate([
-        'doctor_id' => 'required|exists:doctors,id',
-        'items' => 'required|array|min:1',
-        'items.*.item_id' => 'required|exists:items,id',
-        'items.*.quantity' => 'required|integer|min:1',
-        'notes' => 'nullable|string',
-    ]);
-
-    $result = $this->service->returnItems($data);
-
-    return response()->json([
-        'message' => 'Items returned successfully',
-        'data' => $result
-    ]);
-}
-//رفض طلب المواد
-public function reject($id)
-{
-    $request = MaterialRequest::findOrFail($id);
-
-    $request->update([
-        'status' => 'rejected'
-    ]);
-
-    return $request;
-}
+//     return $request;
+// }
 // الموافقة على طلب المواد
-public function approve(Request $request, $id)
-{
-    $data = $request->validate([
-        'items' => 'nullable|array',
-        'items.*.item_id' => 'required_with:items|exists:items,id',
-        'items.*.approved_quantity' => 'nullable|integer|min:0'
-    ]);
+// public function approve(Request $request, $id)
+// {
+//     $data = $request->validate([
+//         'items' => 'nullable|array',
+//         'items.*.item_id' => 'required_with:items|exists:items,id',
+//         'items.*.approved_quantity' => 'nullable|integer|min:0'
+//     ]);
 
-    $result = $this->service->approveRequest($id, $data['items'] ?? null);
+//     $result = $this->service->approveRequest($id, $data['items'] ?? null);
+
+//     return response()->json([
+//         'message' => 'Request processed successfully',
+//         'data' => $result
+//     ]);
+// }
+//     /**
+//      * الموافقة على طلب مواد
+//      */
+//    public function approveRequest(Request $request, int $requestId)
+// {
+//     $validated = $request->validate([
+//         'items' => 'nullable|array',
+
+//         'items.*.item_id' =>
+//             'required_with:items|exists:items,id',
+
+//         'items.*.approved_quantity' =>
+//             'required_with:items|integer|min:0',
+//     ]);
+
+//     try {
+
+//         $result = $this->service->approveMaterialRequest(
+//             $requestId,
+//             $validated['items'] ?? null
+//         );
+        
+
+//         return response()->json([
+//             'success' => true,
+//             'message' => 'تمت معالجة الطلب بنجاح',
+//             'data' => $result
+//         ]);
+ 
+
+//     } catch (\Exception $e) {
+
+//         return response()->json([
+//             'success' => false,
+//             'message' => $e->getMessage()
+//         ], 400);
+//     }
+// }
+/**
+ * الموافقة على طلب مواد بالكامل وصرفه
+ */
+public function approveRequest(Request $request, int $requestId)
+{
+    try {
+        // يتم استدعاء الخدمة مباشرة دون الحاجة لمصفوفة تعديل الكميات
+        $result = $this->service->approveMaterialRequest($requestId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تمت الموافقة على الطلب بالكامل وصرف المواد من المخزن بنجاح',
+            'data' => $result
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 400);
+    }
+}
+
+//////////////////////////////////
+ /**
+     * إنشاء جرد جديد
+     */
+    
+    public function audit(Request $request)
+    {
+        $validated = $request->validate([
+            'audit_date' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        $audit = Audit::create([
+            'audit_number' => 'AUDIT-' . date('YmdHis'),
+            'audit_date' => $validated['audit_date'],
+            'status' => 'pending',
+            'notes' => $validated['notes'] ?? null,
+            'started_by' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إنشاء الجرد',
+            'data' => $audit,
+        ], 201);
+    }
+
+    /**
+     * عرض كل الجردات
+     */
+    public function shows()
+    {
+        $audits = Audit::with('items.item')
+            ->latest()
+            ->paginate(20);
+
+        return response()->json([
+            'success' => true,
+            'data' => $audits,
+        ]);
+    }
+
+    // /**
+    //  * عرض جرد واحد
+    //  */
+    // public function showss(int $id)
+    // {
+    //     $audit = Audit::with('items.item')
+    //         ->findOrFail($id);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => $audit,
+    //     ]);
+    // }
+    /**
+ * عرض جرد واحد مجمع (تظهر كل مادة مرة واحدة فقط بمجموع كمياتها المدخلة)
+ */
+public function showss(int $id)
+{
+    $audit = Audit::with('items.item')->findOrFail($id);
+
+    // تجميع العناصر بناءً على id المادة
+    $aggregatedItems = $audit->items->groupBy('item_id')->map(function ($group) {
+        $firstItem = $group->first();
+        
+        // مجموع الكميات الفعلية التي تم عدّها وإدخالها على دفعات
+        $totalActual = $group->sum('actual_quantity');
+
+        // الكمية المتوقعة الفعلية الحالية بالمستودع
+        $expectedQuantity = Inventory::where('item_id', $firstItem->item_id)
+            ->where('is_active', true)
+            ->sum('quantity');
+
+        return [
+            'item_id' => $firstItem->item_id,
+            'item' => $firstItem->item,
+            'expected_quantity' => $expectedQuantity,
+            'actual_quantity' => $totalActual,
+            'variance' => $totalActual - $expectedQuantity,
+            // دمج مبررات الفروقات من كافة الدفعات إن وجدت في مصفوفة واحدة
+            'variance_reasons' => $group->pluck('variance_reason')->filter()->values()->all(),
+        ];
+    })->values();
+
+    // تجهيز البيانات لإرسالها بالـ Response
+    $auditData = $audit->toArray();
+    $auditData['items'] = $aggregatedItems; // استبدال القائمة المكررة بالقائمة المجمّعة
 
     return response()->json([
-        'message' => 'Request processed successfully',
-        'data' => $result
+        'success' => true,
+        'data' => $auditData,
     ]);
 }
 
+    // /**
+    //  * إضافة مادة للجرد
+    //  */
+    // public function addItem(Request $request, int $auditId)
+    // {
+    //     $validated = $request->validate([
+    //         'item_id' => 'required|exists:items,id',
+    //         'actual_quantity' => 'required|integer|min:0',
+    //         'variance_reason' => 'nullable|string',
+    //     ]);
+
+    //     $audit = Audit::findOrFail($auditId);
+
+    //     if ($audit->status !== 'pending') {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'الجرد غير قابل للتعديل'
+    //         ], 400);
+    //     }
+
+    //     $exists = AuditItem::where('audit_id', $auditId)
+    //         ->where('item_id', $validated['item_id'])
+    //         ->exists();
+
+    //     if ($exists) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'المادة موجودة مسبقاً'
+    //         ], 400);
+    //     }
+
+    //     $expectedQuantity = Inventory::where('item_id', $validated['item_id'])
+    //         ->where('is_active', true)
+    //         ->sum('quantity');
+
+    //     $variance = $validated['actual_quantity'] - $expectedQuantity;
+
+    //     $auditItem = AuditItem::create([
+    //         'audit_id' => $auditId,
+    //         'item_id' => $validated['item_id'],
+    //         'expected_quantity' => $expectedQuantity,
+    //         'actual_quantity' => $validated['actual_quantity'],
+    //         'variance' => $variance,
+    //         'variance_reason' => $validated['variance_reason'] ?? null,
+    //     ]);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'تمت إضافة المادة للجرد',
+    //         'data' => $auditItem->load('item'),
+    //     ], 201);
+    // }
+
+    /**
+ * إضافة مادة للجرد (تسمح بالتكرار على دفعات)
+ */
+// public function addItem(Request $request, int $auditId)
+// {
+//     $validated = $request->validate([
+//         'item_id' => 'required|exists:items,id',
+//         'quantity_actual' => 'required|integer|min:0',
+//         'variance_reason' => 'nullable|string',
+        
+//     ]);
+
+//     $audit = Audit::findOrFail($auditId);
+
+//     if ($audit->status !== 'pending') {
+//         return response()->json([
+//             'success' => false,
+//             'message' => 'الجرد مغلق وغير قابل للتعديل'
+//         ], 400);
+//     }
+
+//     // 🚀 [تم حذف شرط التحقق من الوجود المسبق هنا للسماح بالإدخال المتكرر]
+
+//     // جلب المتوقع الإجمالي الحالي في النظام لهذه المادة
+//     $expectedQuantity = Inventory::where('item_id', $validated['item_id'])
+//         ->where('is_active', true)
+//         ->sum('quantity');
+
+//     // حساب فارق مبدئي لهذا السطر (سيتم ضبط الفارق الحقيقي النهائي عند التجميع والموافقة)
+//     $variance = $validated['quantity_actual'] - $expectedQuantity;
+
+//     $auditItem = AuditItem::create([
+//         'audit_id' => $auditId,
+//         'item_id' => $validated['item_id'],
+//         'quantity_expected' => $expectedQuantity, 
+//         'quantity_actual' => $validated['quantity_actual'],
+//         'variance' => $variance,
+//         'variance_reason' => $validated['variance_reason'] ?? null,
+//     ]);
+
+//     return response()->json([
+//         'success' => true,
+//         'message' => 'تم تسجيل كمية المادة في الجرد بنجاح',
+//         'data' => $auditItem->load('item'),
+//     ], 201);
+// }
+//اضافة مواد للجرد
+public function addItem(Request $request, int $auditId)
+{
+    $validated = $request->validate([
+        'item_id' => 'required|exists:items,id',
+        'quantity_actual' => 'required|integer|min:0',
+    ]);
+
+    $audit = Audit::findOrFail($auditId);
+    
+    // تسجيل الإدخال كـ "سجل خام" (سجل عدّ)
+    $entry = AuditItem::create([
+        'audit_id' => $auditId,
+        'item_id' => $validated['item_id'],
+        'quantity_actual' => $validated['quantity_actual'],
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تسجيل الكمية بنجاح'
+    ]);
+}
+//عرض نتيجة الجرد
+
+public function getAuditResult($auditId)
+{
+    // 1. جلب البيانات المجمعة لكل مادة
+    $results = AuditItem::where('audit_id', $auditId)
+        ->select('item_id', DB::raw('SUM(quantity_actual) as total_actual'))
+        ->groupBy('item_id')
+        ->get();
+
+    $itemsReport = [];
+    $grandTotalVariance = 0; // متغير لحساب النقص أو الفائض الكلي
+
+    foreach ($results as $row) {
+        $expected = Inventory::where('item_id', $row->item_id)->sum('quantity');
+        $variance = $row->total_actual - $expected;
+        
+        // تراكم الفارق الكلي
+        $grandTotalVariance += $variance;
+
+        $itemsReport[] = [
+            'item_id' => $row->item_id,
+            'item_name' => \App\Models\Item::find($row->item_id)->name ?? 'غير معروف',
+            'total_actual' => (int) $row->total_actual,
+            'total_expected' => (int) $expected,
+            'variance' => (int) $variance
+        ];
+    }
+
+    return response()->json([
+        'success' => true,
+        'details' => $itemsReport, // تفاصيل كل مادة
+        'summary' => [
+            'total_items_count' => count($itemsReport),
+            'grand_total_variance' => (int) $grandTotalVariance,
+            'status' => $grandTotalVariance === 0 ? 'مطابق' : ($grandTotalVariance > 0 ? 'فائض' : 'عجز')
+        ]
+    ]);
+}
+// مسار خاص لتحديث سبب النقص
+// public function updateVarianceReason(Request $request, $auditItemId) 
+// {
+//     $request->validate(['reason' => 'required|string']);
+    
+//     $item = AuditItem::findOrFail($auditItemId);
+//     $item->update([
+//         'variance_reason' => $request->reason,
+//         'is_resolved' => true // أصبح هذا النقص مبرراً ومعلوماً
+//     ]);
+    
+//     return response()->json(['message' => 'تم حفظ التبرير بنجاح']);
+// }
+public function updateVarianceReason(Request $request, $auditId, $itemId) 
+{
+    $request->validate(['reason' => 'required|string']);
+    
+    // تحديث كل السجلات التي تنتمي لهذه المادة في هذا الجرد بالتحديد
+    $updatedCount = AuditItem::where('audit_id', $auditId)
+        ->where('item_id', $itemId)
+        ->update([
+            'variance_reason' => $request->reason,
+            //'is_resolved' => true
+        ]);
+    
+    if ($updatedCount === 0) {
+        return response()->json(['message' => 'لم يتم العثور على سجلات لهذه المادة في هذا الجرد'], 404);
+    }
+    
+    return response()->json(['message' => 'تم حفظ التبرير بنجاح لجميع سجلات المادة']);
+}
+
+// public function getAuditResult($auditId)
+// {
+//     // 1. جلب إجمالي الكمية المتوقعة في النظام (ثابت)
+//     // 2. جلب مجموع الكميات التي أدخلها الموظف (مجمع)
+    
+//     $results = AuditItem::where('audit_id', $auditId)
+//         ->select('item_id', DB::raw('SUM(quantity_actual) as total_actual'))
+//         ->groupBy('item_id')
+//         ->get();
+
+//     $finalReport = $results->map(function ($row) {
+//         $expected = Inventory::where('item_id', $row->item_id)->sum('quantity');
+        
+//         return [
+//             'item_id' => $row->item_id,
+//             'total_actual' => $row->total_actual,
+//             'total_expected' => $expected,
+//             'variance' => $row->total_actual - $expected
+//         ];
+//     });
+
+//     return response()->json($finalReport);
+// }
+
+    // /**
+    //  * إنهاء الجرد بدون تسوية
+    //  */
+    // public function complete(int $auditId)
+    // {
+    //     $audit = Audit::findOrFail($auditId);
+
+    //     if ($audit->status !== 'pending') {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'الجرد مكتمل مسبقاً'
+    //         ], 400);
+    //     }
+
+    //     $audit->update([
+    //         'status' => 'waiting_approval',
+    //         'completed_date' => now(),
+    //         'completed_by' => Auth::id(),
+    //     ]);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'تم إنهاء الجرد وبانتظار الموافقة',
+    //         'data' => $audit,
+    //     ]);
+    // }
+    public function complete(int $auditId)
+{
+    $audit = Audit::findOrFail($auditId);
+
+    if ($audit->status !== 'pending') {
+        return response()->json([
+            'success' => false,
+            'message' => 'الجرد مكتمل مسبقاً'
+        ], 400);
+    }
+
+    // 1. احسبي الإجماليات أولاً
+    $auditItems = AuditItem::where('audit_id', $auditId)->get();
+    
+    $totalItems = $auditItems->groupBy('item_id')->count();
+    
+    // حساب الفارق الكلي بناءً على منطقنا السابق
+    $totalVariance = $auditItems->groupBy('item_id')->map(function ($items) {
+        $actual = $items->sum('quantity_actual');
+        $expected = Inventory::where('item_id', $items->first()->item_id)->sum('quantity');
+        return $actual - $expected;
+    })->sum();
+
+    // 2. حدثي الـ Audit مع القيم المحسوبة
+    $audit->update([
+        'status' => 'waiting_approval',
+        'completed_date' => now(),
+        'completed_by' => Auth::id(),
+        'total_items' => $totalItems,       // <-- هاد اللي كان ناقصك
+        'total_variance' => $totalVariance, // <-- هاد اللي كان ناقصك
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم إنهاء الجرد وبانتظار الموافقة',
+        'data' => $audit, // الآن سيظهر لكِ القيم المحدثة
+    ]);
+}
+//     //عرض الجردات في انتظار الموافقة
+//     public function pendingApproval()
+// {
+//     $audits = Audit::with('items.item')
+//         ->where('status', 'waiting_approval')
+//         ->latest()
+//         ->get();
+
+//     return response()->json([
+//         'success' => true,
+//         'data' => $audits,
+//     ]);
+// }
+// public function pendingApproval()
+// {
+//     $audits = Audit::where('status', 'waiting_approval')->latest()->get();
+
+//     $data = $audits->map(function ($audit) {
+//         // تجميع المواد داخل كل جردة
+//         $groupedItems = $audit->items->groupBy('item_id')->map(function ($items) {
+//             return [
+//                 'item_name' => $items->first()->item->name ?? 'غير معروف',
+//                 'total_actual' => $items->sum('actual_quantity'),
+//                 'item_id' => $items->first()->item_id
+//             ];
+//         });
+
+//         return [
+//             'id' => $audit->id,
+//             'audit_number' => $audit->audit_number,
+//             'items' => $groupedItems->values() // إرجاعها كمصفوفة نظيفة
+//         ];
+//     });
+
+//     return response()->json(['success' => true, 'data' => $data]);
+// }
+// public function pendingApproval()
+// {
+//     // نجلب الجردات التي تنتظر الموافقة فقط
+//     $audits = Audit::where('status', 'waiting_approval')->latest()->get();
+
+//     $data = $audits->map(function ($audit) {
+        
+//         // هنا نجلب البيانات من جدول AuditItem مباشرة لنضمن الدقة
+//         $groupedItems = \App\Models\AuditItem::where('audit_id', $audit->id)
+//             ->join('items', 'audit_items.item_id', '=', 'items.id')
+//             ->select(
+//                 'items.name as item_name',
+//                 'audit_items.item_id',
+//                 DB::raw('SUM(audit_items.quantity_actual) as total_actual') // تأكدي من اسم الحقل هنا (هل هو quantity_actual؟)
+//             )
+//             ->groupBy('audit_items.item_id', 'items.name')
+//             ->get();
+
+//         return [
+//             'id' => $audit->id,
+//             'audit_number' => $audit->audit_number,
+//             'items' => $groupedItems
+//         ];
+//     });
+
+//     return response()->json(['success' => true, 'data' => $data]);
+// }
+public function getPendingAuditsReport()
+{
+    $pendingAudits = Audit::where('status', 'waiting_approval')->get();
+
+    $report = $pendingAudits->map(function ($audit) {
+        
+        // 1. جلب البيانات مع جلب عمود السبب (reason)
+        $results = AuditItem::where('audit_id', $audit->id)
+            ->select('item_id', 'variance_reason', DB::raw('SUM(quantity_actual) as total_actual'))
+            ->groupBy('item_id', 'variance_reason') // تجميع حسب المادة والسبب
+            ->get();
+
+        $itemsReport = [];
+        $grandTotalVariance = 0;
+
+        foreach ($results as $row) {
+            $expected = Inventory::where('item_id', $row->item_id)->sum('quantity');
+            $variance = $row->total_actual - $expected;
+            
+            $grandTotalVariance += $variance;
+
+            $itemsReport[] = [
+                'item_id' => $row->item_id,
+                'item_name' => \App\Models\Item::find($row->item_id)->name ?? 'غير معروف',
+                'total_actual' => (int) $row->total_actual,
+                'total_expected' => (int) $expected,
+                'variance' => (int) $variance,
+                'variance_reason' => $row->variance_reason ?? 'لا يوجد سبب مسجل' // هنا عرضنا السبب
+            ];
+        }
+
+        return [
+            'audit_id' => $audit->id,
+            'audit_number' => $audit->audit_number,
+            'items' => $itemsReport,
+            'summary' => [
+                'total_items_count' => count($itemsReport),
+                'grand_total_variance' => (int) $grandTotalVariance,
+                'status' => $grandTotalVariance === 0 ? 'مطابق' : ($grandTotalVariance > 0 ? 'فائض' : 'عجز')
+            ]
+        ];
+    });
+
+    return response()->json([
+        'success' => true,
+        'data' => $report
+    ]);
+}
+    /**
+     * موافقة المدير على الجرد + تنفيذ التسوية
+     */
+    public function approved(int $auditId)
+    {
+        $audit = $this->service->approveAudit($auditId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تمت الموافقة على الجرد وتسوية الفروقات',
+            'data' => $audit,
+        ]);
+    }
+//     /**
+//      * إنشاء طلب إتلاف
+//      */
+//     public function store(Request $request)
+//     {
+//         $validated = $request->validate([
+
+//             'reason' => 'required|in:expired,damaged,loss,recall,other',
+
+//             'reason_notes' => 'nullable|string',
+
+//             'items' => 'required|array|min:1',
+
+//             'items.*.inventory_id' => 'required|exists:inventories,id',
+
+//             'items.*.quantity' => 'required|integer|min:1',
+//         ]);
+
+//         $disposal = Disposal::create([
+//             'disposal_number' => 'DISPOSAL-' . date('YmdHis'),
+//             'reason' => $validated['reason'],
+//             'reason_notes' => $validated['reason_notes'] ?? null,
+//             'status' => 'pending',
+//             'created_by' => Auth::id(),
+//         ]);
+
+//         foreach ($validated['items'] as $itemData) {
+
+//             $inventory = Inventory::findOrFail($itemData['inventory_id']);
+
+//             if ($itemData['quantity'] > $inventory->quantity) {
+
+//                 return response()->json([
+//                     'success' => false,
+//                     'message' => 'الكمية المطلوبة أكبر من المتوفرة'
+//                 ], 400);
+//             }
+
+//             DisposalItem::create([
+//                 'disposal_id' => $disposal->id,
+//                 'item_id' => $inventory->item_id,
+//                 'inventory_id' => $inventory->id,
+//                 'batch_number' => $inventory->batch_number,
+//                 'quantity' => $itemData['quantity'],
+//             ]);
+//         }
+
+//         return response()->json([
+//             'success' => true,
+//             'message' => 'تم إنشاء طلب الإتلاف',
+//             'data' => $disposal->load('items'),
+//         ], 201);
+//     }
+
+//     /**
+//      * موافقة المدير وتنفيذ الإتلاف
+//      */
+//     public function approve(int $id)
+//     {
+//         $disposal = $this->service->executeDisposal($id);
+
+//         return response()->json([
+//             'success' => true,
+//             'message' => 'تم تنفيذ الإتلاف',
+//             'data' => $disposal,
+//         ]);
+//     }
+
+//     /**
+//      * عرض كل الإتلافات
+//      */
+//     public function index()
+//     {
+//         $disposals = Disposal::with('items.item')
+//             ->latest()
+//             ->paginate(20);
+
+//         return response()->json([
+//             'success' => true,
+//             'data' => $disposals,
+//         ]);
+//     }
+
+//     /**
+//      * عرض إتلاف واحد
+//      */
+//     public function show(int $id)
+//     {
+//         $disposal = Disposal::with('items.item')
+//             ->findOrFail($id);
+
+//         return response()->json([
+//             'success' => true,
+//             'data' => $disposal,
+//         ]);
+//     }
+
+//     /**
+//  * جلب كافة الدفعات المنتهية الصلاحية والمجمدة والتي تنتظر الإتلاف
+//  */
+// public function getExpiredBatches()
+// {
+//     $expired = Inventory::where('is_active', false) // مجمدة
+//         ->where('quantity', '>', 0)                // لا يزال بها كمية لم تُتلف
+//         ->where('expiry_date', '<', now()->startOfDay()) // منتهية الصلاحية فعلياً
+//         ->with('item')
+//         ->get();
+
+//     return response()->json([
+//         'success' => true,
+//         'data' => $expired
+//     ]);
+// }
+/**
+     * موافقة الأدمن على طلب الإتلاف المعلق (النظام أو اليدوي)
+     */
+    public function approve(int $id)
+    {
+        try {
+            $disposal = $this->service->executeDisposal($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تمت الموافقة وتصفير كميات المواد التالفة من المخازن نهائياً وبأمان',
+                'data' => $disposal
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * عرض جميع طلبات الإتلاف المعلقة لمراجعتها باللوحة
+     */
+    public function getPendingDisposals()
+    {
+        $pending = Disposal::with('items.item')
+            ->where('status', 'pending')
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $pending
+        ]);
+    }
+/**
+ * إنشاء وإتلاف المواد يدوياً فوراً (خاص بأمينة المستودع)
+ * POST /api/disposals/manual-immediate
+ */
+public function storeManualImmediate(Request $request)
+{
+    $validated = $request->validate([
+        'reason' => 'required|in:broken,damaged,spoiled,other',
+        'reason_notes' => 'required|string',
+        'items' => 'required|array|min:1',
+        'items.*.inventory_id' => 'required|exists:inventories,id',
+        'items.*.item_id' => 'required|exists:items,id',
+        'items.*.quantity' => 'required|integer|min:1',
+    ]);
+
+    try {
+        // استدعاء العملية الفورية وتمرير معرف أمينة المستودع الحالية
+        $disposal = $this->service->executeImmediateManualDisposal($validated, Auth::id());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تنفيذ الإتلاف الفوري وتحديث المخازن في نفس اللحظة بنجاح ✅',
+            'data' => $disposal
+        ], 201);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 400);
+    }
+}
+/**
+ * جلب كافة الدفعات المتاحة لمادة معينة (تستخدم عند إضافة مادة للجرد أو طلب المواد)
+ */
+public function getByItem($item_id)
+    {
+        // جلب الدفعات المتاحة لهذه المادة فقط
+        $batches = Inventory::where('item_id', $item_id)
+            ->where('quantity', '>', 0) // لا نحتاج عرض دفعات نفدت كميتها
+            ->where('is_active', true)  // التأكد أنها مفعلة
+            ->orderBy('expiry_date', 'asc') // ترتيب الدفعات حسب تاريخ الانتهاء (الأقدم أولاً)
+            ->get();
+
+        if ($batches->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لا توجد دفعات متاحة لهذه المادة'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $batches
+        ]);
+    }
+//     //عرض جميع المواد منتهية الصلاحية قبل اتلافها 
+//     public function getExpiredItems()
+// {
+//     return Inventory::where('is_active', false)
+//         ->where('quantity', '>', 0) // موجودة في المخزن
+//         ->whereNotNull('expiry_date')
+//         ->whereDoesntHave('disposalItems.disposal', function ($query) {
+//             $query->where('status', 'completed'); // استثني المواد التي تم إتلافها نهائياً
+//         })
+//         ->with('item')
+//         ->get();
+// }
+public function getExpiredItems()
+{
+    return Inventory::where('is_active', false)
+        ->where('quantity', '>', 0)
+        ->whereNotNull('expiry_date')
+        // هنا التعديل: استثني فقط الحالات التي أصبحت 'completed'
+        // أي مادة لديها طلب 'pending' ستستمر بالظهور، وهذا هو المنطق السليم!
+        ->where(function ($query) {
+            $query->whereDoesntHave('disposalItems.disposal') // المادة التي ليس لها أي طلب إتلاف
+                  ->orWhereHas('disposalItems.disposal', function ($q) {
+                      $q->where('status', '!=', 'completed'); // أو لديها طلب لم يكتمل بعد
+                  });
+        })
+        ->with('item')
+        ->get();
+}
+//عرض جميع المواد التي تم اتلافها للادمن 
+public function getDisposedItemsHistory()
+{
+    // عرض كل المواد التي تمت الموافقة على إتلافها
+    return DisposalItem::whereHas('disposal', function($query) {
+        $query->where('status', 'completed');
+    })
+    ->with(['item', 'disposal'])
+    ->get();
+}
+// عرض المواد التي وصلت إلى حدها الأدنى من المخزون (تحت أو يساوي الحد الأدنى)
+public function getLowStockItems()
+{
+    return Item::where('is_active', true)
+        ->whereColumn('current_stock', '<=', 'minimum_stock')
+        ->get();
+}
 }

@@ -21,6 +21,7 @@ class DoctorFinanceService
         $amountSypProvided = array_key_exists('amount_syp', $data) && !is_null($data['amount_syp']);
 
         if (!$amountUsdProvided && !$amountSypProvided) {
+            
             throw new \InvalidArgumentException('يجب إرسال مبلغ بالدولار أو بالليرة على الأقل');
         }
 
@@ -121,7 +122,11 @@ class DoctorFinanceService
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
+            return [
+                'success' => false,
+                'message' => "هذا المستخدم ليس دكتور"
+            ];
+            //throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
         return $this->getDoctorSummary($doctor->id);

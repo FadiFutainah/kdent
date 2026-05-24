@@ -10,6 +10,7 @@ class InventoryTransaction extends Model
         'item_id',
        // 'treatment_session_id',
         'doctor_id',
+        'inventory_id',
         'supplier_id',
         'type',
         'quantity',
@@ -17,6 +18,7 @@ class InventoryTransaction extends Model
         'purchase_price',
         'notes'
     ];
+
 
     public function item()
     {

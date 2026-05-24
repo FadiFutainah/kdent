@@ -24,4 +24,7 @@ public function invoices()
 // {
 //     return $this->belongsToMany(Item::class, 'supplier_items');
 // }
+///////////////////////////////
+  public function inventory()
+   { return $this->hasMany(Inventory::class);  }
 }

@@ -60,13 +60,19 @@ class AuthServices {
     public function verifyOtp($phone, $code) {
         $user = $this->repo->findByIdentifier($phone);
 
-        if (!$user || $user->otp_code != $code) {
-            throw new Exception("كود التحقق غير صحيح.");
-        }
+       if (!$user || $user->otp_code != $code) {
+        return [
+            'success' => false,
+            'message' => 'كود التحقق غير صحيح.'
+        ];
+    }
 
-        if (now()->isAfter($user->otp_expires_at)) {
-            throw new Exception("انتهت صلاحية الكود، اطلب كوداً جديداً.");
-        }
+    if (now()->isAfter($user->otp_expires_at)) {
+        return [
+            'success' => false,
+            'message' => 'انتهت صلاحية الكود.'
+        ];
+    }
 
         $user->update([
             'is_verified' => true,
@@ -81,23 +87,31 @@ class AuthServices {
     $user = $this->repo->findByIdentifier($phone);
 
     if (!$user) {
-        throw new Exception("المستخدم غير موجود");
+        return [
+            'success' => false,
+            'message' => "المستخدم غير موجود"
+        ];
+       // throw new Exception("المستخدم غير موجود");
     }
 
     // إذا الحساب متفعل أصلاً
     if ($user->is_verified) {
-        throw new Exception("الحساب مفعل بالفعل");
+        return [
+            'success' => false,
+            'message' => "الحساب مفعل بالفعل"
+        ];
+       // throw new Exception("الحساب مفعل بالفعل");
     }
 
     // (اختياري) منع السبام - إذا الكود لسا ما انتهى
     if ($user->otp_expires_at && now()->lt($user->otp_expires_at)) {
-        throw new Exception("الكود الحالي ما زال صالح، حاول لاحقاً");
+            return [
+                'success' => false,
+                'message' => "الكود الحالي ما زال صالح، حاول لاحقاً"
+            ];
+       // throw new Exception("الكود الحالي ما زال صالح، حاول لاحقاً");
     }
-      // 🔥 منع السبام (انتظار 60 ثانية)
-    // if ($user->last_otp_sent_at && now()->diffInSeconds($user->last_otp_sent_at) < 60) {
-    //     throw new Exception("انتظر دقيقة قبل طلب كود جديد");
-    // }
-
+     
     // توليد كود جديد
     $otp = rand(1000, 9999);
 
@@ -113,64 +127,7 @@ class AuthServices {
     return "تم إرسال كود تحقق جديد عبر واتساب";
 }
 
-    // 4. تسجيل الدخول المعدل (يستقبل مصفوفة $data)
-    // public function login($data) {
-    //     // استخراج البيانات من المصفوفة القادمة من الـ Controller
-       
-    //     $identifier = $data['login_field'] ?? null;
-    //     $password = $data['password'] ?? null;
-    //     $role = $data['role'] ?? null; // هذا الرول الذي اختاره المستخدم من أول واجهة
-
-    //     // التأكد من أن الواجهة أرسلت الرول فعلاً
-    //     if (!$role) {
-    //         throw new Exception("يجب تحديد نوع الحساب (طبيب، مريض...) من الواجهة.");
-    //     }
-
-    //     $user = $this->repo->findByIdentifier($identifier);
-
-    //     // فحص وجود المستخدم وكلمة المرور
-    //     if (!$user || !Hash::check($password, $user->password)) {
-    //         throw new Exception("بيانات الدخول غير صحيحة");
-    //     }
-
-    //     // فحص هل المستخدم يملك الرول الذي اختاره أم لا
-    //     // هنا حل مشكلة الـ TypeError لأننا تأكدنا أن $role ليس null
-    //     if (!$user->hasRole($role)) {
-    //         throw new Exception("هذا الحساب غير مسجل كـ $role");
-    //     }
-
-    //     // فحص التفعيل للمرضى فقط
-    //     if ($role === 'patient' && !$user->is_verified) {
-    //         throw new Exception("يرجى تفعيل الحساب عبر واتساب أولاً.");
-    //     }
-
-    //     // إصدار التوكن في حال نجاح كل الفحوصات
-    //     return $user->createToken('auth_token')->plainTextToken;
-    // }
-//     public function login($data)
-// {
-//     $identifier = $data['login_field'] ?? null;
-//     $password = $data['password'] ?? null;
-
-//     $user = $this->repo->findByIdentifier($identifier);
-
-//     if (!$user || !Hash::check($password, $user->password)) {
-//         throw new Exception("بيانات الدخول غير صحيحة");
-//     }
-
-//     // تحقق تفعيل المريض فقط
-//     if ($user->hasRole('patient') && !$user->is_verified) {
-//         throw new Exception("يرجى تفعيل الحساب أولاً.");
-//     }
-
-//     $token = $user->createToken('auth_token')->plainTextToken;
-
-//     return [
-//         'token' => $token,
-//         'user' => $user,
-//         'roles' => $user->getRoleNames()
-//     ];
-// }
+   
 public function login($data)
 {
     $identifier = $data['login_field'] ?? null;
@@ -179,10 +136,12 @@ public function login($data)
 
     $user = $this->repo->findByIdentifier($identifier);
 
-    if (!$user || !Hash::check($password, $user->password)) {
-        throw new Exception("بيانات الدخول غير صحيحة");
-    }
-
+   if (!$user || !Hash::check($password, $user->password)) {
+    return [
+        'success' => false,
+        'message' => 'بيانات الدخول غير صحيحة'
+    ];
+}
     // إصلاح بيانات قديمة: إذا كان للمستخدم ملف مريض بدون role نربطه تلقائياً.
     if ($user->getRoleNames()->isEmpty() && $user->patient()->exists()) {
         $user->assignRole('patient');
@@ -192,18 +151,34 @@ public function login($data)
 
     $actualRole = $user->getRoleNames()->first();
     if (!$actualRole) {
-        throw new Exception("هذا الحساب لا يملك أي role. راجع إنشاء الحساب أو الإسناد.");
+       // throw new Exception("هذا الحساب لا يملك أي role. راجع إنشاء الحساب أو الإسناد.");
+        return [
+            'success' => false,
+            'message' => 'هذا الحساب لا يملك أي role. راجع إنشاء الحساب أو الإسناد.'
+        ];
     }
 
     // تحقق تفعيل المريض
-    if ($user->hasRole('patient') && !$user->is_verified) {
-        throw new Exception("يرجى تفعيل الحساب أولاً.");
+    if ($user->hasRole('patient') && !$user->is_verified) 
+        {
+        // throw new Exception("يرجى تفعيل الحساب أولاً.");
+        return [
+            'success' => false,
+            'message' => 'يرجى تفعيل الحساب أولاً.'
+        ];
     }
 
     // 🎯 التحقق من الرول (اختياري)
-    if ($role && !$user->hasRole($role)) {
-        throw new Exception("هذا الحساب ليس {$role}، الدور الصحيح هو {$actualRole}");
-    }
+    if ($role && !$user->hasRole($role))
+        {
+    return [
+        'success' => false,
+        'message' => 'هذا الحساب ليس {$role}، الدور الصحيح هو {$actualRole}'
+    ];
+}
+    //      {
+    //     throw new Exception("هذا الحساب ليس {$role}، الدور الصحيح هو {$actualRole}");
+    // }
 
     // ✅ دخول طبيعي
     $token = $user->createToken('auth_token')->plainTextToken;

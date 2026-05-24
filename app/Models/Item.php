@@ -12,6 +12,8 @@ class Item extends Model
         'unit',
         'minimum_stock',
         'current_stock',
+        //'reorder_point',
+        'max_stock',
         'is_active'
     ];
 
@@ -35,6 +37,26 @@ class Item extends Model
 public function invoice()
     {
         return $this->hasMany(Invoice_Item::class);
+    }
+    ////////////////////////////
+     public function inventory()
+     {
+ return $this->hasMany(Inventory::class);
+     }
+
+      public function getTotalQuantity(): int
+    {
+        return $this->inventory->where('is_active', true)->sum('quantity');
+    }
+    
+    public function getAvailableQuantity(): int
+    {
+        return $this->inventory->where('is_active', true)->sum('quantity_available');
+    }
+    
+    public function getReservedQuantity(): int
+    {
+        return $this->inventory->where('is_active', true)->sum('quantity_reserved');
     }
 
 }

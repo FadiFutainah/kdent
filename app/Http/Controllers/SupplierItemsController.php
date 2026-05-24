@@ -11,27 +11,53 @@ class SupplierItemsController extends Controller
     {
         $this->service = $service;
     }
-  public function store(Request $request)
-    {
-        $data = $request->validate([
-            'name' => 'required|string',
-            'phone' => 'nullable|string',
-            'notes' => 'nullable|string',
+//    //انشاء مورد  
+//   public function store(Request $request)
+//     {
+//         $data = $request->validate([
+//             'name' => 'required|string',
+//             'phone' => 'nullable|string',
+//             'notes' => 'nullable|string',
 
-            'items' => 'required|array',
+//             'items' => 'required|array',
 
-            'items.*.item_id' => 'nullable|exists:items,id',
-            'items.*.name' => 'nullable|string',
-            'items.*.unit' => 'nullable|string',
-        ]);
+//             'items.*.item_id' => 'nullable|exists:items,id',
+//             'items.*.name' => 'nullable|string',
+//             'items.*.unit' => 'nullable|string',
+//         ]);
 
-        $supplier = $this->service->createSupplierWithItems($data);
+//         $supplier = $this->service->createSupplierWithItems($data);
 
-        return response()->json([
-            'message' => 'Supplier created successfully',
-            'data' => $supplier
-        ]);
-    }
+//         return response()->json([
+//             'message' => 'Supplier created successfully',
+//             'data' => $supplier
+//         ]);
+//     }
+
+public function store(Request $request)
+{
+    $data = $request->validate([
+        'name' => 'required|string',
+        'phone' => 'nullable|string',
+        'notes' => 'nullable|string',
+        'items' => 'required|array',
+        
+        // التحقق من الحقول المضافة
+        'items.*.item_id' => 'nullable|exists:items,id',
+        'items.*.name' => 'required_without:items.*.item_id|string', // اسم المادة مطلوب إذا لم تكن موجودة
+        'items.*.code' => 'nullable|string',
+        'items.*.unit' => 'nullable|string',
+        'items.*.minimum_stock' => 'nullable|integer', // أضفنا هذه
+        'items.*.max_stock' => 'nullable|integer',     // أضفنا هذه
+    ]);
+
+    $supplier = $this->service->createSupplierWithItems($data);
+
+    return response()->json([
+        'message' => 'Supplier created successfully',
+        'data' => $supplier
+    ]);
+}
 
 //  public function store(Request $request)
 //     {
@@ -68,15 +94,19 @@ class SupplierItemsController extends Controller
     //         'data' => $item
     //     ]);
     // }
+
     //تثبيت مواد كدفعة وحدة
     public function stores(Request $request)
 {
     $data = $request->validate([
+        
         'items' => 'required|array',
         'items.*.name' => 'required|string|max:255',
         'items.*.code' => 'required|string|max:50|unique:items,code',
         'items.*.unit' => 'required|string|max:50',
         'items.*.minimum_stock' => 'required|integer|min:0',
+        'items.*.max_stock' => 'required|integer|min:0',
+
     ]);
 
     $items = $this->service->createBulkItems($data['items']);
@@ -86,6 +116,7 @@ class SupplierItemsController extends Controller
         'data' => $items
     ]);
 }
+
 //عرض المواد المتاحة
 public function availableItems()
 {

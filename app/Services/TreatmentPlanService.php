@@ -20,7 +20,11 @@ class TreatmentPlanService
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
+                return [
+                    'success' => false,
+                    'message' => "هذا المستخدم ليس دكتور"
+                ];
+           // throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
         return DB::transaction(function () use ($data, $doctor) {
@@ -41,7 +45,11 @@ class TreatmentPlanService
     ]);
   // ✅ تأكيد النوع (احتياط)
         if ($invoice->type !== 'patient') {
-            throw new \Exception('Invoice type must be patient');
+            return [
+                'success' => false,
+                'message' => "Invoice type must be patient"
+            ];
+           // throw new \Exception('Invoice type must be patient');
         }
         return $plan->load([
             'items.category',
@@ -246,7 +254,11 @@ class TreatmentPlanService
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
+            return [
+                'success' => false,
+                'message' => "هذا المستخدم ليس دكتور"
+            ];
+           // throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
         $plan = Treatment_Plan::where('id', $planId)
@@ -257,7 +269,11 @@ class TreatmentPlanService
         $sypProvided = array_key_exists('price_syp', $data) && !is_null($data['price_syp']);
 
         if (empty($data['category_id']) || (!$usdProvided && !$sypProvided)) {
-            throw new \Exception('يجب تحديد اسم العلاج والسعر المتوقع');
+                return [
+                    'success' => false,
+                    'message' => "يجب تحديد اسم العلاج والسعر المتوقع"
+                ];
+           // throw new \Exception('يجب تحديد اسم العلاج والسعر المتوقع');
         }
 
         $payload = $this->applyItemExchangeRate($data);
@@ -279,7 +295,11 @@ class TreatmentPlanService
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
+                return [
+                    'success' => false,
+                    'message' => "هذا المستخدم ليس دكتور"
+                ];
+           // throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
         $plan = Treatment_Plan::where('id', $planId)
@@ -328,7 +348,11 @@ class TreatmentPlanService
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
+                return [
+                        'success' => false,
+                        'message' => "هذا المستخدم ليس دكتور"
+                    ];
+           // throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
         $plan = Treatment_Plan::where('id', $planId)
@@ -380,7 +404,11 @@ class TreatmentPlanService
         if ($user->hasRole('doctor')) {
             $doctor = $user->doctor;
             if (!$doctor) {
-                throw new \Exception('هذا المستخدم ليس دكتور');
+                return [
+                    'success' => false,
+                    'message' => "هذا المستخدم ليس دكتور"
+                ];
+               // throw new \Exception('هذا المستخدم ليس دكتور');
             }
 
             return [
@@ -393,7 +421,11 @@ class TreatmentPlanService
         else if ($user->hasRole('patient')) {
             $patient = $user->patient;
             if (!$patient) {
-                throw new \Exception('هذا المستخدم ليس مريض');
+                    return [
+                        'success' => false,
+                        'message' => "هذا المستخدم ليس مريض"
+                    ];
+                //throw new \Exception('هذا المستخدم ليس مريض');
             }
 
             return [
@@ -403,7 +435,10 @@ class TreatmentPlanService
             ];
         }
 
-        throw new \Exception('ليس لديك صلاحية للوصول إلى الخطط العلاجية');
+        return [
+            'success' => false,
+            'message' => "ليس لديك صلاحية للوصول إلى الخطط العلاجية"
+        ];
     }
 
     private function scopedPlansQuery(array $scope): Builder

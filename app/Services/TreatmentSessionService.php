@@ -105,7 +105,11 @@ class TreatmentSessionService
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
+            return [
+                'success' => false,
+                'message' => "هذا المستخدم ليس دكتور"
+            ];
+           // throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
         $session = Treatment_Session::with('planItem.plan')
@@ -113,17 +117,29 @@ class TreatmentSessionService
             ->firstOrFail();
 
         if ($session->planItem->plan->doctor_id !== $doctor->id) {
-            throw new \Exception('لا تملك صلاحية إنهاء هذه الجلسة');
+                return [
+                    'success' => false,
+                    'message' => "لا تملك صلاحية إنهاء هذه الجلسة"
+                ];
+           // throw new \Exception('لا تملك صلاحية إنهاء هذه الجلسة');
         }
 
         if ($session->status === 'completed') {
-            throw new \DomainException('هذه الجلسة منتهية مسبقا');
+                return [
+                    'success' => false,
+                    'message' => "هذه الجلسة منتهية مسبقا"
+                ];
+            //throw new \DomainException('هذه الجلسة منتهية مسبقا');
         }
 
         $appointment = $this->findConfirmedAppointmentForToday($session->planItem);
 
         if (!$appointment) {
-            throw new \DomainException('لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة');
+            return [
+                'success' => false,
+                'message' => "لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة"
+            ];
+            //throw new \DomainException('لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة');
         }
 
         $updates = [
@@ -195,7 +211,7 @@ class TreatmentSessionService
         return $data;
     }
 
-    private function syncDoctorEarning(Treatment_Session $session): void
+    private function syncDoctorEarning(Treatment_Session $session)
     {
         // Keep earnings table consistent with real execution state.
         if ($session->status !== 'completed') {
@@ -207,7 +223,11 @@ class TreatmentSessionService
         $doctor = $session->planItem?->plan?->doctor;
 
         if (!$doctor) {
-            throw new \Exception('تعذر تحديد دكتور الجلسة من الخطة');
+            return[
+                'success' => false,
+                'message' => "تعذر تحديد دكتور الجلسة من الخطة"
+            ];
+          //  throw new \Exception('تعذر تحديد دكتور الجلسة من الخطة');
         }
 
         $percentage = (float) ($doctor->percentage ?? 0);

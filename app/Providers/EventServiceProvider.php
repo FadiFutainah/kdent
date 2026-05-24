@@ -22,10 +22,13 @@ class EventServiceProvider extends ServiceProvider
       \App\Events\MaterialRequestCreated::class => [
         \App\Listeners\SendRequestNotification::class,
     ],
+        \App\Events\ExpiredItemsDetected::class => [
+            \App\Listeners\ExpiredItemsNotification::class,
+        ],
     ];
 
     public function boot(): void
     {
-        //
+        \App\Models\Item::observe(\App\Observers\ItemObserver::class);
     }
 }
