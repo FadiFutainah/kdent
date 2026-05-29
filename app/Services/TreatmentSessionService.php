@@ -7,7 +7,6 @@ use App\Models\Doctor_Earning;
 use App\Models\Plan_Item;
 use App\Models\Treatment_Session;
 use Carbon\Carbon;
-use App\Models\Invoice;
 use Illuminate\Support\Facades\Auth;
 
 class TreatmentSessionService
@@ -33,23 +32,15 @@ class TreatmentSessionService
             throw new \Exception('لا تملك صلاحية إنشاء جلسة لهذا العنصر');
         }
 
-        $payload = $this->applyExchangeRate($data);
-
         $session = Treatment_Session::create([
-            'plan_item_id' => $planItem->id,
+            'plan_item_id'   => $planItem->id,
             'appointment_id' => null,
-            'exchange_rate_id' => $payload['exchange_rate_id'] ?? null,
-            'name' => $payload['name'] ?? null,
-            'rprice_usd' => $payload['rprice_usd'] ?? null,
-            'rprice_syp' => $payload['rprice_syp'] ?? null,
-            'session_date' => null,
-            'status' => $payload['status'] ?? 'in_progress',
-            'clinical_notes' => $payload['clinical_notes'] ?? null,
-            'is_last_session' => $payload['is_last_session'] ?? false,
+            'name'           => $data['name'] ?? null,
+            'session_date'   => null,
+            'status'         => 'in_progress',
         ]);
 
         $this->syncStatuses($planItem);
-        $this->syncDoctorEarning($session->fresh());
 
         return $session;
     }
@@ -75,27 +66,14 @@ class TreatmentSessionService
         }
 
         $updates = [];
-        $fields = [
-            'name',
-            'rprice_usd',
-            'rprice_syp',
-            'clinical_notes',
-            'is_last_session',
-        ];
 
-        foreach ($fields as $field) {
-            if (array_key_exists($field, $data)) {
-                $updates[$field] = $data[$field];
-            }
+        if (array_key_exists('name', $data)) {
+            $updates['name'] = $data['name'];
         }
 
         if ($updates) {
-            $updates = $this->applyExchangeRate($updates);
             $session->update($updates);
         }
-
-        $this->syncStatuses($session->planItem);
-        $this->syncDoctorEarning($session->fresh());
 
         return $session->fresh();
     }
@@ -130,6 +108,7 @@ class TreatmentSessionService
                     'message' => "هذه الجلسة منتهية مسبقا"
                 ];
             //throw new \DomainException('هذه الجلسة منتهية مسبقا');
+            throw new \DomainException('هذه الجلسة منتهية مسبقاً');
         }
 
         $appointment = $this->findConfirmedAppointmentForToday($session->planItem);
@@ -142,41 +121,15 @@ class TreatmentSessionService
             //throw new \DomainException('لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة');
         }
 
-        $updates = [
-            'status' => 'completed',
+        $session->update([
+            'status'         => 'completed',
             'appointment_id' => $appointment->id,
-            'session_date' => $appointment->appointment_date?->toDateString(),
-        ];
-
-        $session->update($updates);
+            'session_date'   => $appointment->appointment_date->toDateString(),
+        ]);
 
         $appointment->update(['status' => 'completed']);
 
-        $session = $session->fresh();
-        $priceUpdates = [];
-
-        if (!is_null($session->rprice_usd)) {
-            $priceUpdates['rprice_usd'] = $session->rprice_usd;
-        }
-
-        if (!is_null($session->rprice_syp)) {
-            $priceUpdates['rprice_syp'] = $session->rprice_syp;
-        }
-
-        if ($priceUpdates) {
-            $session->update($this->applyExchangeRate($priceUpdates));
-        }
-
         $this->syncStatuses($session->planItem);
-        $this->syncDoctorEarning($session->fresh());
-        ///////////////
-        $invoice = Invoice::where('plan_id', $session->planItem->plan_id)->first();
-      if ($invoice && $invoice->type === 'patient') {
-              app(\App\Services\InvoiceService::class)
-            ->addSession($invoice, $session);
-}
-
-/////////////////////
 
         return $session->fresh();
     }
@@ -262,27 +215,17 @@ class TreatmentSessionService
 
     private function syncStatuses(Plan_Item $planItem): void
     {
-        $hasAnySession = Treatment_Session::where('plan_item_id', $planItem->id)->exists();
+        $hasOpen = Treatment_Session::where('plan_item_id', $planItem->id)
+            ->where('status', '!=', 'completed')
+            ->exists();
 
-        if (!$hasAnySession) {
-            $planItem->update(['status' => 'in_progress']);
-        } else {
-            $hasOpenSessions = Treatment_Session::where('plan_item_id', $planItem->id)
-                ->where('status', '!=', 'completed')
-                ->exists();
+        $hasSessions = Treatment_Session::where('plan_item_id', $planItem->id)->exists();
 
-            $planItem->update([
-                'status' => $hasOpenSessions ? 'in_progress' : 'completed',
-            ]);
-        }
+        $planItem->update([
+            'status' => ($hasSessions && !$hasOpen) ? 'completed' : 'in_progress',
+        ]);
 
         $plan = $planItem->plan;
-        $hasAnyItems = Plan_Item::where('plan_id', $plan->id)->exists();
-
-        if (!$hasAnyItems) {
-            $plan->update(['status' => 'in_progress']);
-            return;
-        }
 
         $hasOpenItems = Plan_Item::where('plan_id', $plan->id)
             ->where('status', '!=', 'completed')
@@ -304,7 +247,6 @@ class TreatmentSessionService
 
         foreach ($appointments as $appointment) {
             $isLinked = Treatment_Session::where('appointment_id', $appointment->id)->exists();
-
             if (!$isLinked) {
                 return $appointment;
             }

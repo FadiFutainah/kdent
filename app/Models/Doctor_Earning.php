@@ -10,7 +10,7 @@ class Doctor_Earning extends Model
 
     protected $fillable = [
         'doctor_id',
-        'treatment_session_id',
+        'treatment_plans_id',
         'exchange_rate_id',
         'percentage',
         'amount_usd',
@@ -23,9 +23,9 @@ class Doctor_Earning extends Model
         return $this->belongsTo(Doctor::class, 'doctor_id');
     }
 
-    public function treatmentSession()
+    public function treatmentPlan()
     {
-        return $this->belongsTo(Treatment_Session::class, 'treatment_session_id');
+        return $this->belongsTo(Treatment_Plan::class, 'treatment_plans_id');
     }
 
     public function exchangeRate()

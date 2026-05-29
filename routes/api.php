@@ -15,6 +15,9 @@ use App\Http\Controllers\InventoryTransactionController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ExchangeRateController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\MedicalReportController;
+use App\Http\Controllers\MedicalRecordController;
+use App\Http\Controllers\SecretaryController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -24,6 +27,8 @@ Route::post('/login', [AuthController::class, 'login']);       // للجميع �
 Route::middleware('auth:sanctum')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout']); });// تسجيل الخروج
 
+Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::class, 'checkToken']
+);
 
 Route::middleware(['auth:sanctum', 'role:patient'])->group(function () {
 Route::get('/specializations', [SpecializationController::class,'index'])->middleware('role:patient');//عرض الاختصاصات 
@@ -46,7 +51,10 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::get('/pending_approvals', [InventoryTransactionController::class, 'getPendingAuditsReport']);// عرض الجردات في انتظار الموافقة
     Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد 
     Route::get('getDisposedItemsHistory', [InventoryTransactionController::class, 'getDisposedItemsHistory']);//عرض جميع المواد التي تم اتلافها للادمن 
-    }); 
+    
+    Route::get('/Allpatients', [PatientController::class, 'listAllPatients']);
+
+});
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
     Route::post('/addAvailableTime', [DoctorController::class, 'addAvailableTime']);
@@ -59,14 +67,29 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
 
 });
 
+
+/*Route::middleware(['auth:sanctum', 'role:secretary|patient'])->group(function () {
+
+    Route::get('/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
+});*/
+
 Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
     Route::get('/secretary/doctors/all', [AppointmentController::class, 'listAllDoctorsForSecretary']);
     Route::post('/secretary/doctors', [AppointmentController::class, 'listDoctorsBySpecialization']);
     Route::post('/secretary/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
+    Route::get('/secretary/doctors/{doctorId}/available-slots7', [AppointmentController::class, 'availableSlotsByDoctor7Days']);
+    Route::get('/secretary/doctors/{doctorId}/patients', [SecretaryController::class, 'doctorPatients']);
+    Route::get('/secretary/doctors/{doctorId}/appointments/today', [SecretaryController::class, 'doctorTodayAppointments']);
     Route::get('/secretary/appointments/scheduled', [AppointmentController::class, 'listScheduledBySecretary']);
     Route::get('/secretary/appointments/confirmed', [AppointmentController::class, 'listConfirmedBySecretary']);
     Route::post('/appointments/secretary', [AppointmentController::class, 'bookBySecretary']);
     Route::post('/appointments/{appointmentId}/confirm', [AppointmentController::class, 'confirmBySecretary']);
+    Route::post('/appointments/{appointmentId}/cancel', [AppointmentController::class, 'cancelBySecretary']);
+
+});
+
+Route::middleware(['auth:sanctum', 'role:doctor|secretary'])->group(function () {
+    Route::post('/patients/search', [DoctorController::class, 'searchPatients']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () {
@@ -82,22 +105,25 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::post('/invoices/{id}/apply-discount', [InvoiceController::class, 'applyDiscount']);//تطبيق الخصم
 });
 
+
 Route::middleware(['auth:sanctum', 'role:doctor|admin|accountant'])->group(function () {
     Route::get('/exchange-rates/current', [ExchangeRateController::class, 'current']);
     Route::get('/exchange-rates/history', [ExchangeRateController::class, 'history']);
 
 });
 
-Route::middleware(['auth:sanctum', 'role:patient|doctor'])->group(function () {
-    Route::get('/my/treatment-plans', [TreatmentPlanController::class, 'myPlans']);
-    Route::get('/treatment-plans/show/{planId}', [TreatmentPlanController::class, 'show']);
-    Route::get('/treatment-plans/{planId}/showItem/{itemId}', [TreatmentPlanController::class, 'showItem']);
-    Route::get('/treatment-plans/{planId}/items/{itemId}/showSession/{sessionId}', [TreatmentPlanController::class, 'showSession']);
+Route::middleware(['auth:sanctum', 'role:patient|doctor|secretary'])->group(function () {
+    Route::get('/patients/{patientId}/plans', [TreatmentPlanController::class, 'myPlans']);
+    Route::get('/plans/{planId}', [TreatmentPlanController::class, 'show']);
+    Route::get('/items/{itemId}', [TreatmentPlanController::class, 'showItem']);
+    Route::get('/sessions/{sessionId}', [TreatmentPlanController::class, 'showSession']);
+    Route::get('/medical-reports', [MedicalReportController::class, 'index']);
+    Route::get('/medical-reports/{reportId}', [MedicalReportController::class, 'show']);
+    Route::get('/medical-records/{patientId}', [MedicalRecordController::class, 'show']);
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::get('/my/finance/summary', [DoctorFinanceController::class, 'mySummary']);
-    Route::post('/treatment-plans/search', [TreatmentPlanController::class, 'search']);
     Route::post('/treatment-plans', [TreatmentPlanController::class, 'store']);
     Route::post('/treatment-plans/{planId}', [TreatmentPlanController::class, 'update']);
     Route::post('/treatment-plans/{planId}/items', [TreatmentPlanController::class, 'addItem']);
@@ -108,6 +134,9 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::patch('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
     Route::post('/consume', [InventoryTransactionController::class, 'storee']);//طلب مواد من المستودع
     
+    Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
+    Route::post('/medical-reports', [MedicalReportController::class, 'store']);
+    Route::post('/medical-records/{patientId}', [MedicalRecordController::class, 'update']);
 });
 
 

@@ -77,4 +77,12 @@ public function register(RegisterRequest $request)
 
         return response()->json(['message' => 'Successfully logged out']);
     }
+
+    public function checkToken()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->service->checkToken(),
+        ]);
+    }
 }

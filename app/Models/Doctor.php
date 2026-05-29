@@ -50,6 +50,10 @@ class Doctor extends Model
     {
         return $this->hasMany(Doctor_Payment::class, 'doctor_id');
     }
+    public function medicalReports()
+    {
+        return $this->hasMany(Medical_Report::class, 'doctor_id');
+    }
 
 
 }

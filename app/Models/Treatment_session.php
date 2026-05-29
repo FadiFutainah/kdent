@@ -11,21 +11,13 @@ class Treatment_Session extends Model
     protected $fillable = [
         'plan_item_id',
         'appointment_id',
-        'exchange_rate_id',
         'name',
-        'rprice_usd',
-        'rprice_syp',
         'session_date',
         'status',
-        'clinical_notes',
-        'is_last_session',
     ];
 
     protected $casts = [
         'session_date' => 'date',
-        'is_last_session' => 'boolean',
-        'rprice_usd' => 'decimal:2',
-        'rprice_syp' => 'decimal:2',
     ];
 
     public function planItem()
@@ -37,6 +29,7 @@ class Treatment_Session extends Model
     {
         return $this->belongsTo(Appointment::class, 'appointment_id');
     }
+ 
 
     public function exchangeRate()
     {

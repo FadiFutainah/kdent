@@ -11,9 +11,7 @@ class Plan_Item extends Model
     protected $fillable = [
         'plan_id',
         'category_id',
-        'price_usd',
-        'price_syp',
-        'target_teeth',
+        'notes',
         'status',
     ];
 

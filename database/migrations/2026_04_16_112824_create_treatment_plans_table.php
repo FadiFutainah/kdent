@@ -16,8 +16,11 @@ return new class extends Migration
             $table->foreignId('patient_id')->constrained('patients')->cascadeOnDelete();
             $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
             $table->string('name');
-            $table->dateTime('start_date');
-            $table->text('notes')->nullable();            
+            $table->foreignId('exchange_rate_id')->nullable()->constrained('exchange_rates')->nullOnDelete();
+            $table->decimal('price_usd', 10, 2)->nullable();
+            $table->decimal('price_syp', 12, 2)->nullable();
+            $table->text('target_teeth')->nullable();
+            $table->dateTime('start_date');          
             $table->enum('status', ['in_progress', 'completed'])->default('in_progress');
             $table->timestamps();
         });

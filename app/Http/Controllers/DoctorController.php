@@ -62,6 +62,17 @@ public function upcomingAppointments()
 {
     return response()->json($this->service->getUpcomingAppointmentsGrouped());
 }
+
+public function searchPatients(Request $request)
+{
+    $data = $request->validate([
+        'name' => 'required|string|min:2',
+    ]);
+
+    return response()->json(
+        $this->service->searchPatientsByName($data['name'])
+    );
+}
 //طلب مواد من المخزن
 public function store(Request $request)
 {
@@ -79,5 +90,7 @@ public function store(Request $request)
         'data' => $req
     ]);
 }
+
+    
 
 }

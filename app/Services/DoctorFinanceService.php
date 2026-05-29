@@ -40,6 +40,17 @@ class DoctorFinanceService
             }
         }
 
+        if (!is_null($amountUsd) && $amountUsd <= 0) {
+            throw new \DomainException('المبلغ يجب أن يكون أكبر من صفر');
+        }
+
+        $remainingUsd = $this->getRemainingUsd($doctorId);
+
+        if (!is_null($amountUsd) && ($amountUsd - $remainingUsd) > 0.01) {
+            $remainingLabel = $this->formatMoney($remainingUsd);
+            throw new \DomainException("المتبقي للدكتور بالدولار فقط {$remainingLabel}");
+        }
+
         $payment = Doctor_Payment::create([
             'doctor_id' => $doctor->id,
             'exchange_rate_id' => $rateRecord->id,
@@ -62,9 +73,22 @@ class DoctorFinanceService
         ];
     }
 
+    private function getRemainingUsd(int $doctorId): float
+    {
+        $totalDueUsd = (float) Doctor_Earning::where('doctor_id', $doctorId)->sum('amount_usd');
+        $totalPaidUsd = (float) Doctor_Payment::where('doctor_id', $doctorId)->sum('amount_usd');
+
+        return max($totalDueUsd - $totalPaidUsd, 0);
+    }
+
+    private function formatMoney(float $amount): string
+    {
+        return rtrim(rtrim(number_format($amount, 2, '.', ''), '0'), '.');
+    }
+
     public function getDoctorSummary(int $doctorId)
     {
-        doctor::findOrFail($doctorId);
+        Doctor::findOrFail($doctorId);
 
         $totalDueUsd = (float) Doctor_Earning::where('doctor_id', $doctorId)->sum('amount_usd');
         $totalPaidUsd = (float) Doctor_Payment::where('doctor_id', $doctorId)->sum('amount_usd');
@@ -72,29 +96,29 @@ class DoctorFinanceService
         $totalDueSyp = (float) Doctor_Earning::where('doctor_id', $doctorId)->sum('amount_syp');
         $totalPaidSyp = (float) Doctor_Payment::where('doctor_id', $doctorId)->sum('amount_syp');
 
+        // معالجة الـ earning اللي ما عندها syp
         $missingDueSyp = Doctor_Earning::where('doctor_id', $doctorId)
             ->whereNull('amount_syp')
+            ->with('exchangeRate')
             ->get();
 
         foreach ($missingDueSyp as $earning) {
-            $earningRate = $earning->exchangeRate?->rate;
-            if (!$earningRate && $earning->treatmentSession) {
-                $earningRate = $earning->treatmentSession->exchangeRate?->rate;
-            }
-
-            if ($earningRate) {
-                $totalDueSyp += round(((float) $earning->amount_usd) * (float) $earningRate, 2);
+            $rate = $earning->exchangeRate?->rate;
+            if ($rate) {
+                $totalDueSyp += round((float) $earning->amount_usd * (float) $rate, 2);
             }
         }
 
+        // معالجة الـ payment اللي ما عندها syp
         $missingPaidSyp = Doctor_Payment::where('doctor_id', $doctorId)
             ->whereNull('amount_syp')
+            ->with('exchangeRate')
             ->get();
 
         foreach ($missingPaidSyp as $payment) {
-            $paymentRate = $payment->exchangeRate?->rate;
-            if ($paymentRate) {
-                $totalPaidSyp += round(((float) $payment->amount_usd) * (float) $paymentRate, 2);
+            $rate = $payment->exchangeRate?->rate;
+            if ($rate) {
+                $totalPaidSyp += round((float) $payment->amount_usd * (float) $rate, 2);
             }
         }
 
@@ -102,17 +126,16 @@ class DoctorFinanceService
         $rate = (float) $rateRecord->rate;
 
         $remainingUsd = max($totalDueUsd - $totalPaidUsd, 0);
-        $remainingSyp = round($remainingUsd * $rate, 2);
 
         return [
             'doctor_id' => $doctorId,
             'totals' => [
-                'due_usd' => $totalDueUsd,
-                'due_syp' => $totalDueSyp,
-                'paid_usd' => $totalPaidUsd,
-                'paid_syp' => $totalPaidSyp,
+                'due_usd'       => $totalDueUsd,
+                'due_syp'       => $totalDueSyp,
+                'paid_usd'      => $totalPaidUsd,
+                'paid_syp'      => $totalPaidSyp,
                 'remaining_usd' => $remainingUsd,
-                'remaining_syp' => $remainingSyp,
+                'remaining_syp' => round($remainingUsd * $rate, 2),
             ],
         ];
     }

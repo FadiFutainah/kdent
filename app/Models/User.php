@@ -19,7 +19,7 @@ protected $guard_name = 'api';
      * @var list<string>
      */
     protected $fillable = [
-      'name',
+        'name',
         'email',           // للموظفين (طبيب، محاسب...)
         'phone_number',    // للمرضى
         'password',

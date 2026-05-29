@@ -3,125 +3,100 @@
 namespace App\Http\Controllers;
 
 use App\Services\TreatmentPlanService;
+
 use Illuminate\Http\Request;
 
 class TreatmentPlanController extends Controller
 {
-    protected $service;
-
-    public function __construct(TreatmentPlanService $service)
+    public function __construct(private TreatmentPlanService $service)
     {
-        $this->service = $service;
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'name' => 'required|string',
-            'start_date' => 'required|date',
-            'notes' => 'nullable|string',
+            'patient_id'   => 'required|exists:patients,id',
+            'name'         => 'required|string',
+            'start_date'   => 'required|date',
+            'price_usd'    => 'nullable|numeric|min:0|required_without:price_syp',
+            'price_syp'    => 'nullable|numeric|min:0|required_without:price_usd',
+            'target_teeth' => 'nullable|string',
+            'exchange_rate_id' => 'nullable|exists:exchange_rates,id',
         ]);
 
-        return response()->json(
-            $this->service->createPlan($data)
-        );
+        return response()->json($this->service->createPlan($data));
     }
-
 
     public function search(Request $request)
     {
         $data = $request->validate([
-            'name' => 'nullable|string|min:2',
+            'name'         => 'nullable|string|min:2',
             'phone_number' => 'nullable|string|min:6',
         ]);
 
         if (empty($data['name']) && empty($data['phone_number'])) {
-            return response()->json([
-                'message' => 'يجب إدخال اسم المريض أو رقم الهاتف للبحث',
-            ], 422);
+            return response()->json(['message' => 'يجب إدخال اسم المريض أو رقم الهاتف للبحث'], 422);
         }
 
-        return response()->json(
-            $this->service->searchPlans($data)
-        );
+        return response()->json($this->service->searchPlans($data));
     }
 
-    public function myPlans()
+    public function myPlans(int $patientId)
     {
-        return response()->json(
-            $this->service->getMyPlans()
-        );
+        return response()->json($this->service->getPatientPlans($patientId));
     }
 
     public function show(int $planId)
     {
-        return response()->json(
-            $this->service->getPlanDetails($planId)
-        );
+        return response()->json($this->service->getPlanDetails($planId));
     }
 
-    public function showItem(int $planId, int $itemId)
+    public function showItem(int $itemId)
     {
-        return response()->json(
-            $this->service->getPlanItemDetails($planId, $itemId)
-        );
+        return response()->json($this->service->getPlanItemDetails($itemId));
     }
 
-    public function showSession(int $planId, int $itemId, int $sessionId)
+    public function showSession(int $sessionId)
     {
-        return response()->json(
-            $this->service->getSessionDetails($planId, $itemId, $sessionId)
-        );
+        return response()->json($this->service->getSessionDetails($sessionId));
     }
 
     public function update(Request $request, int $planId)
     {
         $data = $request->validate([
-            'name' => 'nullable|string',
-            'start_date' => 'nullable|date',
-            'notes' => 'nullable|string',
+            'name'         => 'nullable|string',
+            'start_date'   => 'nullable|date',
+            'price_usd'    => 'nullable|numeric|min:0',
+            'price_syp'    => 'nullable|numeric|min:0',
+            'target_teeth' => 'nullable|string',
         ]);
 
-        return response()->json(
-            $this->service->updatePlan($planId, $data)
-        );
+        return response()->json($this->service->updatePlan($planId, $data));
     }
 
     public function addItem(Request $request, int $planId)
     {
         $data = $request->validate([
             'category_id' => 'required|exists:treatment_categories,id',
-            'price_usd' => 'nullable|numeric|min:0|required_without:price_syp',
-            'price_syp' => 'nullable|numeric|min:0|required_without:price_usd',
-            'target_teeth' => 'nullable|string',
-            'status' => 'nullable|in:in_progress,completed',
+            'notes'       => 'nullable|string',
         ]);
 
-        return response()->json(
-            $this->service->addPlanItem($planId, $data)
-        );
+        return response()->json($this->service->addPlanItem($planId, $data));
     }
 
     public function updateItem(Request $request, int $planId, int $itemId)
     {
         $data = $request->validate([
             'category_id' => 'nullable|exists:treatment_categories,id',
-            'price_usd' => 'nullable|numeric|min:0|required_without:price_syp',
-            'price_syp' => 'nullable|numeric|min:0|required_without:price_usd',
-            'target_teeth' => 'nullable|string',
-            'status' => 'nullable|in:in_progress,completed',
+            'notes'       => 'nullable|string',
+            'status'      => 'nullable|in:in_progress,completed',
         ]);
 
-        return response()->json(
-            $this->service->updatePlanItem($planId, $itemId, $data)
-        );
+        return response()->json($this->service->updatePlanItem($planId, $itemId, $data));
     }
 
     public function deleteItem(int $planId, int $itemId)
     {
-        return response()->json(
-            $this->service->deletePlanItem($planId, $itemId)
-        );
+        return response()->json($this->service->deletePlanItem($planId, $itemId));
     }
 }
