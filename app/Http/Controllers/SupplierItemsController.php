@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use App\Services\SupplierService;
 use Illuminate\Http\Request;
+use App\Models\Supplier;
 
 class SupplierItemsController extends Controller
 {
@@ -127,5 +128,39 @@ public function availableItems()
         'data' => $items
     ]);
 }
-
+////////
+public function getAllSuppliers()
+{
+    return Supplier::with('supplierItems') // لجلب المواد المرتبطة بكل مورد
+        ->orderBy('name', 'ASC')
+        ->get();
 }
+//تعديل مورد
+public function update(Request $request, $id)
+    {
+        // 1. التحقق من البيانات المرسلة
+        $request->validate([
+            'action' => '|in:add,remove,update_details',
+            'name'   => 'sometimes|string',
+            // يمكن إضافة قواعد تحقق أخرى هنا
+        ]);
+
+        try {
+            // 2. تمرير الطلب للسيرفيس
+            $result = $this->service->update($id, $request->all());
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'تمت العملية بنجاح',
+                'data' => $result
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'حدث خطأ أثناء التعديل: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+}
+

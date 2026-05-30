@@ -141,19 +141,19 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
 
 
 Route::middleware(['auth:sanctum', 'role:storekeeper'])->group(function () {
-    Route::post('/suppliers', [SupplierItemsController::class, 'store']);// إضافة مورد جديد
-    Route::post('/purchase', [InventoryTransactionController::class, 'purchase']);// تسجيل عملية شراء مواد من مورد
-    //Route::post('/consume', [InventoryTransactionController::class, 'consume']);
-    //Route::post('/returnItems', [InventoryTransactionController::class, 'returnItems']);// 
-    Route::post('/storeitems', [SupplierItemsController::class, 'stores']);// تثبيت مواد في النظام
-    Route::get('/available_items', [SupplierItemsController::class, 'availableItems']);//عرض المواد
-    Route::post('/{id}/approve', [InventoryTransactionController::class, 'approveRequest']);// موافقة على طلب مواد
-    Route::post('/audit', [InventoryTransactionController::class, 'audit']);// إنشاء جرد جديد
-    Route::get('/shows', [InventoryTransactionController::class, 'shows']);// عرض كل الجردات
-    Route::get('/showss', [InventoryTransactionController::class, 'showss']);// عرض تفاصيل جرد محدد      
-    Route::post('/audits/{id}/items', [InventoryTransactionController::class, 'addItem']);// إضافة مادة إلى جرد
-    Route::get('/audits/{id}/complete', [InventoryTransactionController::class, 'complete']);// انهاء الجرد
-    // روابط الإتلاف الخاصة بأمينة المستودع
+Route::post('/suppliers', [SupplierItemsController::class, 'store']);// إضافة مورد جديد
+Route::post('/purchase', [InventoryTransactionController::class, 'purchase']);// تسجيل عملية شراء مواد من مورد
+//Route::post('/consume', [InventoryTransactionController::class, 'consume']);
+//Route::post('/returnItems', [InventoryTransactionController::class, 'returnItems']);// 
+Route::post('/storeitems', [SupplierItemsController::class, 'stores']);// تثبيت مواد في النظام
+Route::get('/available_items', [SupplierItemsController::class, 'availableItems']);//عرض المواد
+Route::post('/{id}/approve', [InventoryTransactionController::class, 'approveRequest']);// موافقة على طلب مواد
+Route::post('/audit', [InventoryTransactionController::class, 'audit']);// إنشاء جرد جديد
+Route::get('/shows', [InventoryTransactionController::class, 'shows']);// عرض كل الجردات
+Route::get('/showss', [InventoryTransactionController::class, 'showss']);// عرض تفاصيل جرد محدد      
+Route::post('/audits/{id}/items', [InventoryTransactionController::class, 'addItem']);// إضافة مادة إلى جرد
+Route::get('/audits/{id}/complete', [InventoryTransactionController::class, 'complete']);// انهاء الجرد
+// روابط الإتلاف الخاصة بأمينة المستودع
 Route::post('/disposals/manual-immediate', [InventoryTransactionController::class, 'storeManualImmediate']); // زر إتلاف فوري للمواد المكسورة/التالفة
 Route::get('/disposals/pending', [InventoryTransactionController::class, 'getPendingDisposals']);          // عرض طلبات الإتلاف "التلقائية" القادمة من الجوب ليلاً بانتظار تأكيدها
 Route::post('/disposals/{id}/approve', [InventoryTransactionController::class, 'approve']);                // زر تأكيد وإتلاف الطلبات التلقائية بعد فحص الرف
@@ -162,6 +162,8 @@ Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResu
 Route::post('/reason/{id}/{item_id}', [InventoryTransactionController::class, 'updateVarianceReason']);//اضافة سبب للنقص 
 Route::get('/getExpiredItems', [InventoryTransactionController::class, 'getExpiredItems']);//عرض جميع المواد منتهية الصلاحية قبل اتلافها 
 Route::get('/getLowStockItems', [InventoryTransactionController::class, 'getLowStockItems']);//عرض المواد التي وصلت إلى حدها الأدنى من المخزون
+Route::get('/getAllSuppliers', [SupplierItemsController::class, 'getAllSuppliers']);//عرض جميع الموردين
+Route::put('/suppliers/{id}', [SupplierItemsController::class, 'update']);//تعديل مورد
 
 
 });
