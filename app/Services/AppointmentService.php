@@ -10,6 +10,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class AppointmentService
 {
@@ -45,7 +47,7 @@ class AppointmentService
             ->values()
             ->all();
     }
-
+// للحذف لاحقاً
     public function getAvailableSlotsForDoctorId(int $doctorId, int $daysToCheck = 10): array
     {
         $doctor = Doctor::where('id', $doctorId)
@@ -287,39 +289,35 @@ class AppointmentService
 
     private function ensureSlotAvailable(Doctor $doctor, Carbon $appointmentDateTime)
     {
+        // 1. التحقق من الوقت في الماضي
         if ($appointmentDateTime->lt(Carbon::now())) {
-            return[
-                'success' => false,
-                'message' => "لا يمكن حجز موعد في الماضي"
-            ];
-
-           // throw new \Exception('لا يمكن حجز موعد في الماضي');
+            throw new \Exception("لا يمكن حجز موعد في الماضي");
         }
 
         $day = $this->normalizeDay($appointmentDateTime);
 
+        // 2. التحقق من وجود جدول دوام في هذا اليوم
         $schedules = Doctor_Schedules::where('doctor_id', $doctor->id)
             ->where('day', $day)
             ->get();
 
         if ($schedules->isEmpty()) {
-            return [
-                'success' => false,
-                'message' => "الدكتور لا يعمل بهذا اليوم"
-            ];
-           // throw new \Exception('الدكتور لا يعمل بهذا اليوم');
+            throw new \Exception("الطبيب لا يعمل في هذا اليوم");
         }
 
         $isInSchedule = false;
 
+        // 3. التحقق من مطابقة الوقت لـ Slots الدوام
         foreach ($schedules as $schedule) {
             $start = Carbon::parse($appointmentDateTime->toDateString() . ' ' . $schedule->start_time);
             $end = Carbon::parse($appointmentDateTime->toDateString() . ' ' . $schedule->end_time);
 
+            // إذا كان الموعد قبل البداية أو يساوي/بعد نهاية الدوام
             if ($appointmentDateTime->lt($start) || $appointmentDateTime->gte($end)) {
                 continue;
             }
 
+            // التأكد أن الموعد يطابق تقسيم الـ 30 دقيقة
             $minutesDiff = $start->diffInMinutes($appointmentDateTime);
             if ($minutesDiff % 30 === 0) {
                 $isInSchedule = true;
@@ -328,25 +326,17 @@ class AppointmentService
         }
 
         if (!$isInSchedule) {
-                return [
-                    'success' => false,
-                    'message' => "الوقت المختار غير متاح ضمن دوام الطبيب"
-                ];
-           // throw new \Exception('الوقت المختار غير متاح ضمن دوام الطبيب');
+            throw new \Exception("الوقت المختار غير متاح ضمن دوام الطبيب");
         }
 
+        // 4. التحقق من أن الموعد غير محجوز مسبقاً
         $exists = Appointment::where('doctor_id', $doctor->id)
             ->where('appointment_date', $appointmentDateTime)
             ->whereIn('status', ['scheduled', 'confirmed', 'completed'])
             ->exists();
 
         if ($exists) {
-                return [
-                    'success' => false,
-                    'message' => "هذا الموعد محجوز مسبقاً"
-                ];
-          //  throw new \Exception('هذا الموعد محجوز مسبقاً');
-            throw new \Exception('الرجاء اختيار موعد اخر او الاتصال بالمركز');
+            throw new \Exception("هذا الموعد محجوز مسبقاً، الرجاء اختيار موعد آخر");
         }
     }
 
@@ -405,4 +395,42 @@ class AppointmentService
             'user_id' => $user->id,
         ]);
     }
+    public function getDoctorSchedulesRaw(?int $paramDoctorId = null)
+    {
+        $user = Auth::user();
+        $doctorId = null;
+
+        // 1. تحقق صريح: إذا كان المستخدم الحالي يحمل رول "doctor"
+        if ($user->hasRole('doctor')) {           
+            
+            // الطبيب يستعرض مواعيده هو فقط تلقائياً
+            $doctorId = $user->doctor->id;
+
+        // 2. إذا كان المستخدم يحمل رول "secretary" (سكرتارية)
+        } elseif ($user->hasRole('secretary')) {
+            
+            // السكرتارية مجبرة على إرسال الـ doctor_id
+            if (!$paramDoctorId) {
+                throw ValidationException::withMessages([
+                    'doctor_id' => ['يجب تحديد معرف الطبيب المطلوب (doctor_id).']
+                ]);
+            }
+            
+            $doctorId = $paramDoctorId;
+
+        // 3. حماية إضافية في حال تم الدخول من رول آخر بالخطأ مستقبلاً
+        } else {
+            throw ValidationException::withMessages([
+                'error' => ['ليس لديك الصلاحية للوصول إلى هذه البيانات.']
+            ]);
+        }
+
+        $dayOrder = ['sat', 'sun', 'mon', 'tues', 'wed', 'thy', 'fri'];
+
+        return Doctor_Schedules::where('doctor_id', $doctorId)
+            ->get()
+            ->unique('day')
+            ->sortBy(fn($schedule) => array_search($schedule->day, $dayOrder))
+            ->values();
+}
 }

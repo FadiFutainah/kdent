@@ -55,7 +55,8 @@ class AppointmentController extends Controller
 
 		return response()->json($slots);
 	}
-
+	
+// للحذف لاحقاً
 	public function availableSlotsByDoctor7Days(int $doctorId)
 	{
 		$slots = $this->service->getAvailableSlotsForDoctorId($doctorId, 7);
@@ -114,4 +115,19 @@ class AppointmentController extends Controller
 			'message' => 'تم إلغاء الموعد بنجاح'
 		]);
 	}
+
+	public function getAvailableSlots(Request $request)
+    {
+        $request->validate([
+            'doctor_id' => 'nullable|integer',
+        ]);
+
+        // جلب المواعيد الخام من السيرفس
+        $schedules = $this->service->getDoctorSchedulesRaw($request->query('doctor_id'));
+
+        // إرجاع المصفوفة مباشرة لتكون النتيجة مطابقة تماماً للـ JSON المطلوب
+        return response()->json($schedules, 200);
+    }
+
+
 }

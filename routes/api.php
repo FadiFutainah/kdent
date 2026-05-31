@@ -90,6 +90,7 @@ Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
 
 Route::middleware(['auth:sanctum', 'role:doctor|secretary'])->group(function () {
     Route::post('/patients/search', [DoctorController::class, 'searchPatients']);
+    Route::get('/doctor/schedules', [AppointmentController::class, 'getAvailableSlots']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () {
