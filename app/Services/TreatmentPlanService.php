@@ -21,41 +21,14 @@ class TreatmentPlanService
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
-                return [
-                    'success' => false,
-                    'message' => "هذا المستخدم ليس دكتور"
-                ];
-           // throw new \Exception('هذا المستخدم ليس دكتور');
+            return ['success' => false, 'message' => "هذا المستخدم ليس دكتور"];
         }
 
-        return DB::transaction(function () use ($data, $doctor) {
-            $plan = Treatment_Plan::create([
-                'patient_id' => $data['patient_id'],
-                'doctor_id' => $doctor->id,
-                'name' => $data['name'],
-                'start_date' => $data['start_date'],
-                'notes' => $data['notes'] ?? null,
-            ]);
-              // 2. إنشاء الفاتورة تلقائيًا
-        $invoice = app(\App\Services\InvoiceService::class)
-            ->createForPatient([
-        'patient_id' => $plan->patient_id,
-        'plan_id' => $plan->id,
-        // اختياري:
-        //'issued_at' => now()
-    ]);
-  // ✅ تأكيد النوع (احتياط)
-        if ($invoice->type !== 'patient') {
-            return [
-                'success' => false,
-                'message' => "Invoice type must be patient"
-            ];
-           // throw new \Exception('Invoice type must be patient');
         $usdProvided = !empty($data['price_usd']);
         $sypProvided = !empty($data['price_syp']);
 
         if (!$usdProvided && !$sypProvided) {
-            throw new \Exception('يجب إدخال سعر الخطة بالدولار أو الليرة');
+            return ['success' => false, 'message' => 'يجب إدخال سعر الخطة بالدولار أو الليرة'];
         }
 
         $rateRecord = $this->exchangeRateService->getCurrentUsdToSypRate();
@@ -73,6 +46,7 @@ class TreatmentPlanService
                 'doctor_id'        => $doctor->id,
                 'name'             => $data['name'],
                 'start_date'       => $data['start_date'],
+                'notes'            => $data['notes'] ?? null,
                 'exchange_rate_id' => $rateRecord->id,
                 'price_usd'        => $data['price_usd'],
                 'price_syp'        => $data['price_syp'],
@@ -84,7 +58,7 @@ class TreatmentPlanService
             $invoice = app(\App\Services\InvoiceService::class)
                 ->createForPatient([
                     'patient_id' => $plan->patient_id,
-                    'plan_id' => $plan->id,
+                    'plan_id'    => $plan->id,
                 ]);
 
             if ($invoice->type !== 'patient') {
@@ -258,8 +232,9 @@ class TreatmentPlanService
         ];
     }
 
-    public function updatePlan(int $planId, array $data)
-    {
+
+    public function addPlanItem(int $planId, array $data)
+    { 
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
@@ -270,68 +245,11 @@ class TreatmentPlanService
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
-        return DB::transaction(function () use ($plan, $data) {
-            $planUpdates = [];
-
-            if (array_key_exists('name', $data)) {
-                $planUpdates['name'] = $data['name'];
-            }
-
-            if (array_key_exists('start_date', $data)) {
-                $planUpdates['start_date'] = $data['start_date'];
-            }
-
-            if (array_key_exists('notes', $data)) {
-                $planUpdates['notes'] = $data['notes'];
-            }
-
-            if ($planUpdates) {
-                $plan->update($planUpdates);
-            }
-
-            return $plan->load([
-                'items.category',
-                'items.sessions',
-            ]);
-        });
-    }
-
-    public function addPlanItem(int $planId, array $data)
-    {
-        $doctor = Auth::user()->doctor;
-
-        if (!$doctor) {
-            return [
-                'success' => false,
-                'message' => "هذا المستخدم ليس دكتور"
-            ];
-           // throw new \Exception('هذا المستخدم ليس دكتور');
-        }
-
-        $plan = Treatment_Plan::where('id', $planId)
-            ->where('doctor_id', $doctor->id)
-            ->firstOrFail();
-
-        $usdProvided = array_key_exists('price_usd', $data) && !is_null($data['price_usd']);
-        $sypProvided = array_key_exists('price_syp', $data) && !is_null($data['price_syp']);
-
-        if (empty($data['category_id']) || (!$usdProvided && !$sypProvided)) {
-                return [
-                    'success' => false,
-                    'message' => "يجب تحديد اسم العلاج والسعر المتوقع"
-                ];
-           // throw new \Exception('يجب تحديد اسم العلاج والسعر المتوقع');
-        }
-
-        $payload = $this->applyItemExchangeRate($data);
-
         $item = Plan_Item::create([
-            'plan_id' => $plan->id,
-            'category_id' => $payload['category_id'],
-            'price_usd' => $payload['price_usd'],
-            'price_syp' => $payload['price_syp'] ?? null,
-            'target_teeth' => $payload['target_teeth'] ?? null,
-            'status' => $payload['status'] ?? 'in_progress',
+            'plan_id'     => $plan->id,
+            'category_id' => $data['category_id'],
+            'notes'       => $data['notes'] ?? null,
+            'status'      => 'in_progress',
         ]);
 
         return $item->load('category', 'sessions');
@@ -342,11 +260,7 @@ class TreatmentPlanService
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
-                return [
-                    'success' => false,
-                    'message' => "هذا المستخدم ليس دكتور"
-                ];
-           // throw new \Exception('هذا المستخدم ليس دكتور');
+            throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
         $plan = Treatment_Plan::where('id', $planId)
@@ -359,28 +273,10 @@ class TreatmentPlanService
 
         $updates = [];
 
-        if (array_key_exists('category_id', $data)) {
-            $updates['category_id'] = $data['category_id'];
-        }
-
-        if (array_key_exists('price_usd', $data)) {
-            $updates['price_usd'] = $data['price_usd'];
-        }
-
-        if (array_key_exists('price_syp', $data)) {
-            $updates['price_syp'] = $data['price_syp'];
-        }
-
-        if (array_key_exists('target_teeth', $data)) {
-            $updates['target_teeth'] = $data['target_teeth'];
-        }
-
-        if (array_key_exists('status', $data)) {
-            $updates['status'] = $data['status'];
-        }
-
-        if ($updates) {
-            $updates = $this->applyItemExchangeRate($updates);
+        foreach (['category_id', 'notes', 'status'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $updates[$field] = $data[$field];
+            }
         }
 
         if ($updates) {
@@ -445,36 +341,54 @@ class TreatmentPlanService
     }
 
     private function resolvePlanAccessScope(): array
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('secretary')) {
+            return ['role' => 'secretary', 'column' => null, 'id' => null];
+        }
+
+        if ($user->hasRole('doctor')) {
+            $doctor = $user->doctor;
+            if (!$doctor) {
+                throw new \Exception('هذا المستخدم ليس دكتور');
+            }
+            return ['role' => 'doctor', 'column' => 'doctor_id', 'id' => $doctor->id];
+        }
+
+        if ($user->hasRole('patient')) {
+            $patient = $user->patient;
+            if (!$patient) {
+                throw new \Exception('هذا المستخدم ليس مريض');
+            }
+            return ['role' => 'patient', 'column' => 'patient_id', 'id' => $patient->id];
+        }
+
+        throw new \Exception('غير مصرح');
+    }
+
+
+
     private function authorizePatientAccess(int $patientId): void
     {
         $user = Auth::user();
 
-        // secretary => كل المرضى
         if ($user->hasRole('secretary')) {
             return;
         }
 
-        // patient => ملفه فقط
         if ($user->hasRole('patient')) {
-
             if ($user->patient?->id !== $patientId) {
                 throw new \Exception('لا تملك صلاحية الوصول');
             }
-
             return;
         }
 
-        // doctor => مرضاه فقط
         if ($user->hasRole('doctor')) {
-            $doctor = $user->doctor;
-            if (!$doctor) {
-                return [
-                    'success' => false,
-                    'message' => "هذا المستخدم ليس دكتور"
-                ];
-               // throw new \Exception('هذا المستخدم ليس دكتور');
-
             $doctorId = $user->doctor?->id;
+            if (!$doctorId) {
+                throw new \Exception('هذا المستخدم ليس دكتور');
+            }
 
             $hasAccess = Treatment_Plan::where('doctor_id', $doctorId)
                 ->where('patient_id', $patientId)
@@ -483,35 +397,11 @@ class TreatmentPlanService
             if (!$hasAccess) {
                 throw new \Exception('هذا المريض ليس من مرضاك');
             }
-
             return;
         }
 
-        else if ($user->hasRole('patient')) {
-            $patient = $user->patient;
-            if (!$patient) {
-                    return [
-                        'success' => false,
-                        'message' => "هذا المستخدم ليس مريض"
-                    ];
-                //throw new \Exception('هذا المستخدم ليس مريض');
-            }
-
-            return [
-                'role' => 'patient',
-                'column' => 'patient_id',
-                'id' => $patient->id,
-            ];
-        }
-
-        return [
-            'success' => false,
-            'message' => "ليس لديك صلاحية للوصول إلى الخطط العلاجية"
-        ];
         throw new \Exception('غير مصرح');
     }
-
-
     private function syncDoctorEarning(Treatment_Plan $plan): void
     {
         $doctor = $plan->doctor;

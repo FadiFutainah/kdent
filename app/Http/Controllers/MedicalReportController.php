@@ -27,10 +27,10 @@ class MedicalReportController extends Controller
         );
     }
 
-    public function index()
+    public function index(int $patientId)
     {
         return response()->json(
-            $this->service->getReportsForCurrentUser()
+            $this->service->getReportsForCurrentUser($patientId)
         );
     }
 

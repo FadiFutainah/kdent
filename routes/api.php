@@ -117,7 +117,7 @@ Route::middleware(['auth:sanctum', 'role:patient|doctor|secretary'])->group(func
     Route::get('/plans/{planId}', [TreatmentPlanController::class, 'show']);
     Route::get('/items/{itemId}', [TreatmentPlanController::class, 'showItem']);
     Route::get('/sessions/{sessionId}', [TreatmentPlanController::class, 'showSession']);
-    Route::get('/medical-reports', [MedicalReportController::class, 'index']);
+    Route::get('/medical-reports/{patientId}', [MedicalReportController::class, 'index']);
     Route::get('/medical-reports/{reportId}', [MedicalReportController::class, 'show']);
     Route::get('/medical-records/{patientId}', [MedicalRecordController::class, 'show']);
 });
@@ -131,7 +131,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::delete('/treatment-plans/{planId}/items/{itemId}', [TreatmentPlanController::class, 'deleteItem']);
     Route::post('/plan-items/{itemId}/treatment-sessions', [TreatmentSessionController::class, 'store']);
     Route::post('/treatment-sessions/{sessionId}', [TreatmentSessionController::class, 'update']);
-    Route::patch('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
+    Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
     Route::post('/consume', [InventoryTransactionController::class, 'storee']);//طلب مواد من المستودع
     
     Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);

@@ -28,7 +28,7 @@ class MedicalReportService
         ]);
     }
 
-    public function getReportsForCurrentUser()
+    public function getReportsForCurrentUser(int $patientId = null)
     {
         $scope = $this->resolveAccessScope();
 
@@ -36,19 +36,28 @@ class MedicalReportService
 
         if ($scope['role'] === 'doctor') {
             $query->where('doctor_id', $scope['doctor_id']);
+            // إذا حدد مريض معين
+            if ($patientId) {
+                $query->where('patient_id', $patientId);
+            }
         }
 
         if ($scope['role'] === 'patient') {
+            // المريض يشوف تقاريره فقط بغض النظر عن $patientId
             $query->where('patient_id', $scope['patient_id']);
+        }
+
+        if ($scope['role'] === 'secretary' && $patientId) {
+            $query->where('patient_id', $patientId);
         }
 
         return $query->orderByDesc('report_date')
             ->get()
             ->map(fn($r) => [
-                'id'            => $r->id,
-                'patient_name'  => $r->patient?->user?->name,
-                'doctor_name'   => $r->doctor?->user?->name,
-                'report_date'   => $r->report_date,
+                'id'           => $r->id,
+                'patient_name' => $r->patient?->user?->name,
+                'doctor_name'  => $r->doctor?->user?->name,
+                'report_date'  => $r->report_date,
             ]);
     }
 
