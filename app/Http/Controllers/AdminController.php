@@ -30,5 +30,12 @@ class AdminController extends Controller
             $this->service->createEmployee($data)
         );
     }
+public function employees()
+{
+    return response()->json(
+        $this->service->getEmployees()
+    );
+}
+
 }
 

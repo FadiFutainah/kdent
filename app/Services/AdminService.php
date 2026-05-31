@@ -13,10 +13,19 @@ class AdminService
     {
          return DB::transaction(function () use ($data) {
 
-        $allowedRoles = ['doctor', 'accountant','secretary','storekeeper'];
+        // $allowedRoles = ['doctor', 'accountant','secretary','storekeeper'];
 
-        if (!in_array($data['role'], $allowedRoles)) {
-            throw new \Exception("نوع المستخدم غير صالح");
+        // if (!in_array($data['role'], $allowedRoles)) {
+        //     throw new \Exception("نوع المستخدم غير صالح");
+        // }
+          if (
+            $data['role'] === 'doctor' &&
+            empty($data['specialization_id'])
+        ) {
+            return [
+                'success' => false,
+                'message' => 'يجب تحديد الاختصاص للطبيب'
+            ];
         }
 
         // 1️⃣ إنشاء User
@@ -34,10 +43,6 @@ class AdminService
         // 3️⃣ doctor profile
         if ($data['role'] === 'doctor') {
 
-            if (empty($data['specialization_id'])) {
-                throw new \Exception("يجب تحديد الاختصاص للطبيب");
-            }
-
             Doctor::create([
                 'user_id' => $user->id,
                 'specialization_id' => $data['specialization_id'],
@@ -52,5 +57,39 @@ class AdminService
             'role' => $data['role']
         ];
     });
+}
+public function getEmployees()
+{
+    $employees = User::with([
+        'roles',
+        'doctor.specialization'
+    ])
+    ->whereHas('roles', function ($q) {
+        $q->whereIn('name', [
+            'doctor',
+            'accountant',
+            'secretary',
+            'storekeeper'
+        ]);
+    })
+    ->latest()
+    ->get();
 
-}}
+    return $employees->map(function ($user) {
+
+       return array_filter([
+            'id' => $user->id,
+            'name' => $user->name,
+            'phone_number' => $user->phone_number,
+            'email' => $user->email,
+
+            'role' => $user->roles->first()?->name,
+
+            'doctor_info' => $user->doctor ? [
+                'specialization' => $user->doctor->specialization?->name,
+                'percentage' => $user->doctor->percentage,
+            ] : null,
+        ]);
+    });
+}
+}

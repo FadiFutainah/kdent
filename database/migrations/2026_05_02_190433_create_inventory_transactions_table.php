@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('item_id')->constrained()->cascadeOnDelete();
            // $table->foreignId('treatment_session_id')->nullable()->constrained('treatment_sessions')->nullOnDelete();
+           $table->foreignId('inventory_id')->nullable()->constrained('inventories')->nullOnDelete();
            $table->foreignId('doctor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();
 // 👇 ربط الحركة الأصلية (للإرجاع)
@@ -26,6 +27,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
         });
+
     }
 
     /**

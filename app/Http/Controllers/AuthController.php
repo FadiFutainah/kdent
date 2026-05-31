@@ -11,11 +11,7 @@ class AuthController {
     protected $service;
     public function __construct(AuthServices $service) { $this->service = $service; }
 
-    // المسار: /register-patient
-    // public function register(Request $request) {
-    //     $this->service->registerPatient($request->all());
-    //     return response()->json(['message' => 'تم إرسال كود التحقق بنجاح']);
-    // }
+    
 public function register(RegisterRequest $request)
 {
     $data = $request->validated();
@@ -33,15 +29,24 @@ public function register(RegisterRequest $request)
             'otp_code'     => 'required|digits:4'
         ]);
 
-        try {
-            $token = $this->service->verifyOtp($request->phone_number, $request->otp_code);
-            return response()->json([
-                'message' => 'تم تفعيل الحساب بنجاح',
-                'token'   => $token
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
-        }
+        // try {
+        //     $token = $this->service->verifyOtp($request->phone_number, $request->otp_code);
+        //     return response()->json([
+        //         'message' => 'تم تفعيل الحساب بنجاح',
+        //         'token'   => $token
+        //     ]);
+        // } catch (\Exception $e) {
+        //     return response()->json(['error' => $e->getMessage()], 422);
+        // }
+         $result = $this->service->verifyOtp(
+        $request->phone_number,
+        $request->otp_code
+    );
+
+    return response()->json(
+        $result,
+        $result['success'] ? 200 : 422
+    );
     }
     public function resendOtp(Request $request)
 {

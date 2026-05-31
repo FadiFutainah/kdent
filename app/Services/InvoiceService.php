@@ -28,7 +28,7 @@ public function getAllPatientInvoices()
             'plan'          // الخطة (اختياري)
         ])
         ->orderByDesc('created_at')
-        ->get();
+        ->get();       
 }
 
 //اعتماد الفاتورة بس للموردين
@@ -37,10 +37,18 @@ public function approve($id)
     $invoice = Invoice::findOrFail($id);
 
     if ($invoice->type !== 'supplier') {
-    throw new \Exception("Only supplier invoices can be approved");
+        return [
+            'success' => false,
+            'message' => "Only supplier invoices can be approved"
+        ];
+   // throw new \Exception("Only supplier invoices can be approved");
 }
     if ($invoice->status !== 'draft') {
-        throw new \Exception("Only draft invoices can be approved");
+        return [
+            'success' => false,
+            'message' => "Only draft invoices can be approved"
+        ];
+      //  throw new \Exception("Only draft invoices can be approved");
     }
 
     $invoice->update([
@@ -58,11 +66,19 @@ public function payInvoice($invoiceId, $amount)
         : $invoice->total_amount_USD;
 
     if ($invoice->paid_amount >= $total) {
-        throw new \Exception("Invoice already fully paid");
+        return [
+            'success' => false,
+            'message' => "Invoice already fully paid"
+        ];
+      //  throw new \Exception("Invoice already fully paid");
     }
 
     if (($invoice->paid_amount + $amount) > $total) {
-        throw new \Exception("Payment exceeds remaining amount");
+        return [
+            'success' => false,
+            'message' => "Payment exceeds remaining amount"
+        ];
+        //throw new \Exception("Payment exceeds remaining amount");
     }
     $rate = app(ExchangeRateService::class)->getCurrentUsdToSypRate();
 
@@ -236,7 +252,11 @@ public function applyDiscount($invoiceId, $discount)
 
     // ❗ فقط للمورد والمريض
     if (!in_array($invoice->type, ['supplier', 'patient'])) {
-        throw new \Exception("Discount not allowed for this invoice type");
+            return [
+                'success' => false,
+                'message' => "Discount not allowed for this invoice type"
+            ];
+        //throw new \Exception("Discount not allowed for this invoice type");
     }
 
     // 🧾 خزّن نسبة الخصم
@@ -250,7 +270,11 @@ public function applyDiscount($invoiceId, $discount)
     $totalAfter = $totalBefore - $discountValue;
  // ✅ 👇 هون بالضبط تحطها
     if ($invoice->paid_amount > $totalAfter) {
-        throw new \Exception("Discount invalid: paid amount exceeds total after discount");
+            return [
+                'success' => false,
+                'message' => "Discount invalid: paid amount exceeds total after discount"
+            ];
+       // throw new \Exception("Discount invalid: paid amount exceeds total after discount");
     }
     // 💾 التخزين
     $invoice->total_amount_USD_after_discount = $totalAfter;

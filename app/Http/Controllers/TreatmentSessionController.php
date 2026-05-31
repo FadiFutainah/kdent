@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Services\TreatmentSessionService;
 use Illuminate\Http\Request;
 
@@ -14,6 +13,14 @@ class TreatmentSessionController extends Controller
     public function store(Request $request, int $itemId)
     {
         $data = $request->validate([
+             'appointment_id' => 'prohibited',
+            'name' => 'nullable|string',
+            'rprice_usd' => 'nullable|numeric|min:0',
+            'rprice_syp' => 'nullable|numeric|min:0',
+             'session_date' => 'prohibited',
+            'status' => 'nullable|in:in_progress',
+            'clinical_notes' => 'nullable|string',
+            'is_last_session' => 'nullable|boolean',
             'name' => 'nullable|string',
         ]);
 

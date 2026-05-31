@@ -83,7 +83,11 @@ class TreatmentSessionService
         $doctor = Auth::user()->doctor;
 
         if (!$doctor) {
-            throw new \Exception('هذا المستخدم ليس دكتور');
+            return [
+                'success' => false,
+                'message' => "هذا المستخدم ليس دكتور"
+            ];
+           // throw new \Exception('هذا المستخدم ليس دكتور');
         }
 
         $session = Treatment_Session::with('planItem.plan')
@@ -91,17 +95,30 @@ class TreatmentSessionService
             ->firstOrFail();
 
         if ($session->planItem->plan->doctor_id !== $doctor->id) {
-            throw new \Exception('لا تملك صلاحية إنهاء هذه الجلسة');
+                return [
+                    'success' => false,
+                    'message' => "لا تملك صلاحية إنهاء هذه الجلسة"
+                ];
+           // throw new \Exception('لا تملك صلاحية إنهاء هذه الجلسة');
         }
 
         if ($session->status === 'completed') {
+                return [
+                    'success' => false,
+                    'message' => "هذه الجلسة منتهية مسبقا"
+                ];
+            //throw new \DomainException('هذه الجلسة منتهية مسبقا');
             throw new \DomainException('هذه الجلسة منتهية مسبقاً');
         }
 
         $appointment = $this->findConfirmedAppointmentForToday($session->planItem);
 
         if (!$appointment) {
-            throw new \DomainException('لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة');
+            return [
+                'success' => false,
+                'message' => "لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة"
+            ];
+            //throw new \DomainException('لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة');
         }
 
         $session->update([
@@ -117,6 +134,84 @@ class TreatmentSessionService
         return $session->fresh();
     }
 
+    private function applyExchangeRate(array $data): array
+    {
+        $hasPriceContext = array_key_exists('rprice_usd', $data) || array_key_exists('rprice_syp', $data);
+
+        if (!$hasPriceContext) {
+            return $data;
+        }
+
+        $usdProvided = array_key_exists('rprice_usd', $data) && !is_null($data['rprice_usd']);
+        $sypProvided = array_key_exists('rprice_syp', $data) && !is_null($data['rprice_syp']);
+
+        if (!$usdProvided && !$sypProvided) {
+            return $data;
+        }
+
+        $rateRecord = $this->exchangeRateService->getCurrentUsdToSypRate();
+        $rate = (float) $rateRecord->rate;
+        $data['exchange_rate_id'] = $rateRecord->id;
+
+        if ($usdProvided && !$sypProvided) {
+            $data['rprice_syp'] = round(((float) $data['rprice_usd']) * $rate, 2);
+        }
+
+        if (!$usdProvided && $sypProvided && $rate > 0) {
+            $data['rprice_usd'] = round(((float) $data['rprice_syp']) / $rate, 2);
+        }
+
+        return $data;
+    }
+
+    private function syncDoctorEarning(Treatment_Session $session)
+    {
+        // Keep earnings table consistent with real execution state.
+        if ($session->status !== 'completed') {
+            Doctor_Earning::where('treatment_session_id', $session->id)->delete();
+            return;
+        }
+
+        $session->loadMissing('planItem.plan.doctor', 'exchangeRate');
+        $doctor = $session->planItem?->plan?->doctor;
+
+        if (!$doctor) {
+            return[
+                'success' => false,
+                'message' => "تعذر تحديد دكتور الجلسة من الخطة"
+            ];
+          //  throw new \Exception('تعذر تحديد دكتور الجلسة من الخطة');
+        }
+
+        $percentage = (float) ($doctor->percentage ?? 0);
+
+        $amountUsd = null;
+        if (!is_null($session->rprice_usd)) {
+            $amountUsd = round(((float) $session->rprice_usd * $percentage) / 100, 2);
+        }
+
+        $exchangeRate = $session->exchangeRate ?? ($session->exchange_rate_id ? $session->exchangeRate()->first() : null);
+        if (!$exchangeRate) {
+            $exchangeRate = $this->exchangeRateService->getCurrentUsdToSypRate();
+        }
+
+        $amountSyp = null;
+        if (!is_null($amountUsd)) {
+            $amountSyp = round($amountUsd * (float) $exchangeRate->rate, 2);
+        }
+
+        Doctor_Earning::updateOrCreate(
+            ['treatment_session_id' => $session->id],
+            [
+                'doctor_id' => $doctor->id,
+                'exchange_rate_id' => $exchangeRate->id,
+                'percentage' => $percentage,
+                'amount_usd' => $amountUsd ?? 0,
+                'amount_syp' => $amountSyp,
+                'earning_date' => $session->session_date ?? now(),
+            ]
+        );
+    }
 
     private function syncStatuses(Plan_Item $planItem): void
     {

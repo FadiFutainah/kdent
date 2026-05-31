@@ -53,30 +53,59 @@ class SendNotificationJob implements ShouldQueue
         $this->data = $data;
     }
 
+    // public function handle()
+    // {
+    //     // 🧾 DB
+    //     foreach ($this->users as $userId) {
+    //         Notification::create([
+    //             'user_id' => $userId,
+    //             'title' => $this->title,
+    //             'body' => $this->body,
+    //             'type' => $this->type,
+    //             'data' => json_encode($this->data)
+    //         ]);
+    //     }
+
+    //     // 🔔 Firebase
+    //     Http::withHeaders([
+    //         'Authorization' => 'key=' . config('services.firebase.server_key'),
+    //         'Content-Type' => 'application/json',
+    //     ])->post('https://fcm.googleapis.com/fcm/send', [
+    //         'to' => '/topics/general',
+    //         'notification' => [
+    //             'title' => $this->title,
+    //             'body' => $this->body,
+    //         ],
+    //         'data' => $this->data
+    //     ]);
+    // }
     public function handle()
-    {
-        // 🧾 DB
-        foreach ($this->users as $userId) {
-            Notification::create([
-                'user_id' => $userId,
-                'title' => $this->title,
-                'body' => $this->body,
-                'type' => $this->type,
-                'data' => json_encode($this->data)
+{
+    // 1. تسجيل الإشعار في قاعدة البيانات (هذا الجزء ممتاز عندك)
+    foreach ($this->users as $userId) {
+        Notification::create([
+            'user_id' => $userId,
+            'title' => $this->title,
+            'body' => $this->body,
+            'type' => $this->type,
+            'data' => json_encode($this->data)
+        ]);
+
+        // 2. إرسال الإشعار لـ Firebase (الجزء المصحح)
+        $user = User::find($userId);
+        if ($user && $user->fcm_token) {
+            Http::withHeaders([
+                'Authorization' => 'key=' . config('services.firebase.server_key'),
+                'Content-Type' => 'application/json',
+            ])->post('https://fcm.googleapis.com/fcm/send', [
+                'to' => $user->fcm_token, // هنا نرسل للمستخدم المحدد فقط!
+                'notification' => [
+                    'title' => $this->title,
+                    'body'  => $this->body,
+                ],
+                'data' => $this->data
             ]);
         }
-
-        // 🔔 Firebase
-        Http::withHeaders([
-            'Authorization' => 'key=' . config('services.firebase.server_key'),
-            'Content-Type' => 'application/json',
-        ])->post('https://fcm.googleapis.com/fcm/send', [
-            'to' => '/topics/general',
-            'notification' => [
-                'title' => $this->title,
-                'body' => $this->body,
-            ],
-            'data' => $this->data
-        ]);
     }
+}
 }

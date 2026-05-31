@@ -157,7 +157,11 @@ public function getAvailableSlotsForDays($doctorId)
         $appointmentDateTime = Carbon::parse($data['date'] . ' ' . $data['time']);
 
         if ($appointmentDateTime->lt(Carbon::now())) {
-            throw new \Exception("لا يمكن حجز موعد في الماضي");
+                return [
+                    'success' => false,
+                    'message' => "لا يمكن حجز موعد في الماضي"
+                ];
+            //throw new \Exception("لا يمكن حجز موعد في الماضي");
         }
 
         $day = $this->normalizeDay($appointmentDateTime);
@@ -167,7 +171,11 @@ public function getAvailableSlotsForDays($doctorId)
             ->exists();
 
         if (!$hasSchedule) {
-            throw new \Exception("الدكتور لا يعمل بهذا اليوم");
+                return [
+                    'success' => false,
+                    'message' => "الدكتور لا يعمل بهذا اليوم"
+                ];
+           // throw new \Exception("الدكتور لا يعمل بهذا اليوم");
         }
 
         $exists = Appointment::where('doctor_id', $doctor->id)
@@ -176,7 +184,11 @@ public function getAvailableSlotsForDays($doctorId)
             ->exists();
 
         if ($exists) {
-            throw new \Exception("هذا الموعد محجوز مسبقاً");
+                return [
+                    'success' => false,
+                    'message' => "هذا الموعد محجوز مسبقاً"
+                ];
+            //throw new \Exception("هذا الموعد محجوز مسبقاً");
         }
 
         $appointment = Appointment::create([

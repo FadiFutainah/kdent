@@ -9,9 +9,13 @@ class MaterialRequestItem extends Model
       protected $fillable = [
         'material_request_id',
         'item_id',
-        'quantity',
-        'approved_quantity',
-        'status'
+        //'quantity',
+        'quantity_requested', 
+        //'quantity_fulfilled', 
+        'batch_number_used', 
+        'inventory_id'
+        // 'approved_quantity',
+        // 'status'
     ];
 
     // 🔗 الطلب
@@ -25,4 +29,9 @@ class MaterialRequestItem extends Model
     {
         return $this->belongsTo(Item::class);
     }
+    ///////////////////////
+    public function inventory()
+     { 
+        return $this->belongsTo(Inventory::class);
+         }
 }

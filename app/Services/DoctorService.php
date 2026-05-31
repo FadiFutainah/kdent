@@ -18,7 +18,11 @@ class DoctorService
     $doctor = Auth::user()->doctor;
 
     if (!$doctor) {
-        throw new \Exception("هذا المستخدم ليس دكتور");
+        return [
+            'success' => false,
+            'message' => "هذا المستخدم ليس دكتور"
+        ];
+       // throw new \Exception("هذا المستخدم ليس دكتور");
     }
 
     // 🔥 منع التداخل
@@ -31,10 +35,19 @@ class DoctorService
         ->exists();
 
     if ($overlap) {
-        throw new \Exception("الفترة تتداخل مع فترة موجودة");
+        return [
+            'success' => false,
+            'message' => "الفترة تتداخل مع فترة موجودة"
+        ];
+       // throw new \Exception("الفترة تتداخل مع فترة موجودة");
+
     }
     if ($data['start_time'] >= $data['end_time']) {
-    throw new \Exception("وقت البداية لازم يكون قبل النهاية");
+            return [
+                'success' => false,
+                'message' => "وقت البداية لازم يكون قبل النهاية"
+            ];
+    //throw new \Exception("وقت البداية لازم يكون قبل النهاية");
 }
 
     return Doctor_Schedules::create([
@@ -55,7 +68,11 @@ class DoctorService
 
         // ✅ تحقق الوقت
         if ($data['start_time'] >= $data['end_time']) {
-            throw new \Exception("وقت البداية لازم يكون قبل النهاية");
+            return [
+                'success' => false,
+                'message' => "وقت البداية لازم يكون قبل النهاية"
+            ];
+           // throw new \Exception("وقت البداية لازم يكون قبل النهاية");
         }
 
         $schedule->update([

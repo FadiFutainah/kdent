@@ -8,15 +8,23 @@ class MaterialRequest extends Model
 {
     
     protected $fillable = [
+'requisition_number',
         'doctor_id',
         'status',
-        'notes'
+        'notes',
+        'requested_date', 
+        'withdrawn_date', 
+       // 'fulfilled_date', 
+       // 'total_items', 
+        'requested_by',
+       // 'approved_by',
+        //'fulfilled_by'
     ];
 
     // 👨‍⚕️ الدكتور صاحب الطلب
     public function doctor()
     {
-        return $this->belongsTo(User::class, 'doctor_id');
+        return $this->belongsTo(Doctor::class, 'doctor_id');
     }
 
     // 📦 عناصر الطلب
@@ -24,4 +32,7 @@ class MaterialRequest extends Model
     {
         return $this->hasMany(MaterialRequestItem::class);
     }
+    ///////////////////////////////////////
+     public function movements()
+      { return $this->hasMany(InventoryTransaction::class, 'reference_id')->where('reference_type', 'Requisition'); }
 }
