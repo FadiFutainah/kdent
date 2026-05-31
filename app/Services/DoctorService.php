@@ -113,7 +113,7 @@ public function getTodayAppointments()
 
     return Appointment::where('doctor_id', $doctor->id)
         ->whereDate('appointment_date', now()->toDateString())
-        ->with('patient')
+        ->with('patient.user:id,name') // جلب بيانات المريض
         ->orderBy('appointment_date')
         ->get();
 }
