@@ -17,7 +17,7 @@ class TreatmentPlanController extends Controller
         $data = $request->validate([
             'patient_id'   => 'required|exists:patients,id',
             'name'         => 'required|string',
-            'start_date'   => 'required|date',
+            'start_date'   => 'nullable|date',
             'price_usd'    => 'nullable|numeric|min:0|required_without:price_syp',
             'price_syp'    => 'nullable|numeric|min:0|required_without:price_usd',
             'target_teeth' => 'nullable|string',

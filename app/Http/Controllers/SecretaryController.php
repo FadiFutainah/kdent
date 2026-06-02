@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Services\SecretaryService;
 
 class SecretaryController extends Controller
@@ -21,6 +22,22 @@ class SecretaryController extends Controller
     {
         return response()->json(
             $this->service->getDoctorTodayAppointments($doctorId)
+        );
+    }
+
+    
+    public function createPatient(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string',
+            'phone_number' => 'required|string|unique:users,phone_number',
+        ]);
+
+        return response()->json(
+            $this->service->createPatientBySecretary(
+                $data['name'],
+                $data['phone_number']
+            )
         );
     }
 

@@ -44,4 +44,13 @@ class DoctorFinanceController extends Controller
             $this->service->getMySummary()
         );
     }
+
+    public function doctorPlansDues()
+    {
+        return response()->json([
+            'data' => $this->service->getDoctorPlansDues()
+        ]);
+    }
+
+    
 }

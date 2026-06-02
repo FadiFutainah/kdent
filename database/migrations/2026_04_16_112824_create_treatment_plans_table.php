@@ -22,6 +22,7 @@ return new class extends Migration
             $table->text('target_teeth')->nullable();
             $table->dateTime('start_date');          
             $table->enum('status', ['in_progress', 'completed'])->default('in_progress');
+            $table->boolean('is_locked')->default(false);
             $table->timestamps();
         });
     }

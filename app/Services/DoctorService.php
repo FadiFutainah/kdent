@@ -154,19 +154,17 @@ public function getUpcomingAppointmentsGrouped()
 public function searchPatientsByName(string $name)
 {
     $user = Auth::user();
-    $doctor = $user?->doctor;
+   // $doctor = $user?->doctor;
 
     $query = Patient::with('user')
         ->whereHas('user', function ($q) use ($name) {
             $q->where('name', 'like', "%{$name}%");
         });
-
-    if ($doctor) {
+ /*   if ($doctor) {
         $query->whereHas('treatmentPlans', function ($planQuery) use ($doctor) {
             $planQuery->where('doctor_id', $doctor->id);
         });
-    }
-
+    }*/
     return $query
         ->distinct()
         ->get()

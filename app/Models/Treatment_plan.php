@@ -18,6 +18,7 @@ class Treatment_Plan extends Model
         'price_syp',
         'target_teeth',
         'status',
+        'is_locked',
     ];
 
     protected $casts = [

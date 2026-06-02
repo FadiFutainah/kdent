@@ -40,7 +40,9 @@ class MedicalRecordService
 
         $patient = Patient::with('user')->findOrFail($patientId);
 
-        $updates = [];
+        $patientUpdates = [];
+        $userUpdates = [];
+
         $booleanFields = [
             'medical_history_heart_disease',
             'medical_history_diabetes',
@@ -53,20 +55,36 @@ class MedicalRecordService
             'medical_history_pregnancy',
         ];
 
-        foreach ($this->recordFields() as $field) {
-            if (!array_key_exists($field, $data)) {
-                continue;
-            }
-
-            if (in_array($field, $booleanFields, true) && is_null($data[$field])) {
-                continue;
-            }
-
-            $updates[$field] = $data[$field];
+        if (array_key_exists('name', $data)) {
+            $userUpdates['name'] = $data['name'];
         }
 
-        if ($updates) {
-            $patient->update($updates);
+        if (array_key_exists('phone_number', $data)) {
+            $userUpdates['phone_number'] = $data['phone_number'];
+        }
+
+        foreach ($this->recordFields() as $field) {
+
+        if (!array_key_exists($field, $data)) {
+            continue;
+        }
+
+        if (
+            in_array($field, $booleanFields, true)
+            && is_null($data[$field])
+        ) {
+            continue;
+        }
+
+        $patientUpdates[$field] = $data[$field];
+    } 
+
+        if (!empty($userUpdates)) {
+            $patient->user()->update($userUpdates);
+        }
+
+        if (!empty($patientUpdates)) {
+            $patient->update($patientUpdates);
         }
 
         return $this->formatRecord($patient->fresh('user'));

@@ -6,6 +6,7 @@ use App\Models\doctor;
 use App\Models\Doctor_Earning;
 use App\Models\Doctor_Payment;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Treatment_Plan;
 
 class DoctorFinanceService
 {
@@ -154,4 +155,34 @@ class DoctorFinanceService
 
         return $this->getDoctorSummary($doctor->id);
     }
+
+    public function getDoctorPlansDues()
+    {
+        $doctor = Auth::user()->doctor;
+
+        $plans = Treatment_Plan::with('patient')
+            ->where('doctor_id', $doctor->id)
+            ->get();
+
+        return $plans->map(function ($plan) {
+
+            return [
+                'plan_id' => $plan->id,
+
+                'patient' => [
+                    'id' => $plan->patient?->id,
+                    'name' => $plan->patient?->user?->name,
+                ],
+
+                'price_usd' => $plan->price_usd,
+                'price_syp' => $plan->price_syp,
+
+                'status' => $plan->status,
+            ];
+        });
+    }
+
+    
+
+
 }

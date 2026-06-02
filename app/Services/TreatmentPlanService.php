@@ -45,7 +45,7 @@ class TreatmentPlanService
                 'patient_id'       => $data['patient_id'],
                 'doctor_id'        => $doctor->id,
                 'name'             => $data['name'],
-                'start_date'       => $data['start_date'],
+                'start_date'       => $data['start_date'] ?? now(),
                 'notes'            => $data['notes'] ?? null,
                 'exchange_rate_id' => $rateRecord->id,
                 'price_usd'        => $data['price_usd'],
@@ -53,7 +53,7 @@ class TreatmentPlanService
                 'target_teeth'     => $data['target_teeth'] ?? null,
             ]);
 
-            $this->syncDoctorEarning($plan);
+          //  $this->syncDoctorEarning($plan);
 
             $invoice = app(\App\Services\InvoiceService::class)
                 ->createForPatient([
@@ -82,6 +82,10 @@ class TreatmentPlanService
         $plan = Treatment_Plan::where('id', $planId)
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
+
+        if ($plan->status === 'completed' || $plan->is_locked) {
+            throw new \DomainException('الخطة مكتملة ومقفلة ولا يمكن تعديلها');
+        }
 
         return DB::transaction(function () use ($plan, $data) {
             $updates = [];
@@ -245,6 +249,10 @@ class TreatmentPlanService
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
+        if ($plan->status === 'completed' || $plan->is_locked) {
+            throw new \DomainException('الخطة مكتملة ومقفلة ولا يمكن إضافة مراحل');
+        }
+
         $item = Plan_Item::create([
             'plan_id'     => $plan->id,
             'category_id' => $data['category_id'],
@@ -266,6 +274,10 @@ class TreatmentPlanService
         $plan = Treatment_Plan::where('id', $planId)
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
+
+        if ($plan->status === 'completed' || $plan->is_locked) {
+            throw new \DomainException('الخطة مكتملة ومقفلة ولا يمكن تعديل المراحل');
+        }
 
         $item = Plan_Item::where('plan_id', $plan->id)
             ->where('id', $itemId)
@@ -301,6 +313,13 @@ class TreatmentPlanService
         $plan = Treatment_Plan::where('id', $planId)
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
+
+        if ($plan->status === 'completed' || $plan->is_locked) {
+            return [
+                'success' => false,
+                'message' => 'الخطة مكتملة ومقفلة ولا يمكن حذف المراحل',
+            ];
+        }
 
         $item = Plan_Item::where('plan_id', $plan->id)
             ->where('id', $itemId)
@@ -404,21 +423,41 @@ class TreatmentPlanService
     }
     private function syncDoctorEarning(Treatment_Plan $plan): void
     {
+        if ($plan->status !== 'completed') {
+            Doctor_Earning::where('treatment_plans_id', $plan->id)->delete();
+            return;
+        }
+
+        $plan->loadMissing('doctor', 'exchangeRate');
         $doctor = $plan->doctor;
 
-        if (!$doctor) return;
+        if (!$doctor) {
+            return;
+        }
 
         $percentage = (float) ($doctor->percentage ?? 0);
-        $amountUsd  = round(((float) $plan->price_usd) * $percentage / 100, 2);
-        $amountSyp  = !is_null($plan->price_syp)
+        $amountUsd = !is_null($plan->price_usd)
+            ? round(((float) $plan->price_usd) * $percentage / 100, 2)
+            : 0;
+
+        $exchangeRate = $plan->exchangeRate ?? ($plan->exchange_rate_id ? $plan->exchangeRate()->first() : null);
+        if (!$exchangeRate) {
+            $exchangeRate = $this->exchangeRateService->getCurrentUsdToSypRate();
+        }
+
+        $amountSyp = !is_null($plan->price_syp)
             ? round(((float) $plan->price_syp) * $percentage / 100, 2)
             : null;
+
+        if (is_null($amountSyp) && $exchangeRate) {
+            $amountSyp = round($amountUsd * (float) $exchangeRate->rate, 2);
+        }
 
         Doctor_Earning::updateOrCreate(
             ['treatment_plans_id' => $plan->id],
             [
                 'doctor_id'        => $doctor->id,
-                'exchange_rate_id' => $plan->exchange_rate_id,
+                'exchange_rate_id' => $exchangeRate?->id,
                 'percentage'       => $percentage,
                 'amount_usd'       => $amountUsd,
                 'amount_syp'       => $amountSyp,

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\Doctor_Earning;
 use App\Models\Plan_Item;
+use App\Models\Treatment_Plan;
 use App\Models\Treatment_Session;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +28,10 @@ class TreatmentSessionService
         $planItem = Plan_Item::with('plan')
             ->where('id', $data['plan_item_id'])
             ->firstOrFail();
+
+        if ($planItem->plan->status === 'completed' || $planItem->plan->is_locked) {
+            throw new \DomainException('الخطة مكتملة ومقفلة ولا يمكن إضافة جلسة');
+        }
 
         if ($planItem->plan->doctor_id !== $doctor->id) {
             throw new \Exception('لا تملك صلاحية إنشاء جلسة لهذا العنصر');
@@ -59,6 +64,10 @@ class TreatmentSessionService
 
         if ($session->planItem->plan->doctor_id !== $doctor->id) {
             throw new \Exception('لا تملك صلاحية تعديل هذه الجلسة');
+        }
+
+        if ($session->planItem->plan->status === 'completed' || $session->planItem->plan->is_locked) {
+            throw new \DomainException('الخطة مكتملة ومقفلة ولا يمكن تعديل الجلسات');
         }
 
         if ($session->status === 'completed') {
@@ -113,21 +122,27 @@ class TreatmentSessionService
 
         $appointment = $this->findConfirmedAppointmentForToday($session->planItem);
 
-        if (!$appointment) {
+        /*if (!$appointment) {
             return [
                 'success' => false,
                 'message' => "لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة"
             ];
             //throw new \DomainException('لا يوجد موعد مؤكد اليوم لإكمال هذه الجلسة');
-        }
+        }*/
 
         $session->update([
             'status'         => 'completed',
-            'appointment_id' => $appointment->id,
-            'session_date'   => $appointment->appointment_date->toDateString(),
+            'appointment_id' => $appointment?->id,
+            'session_date'   => $appointment
+                ? $appointment->appointment_date->toDateString()
+                : now()->toDateString(),
         ]);
 
-        $appointment->update(['status' => 'completed']);
+        if ($appointment) {
+            $appointment->update([
+                'status' => 'completed'
+            ]);
+        }
 
         $this->syncStatuses($session->planItem);
 
@@ -164,54 +179,53 @@ class TreatmentSessionService
         return $data;
     }
 
-    private function syncDoctorEarning(Treatment_Session $session)
+    private function syncDoctorEarning(Treatment_Plan $plan): void
     {
-        // Keep earnings table consistent with real execution state.
-        if ($session->status !== 'completed') {
-            Doctor_Earning::where('treatment_session_id', $session->id)->delete();
+        // Keep earnings table consistent with the plan completion state.
+        if ($plan->status !== 'completed') {
+            Doctor_Earning::where('treatment_plans_id', $plan->id)->delete();
             return;
         }
 
-        $session->loadMissing('planItem.plan.doctor', 'exchangeRate');
-        $doctor = $session->planItem?->plan?->doctor;
+        $plan->loadMissing('doctor', 'exchangeRate');
+        $doctor = $plan->doctor;
 
         if (!$doctor) {
-            return[
-                'success' => false,
-                'message' => "تعذر تحديد دكتور الجلسة من الخطة"
-            ];
-          //  throw new \Exception('تعذر تحديد دكتور الجلسة من الخطة');
+            return;
         }
 
         $percentage = (float) ($doctor->percentage ?? 0);
 
-        $amountUsd = null;
-        if (!is_null($session->rprice_usd)) {
-            $amountUsd = round(((float) $session->rprice_usd * $percentage) / 100, 2);
-        }
+        $amountUsd = !is_null($plan->price_usd)
+            ? round(((float) $plan->price_usd * $percentage) / 100, 2)
+            : 0;
 
-        $exchangeRate = $session->exchangeRate ?? ($session->exchange_rate_id ? $session->exchangeRate()->first() : null);
+        $exchangeRate = $plan->exchangeRate ?? ($plan->exchange_rate_id ? $plan->exchangeRate()->first() : null);
         if (!$exchangeRate) {
             $exchangeRate = $this->exchangeRateService->getCurrentUsdToSypRate();
         }
 
-        $amountSyp = null;
-        if (!is_null($amountUsd)) {
+        $amountSyp = !is_null($plan->price_syp)
+            ? round(((float) $plan->price_syp * $percentage) / 100, 2)
+            : null;
+
+        if (is_null($amountSyp) && $exchangeRate) {
             $amountSyp = round($amountUsd * (float) $exchangeRate->rate, 2);
         }
 
         Doctor_Earning::updateOrCreate(
-            ['treatment_session_id' => $session->id],
+            ['treatment_plans_id' => $plan->id],
             [
                 'doctor_id' => $doctor->id,
-                'exchange_rate_id' => $exchangeRate->id,
+                'exchange_rate_id' => $exchangeRate?->id,
                 'percentage' => $percentage,
-                'amount_usd' => $amountUsd ?? 0,
+                'amount_usd' => $amountUsd,
                 'amount_syp' => $amountSyp,
-                'earning_date' => $session->session_date ?? now(),
+                'earning_date' => $plan->start_date ?? now(),
             ]
         );
     }
+
 
     private function syncStatuses(Plan_Item $planItem): void
     {
@@ -231,9 +245,14 @@ class TreatmentSessionService
             ->where('status', '!=', 'completed')
             ->exists();
 
+        $planStatus = $plan->is_locked ? 'completed' : ($hasOpenItems ? 'in_progress' : 'completed');
+
         $plan->update([
-            'status' => $hasOpenItems ? 'in_progress' : 'completed',
+            'status' => $planStatus,
+            'is_locked' => $plan->is_locked || !$hasOpenItems,
         ]);
+
+        $this->syncDoctorEarning($plan->fresh());
     }
 
     private function findConfirmedAppointmentForToday(Plan_Item $planItem): ?Appointment

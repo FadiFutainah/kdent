@@ -21,6 +21,8 @@ class MedicalRecordController extends Controller
     public function update(Request $request, int $patientId)
     {
         $data = $request->validate([
+            'name' => 'nullable|string',
+            'phone_number' => 'nullable|string',
             'gender' => 'nullable|in:male,female',
             'address' => 'nullable|string',
             'occupation' => 'nullable|string',

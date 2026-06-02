@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\Patient;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
 use App\Models\Doctor_Schedules;
+use Illuminate\Support\Facades\DB;
 
 class SecretaryService
 {
@@ -45,6 +48,50 @@ class SecretaryService
             })
             ->values();
     }
+
+    public function createPatientBySecretary(string $name, string $phoneNumber)
+    {
+        return DB::transaction(function () use ($name, $phoneNumber) {
+
+            // 1. تحقق إذا المستخدم موجود
+            $user = User::where('phone_number', $phoneNumber)->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name' => $name,
+                    'phone_number' => $phoneNumber,
+                    'password' => Hash::make('11111111'), // default password
+                    'is_verified' => true, // مهم: مفعل مباشرة
+                ]);
+
+                $user->assignRole('patient');
+            }
+
+            // 2. تحقق إذا عنده patient profile
+            if (!$user->patient) {
+                Patient::create([
+                    'user_id' => $user->id,
+                ]);
+            } else {
+                $patient = $user->patient;
+            }
+            $user->refresh();
+
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'phone_number' => $user->phone_number,
+                'is_verified' => $user->is_verified,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+                'patient' => [
+                'id' => $user->patient?->id,
+                ],
+            ];
+        });
+    }
+
+
 
 
 }

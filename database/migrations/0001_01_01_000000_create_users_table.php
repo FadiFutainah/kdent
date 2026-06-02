@@ -14,16 +14,17 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('email')->unique()->unique()->nullable();//الموظف يدخل بالايميل
+            $table->string('email')->unique()->nullable();//الموظف يدخل بالايميل
+            $table->date('date_of_birth')->nullable();
             $table->string('phone_number')->unique()->nullable(); // المريض يدخل بالرقم
             $table->timestamp('email_verified_at')->nullable();
-           $table->string('otp_code')->nullable();
+            $table->string('otp_code')->nullable();
             $table->timestamp('otp_expires_at')->nullable();
             $table->boolean('is_verified')->default(false);
             $table->string('password');
             $table->rememberToken();
             $table->timestamp('last_otp_sent_at')->nullable();// لتتبع آخر مرة تم فيها إرسال OTP
-              $table->string('fcm_token')->nullable();
+            $table->string('fcm_token')->nullable();
             $table->timestamps();
         });
 

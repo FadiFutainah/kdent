@@ -21,6 +21,7 @@ protected $guard_name = 'api';
     protected $fillable = [
         'name',
         'email',           // للموظفين (طبيب، محاسب...)
+        'date_of_birth',
         'phone_number',    // للمرضى
         'password',
         'otp_code',        // كود التحقق المرسل للواتساب
