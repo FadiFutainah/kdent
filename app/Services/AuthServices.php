@@ -80,7 +80,12 @@ class AuthServices {
             'otp_expires_at' => null
         ]);
 
-        return $user->createToken('auth_token')->plainTextToken;
+     //   return $user->createToken('auth_token')->plainTextToken;
+     return [
+        'success' => true,
+        'message' => 'تم تفعيل الحساب بنجاح',
+        'token'   => $user->createToken('auth_token')->plainTextToken
+    ];
     }
     public function resendOtp($phone)
 {

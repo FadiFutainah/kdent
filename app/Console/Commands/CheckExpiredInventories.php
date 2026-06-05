@@ -50,14 +50,14 @@ class CheckExpiredInventories extends Command
 
                 // تسجيل المادة داخل تفاصيل مستند الإتلاف
                 DisposalItem::create([
+
                     'disposal_id' => $disposal->id,
                     'item_id' => $batch->item_id,
                     'inventory_id' => $batch->id,
                     'batch_number' => $batch->batch_number,
                     'quantity' => $batch->quantity,
                     'expiry_date' => $batch->expiry_date,
-    'reason_details' => 'مادة منتهية الصلاحية (نظام)',
-                    
+                    'reason_details' => 'مادة منتهية الصلاحية (نظام)',
                 ]);
             }
 
@@ -70,4 +70,5 @@ $this->info('تم إطلاق الحدث بنجاح.');
 
         return 0;
     }
+
 }

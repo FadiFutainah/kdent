@@ -6,9 +6,11 @@ use App\Models\Payment;
 use App\Models\Treatment_plan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class InvoiceService
 {
+
 //عرض فواتير المورد
     public function getAll()
 {
@@ -17,15 +19,16 @@ class InvoiceService
     ->orderByDesc('created_at')
     ->get();
 }
+
 //عرض فواتير المرضى
 public function getAllPatientInvoices()
 {
     return Invoice::where('type', 'patient')
         ->with([
-            'items',        // الجلسات (invoice_items)
+            //'items',        // الجلسات (invoice_items)
             'payments',     // الدفعات
-            'patient',      // المريض
-            'plan'          // الخطة (اختياري)
+          // 'patient.user',      // المريض
+            'plans'          // الخطة (اختياري)
         ])
         ->orderByDesc('created_at')
         ->get();       
@@ -57,6 +60,7 @@ public function approve($id)
 
     return $invoice;
 }
+
 public function payInvoice($invoiceId, $amount)
 {
     $invoice = Invoice::with('payments')->findOrFail($invoiceId);
@@ -110,132 +114,18 @@ public function payInvoice($invoiceId, $amount)
         'remaining' => $remaining
     ];
 }
-// //دفع للفاتورة 
-// public function payInvoice($invoiceId, $amount)
-// {
-//     $invoice = Invoice::with('payments')->findOrFail($invoiceId);
 
-//     // 🎯 تحديد الإجمالي (مع الخصم إن وجد)
-//     $total = $invoice->total_amount_USD_after_discount > 0
-//         ? $invoice->total_amount_USD_after_discount
-//         : $invoice->total_amount_USD;
-
-//     // 🚨 تحقق
-//     if ($invoice->paid_amount >= $total) {
-//         throw new \Exception("Invoice already fully paid");
-//     }
-
-//     if (($invoice->paid_amount + $amount) > $total) {
-//         throw new \Exception("Payment exceeds remaining amount");
-//     }
-
-//     // 💰 تسجيل الدفع
-//     Payment::create([
-//         'invoice_id' => $invoice->id,
-//         'amount' => $amount,
-//         'method' => 'cash',
-//         'created_by' => Auth::id(),
-//     ]);
-
-//     // 🔥 إعادة حساب المدفوع (الأصح دائمًا)
-//     $invoice->paid_amount = $invoice->payments()->sum('amount');
-
-//     // 🧠 تحديث الحالة
-//     $this->updateStatus($invoice, $total);
-
-//     $invoice->save();
-
-//     return $invoice;
-// }
-// // دفع الفاتورة
-// public function payInvoice($invoiceId, $amount)
-// {
-//     $invoice = Invoice::findOrFail($invoiceId);
-
-//     // 🎯 حدد الإجمالي الصحيح
-    
-//       $total = $invoice->total_amount_USD_after_discount > 0
-//     ? $invoice->total_amount_USD_after_discount
-//     : $invoice->total_amount_USD;
-//     // 🚨 تحقق قبل أي شي
-//     if ($invoice->paid_amount >= $total) {
-//         throw new \Exception("Invoice already fully paid");
-//     }
-
-//     if (($invoice->paid_amount + $amount) > $total) {
-//         throw new \Exception("Payment exceeds remaining amount");
-//     }
-
-//     // 💰 سجل الدفع
-//     Payment::create([
-//         'invoice_id' => $invoice->id,
-//         'amount' => $amount,
-//         'method' => 'cash',
-//         'created_by' => Auth::id(),
-//     ]);
-
-//     // 💰 حدث المدفوع
-//     $invoice->paid_amount += $amount;
-
-//     // 🧠 الحالة
-//     if ($invoice->paid_amount == 0) {
-//         $invoice->status = 'issued';
-//     } elseif ($invoice->paid_amount < $total) {
-//         $invoice->status = 'partial';
-//     } else {
-//         $invoice->status = 'paid';
-//     }
-
-//     $invoice->save();
-
-//     return $invoice;
-// }
-
-// public function getById($id)
-// {
-//     return Invoice::with(['items.item', 'supplier'])
-//         ->findOrFail($id);
- 
-// }
 public function getById($id)
 {
     return Invoice::with([
         'items',
         'supplier',
-        'patient',
+        'patient.user',
         'plans'
     ])->findOrFail($id);
 }
 
-// //تطبيق الخصم
-// public function applyDiscount($invoiceId, $discount)
-// {
-//     $invoice = Invoice::findOrFail($invoiceId);
 
-//     $invoice->discount = $discount;
-
-//     // 💰 لازم نجيب القيمة الأصلية (قبل أي تعديل)
-//     $totalBefore = $invoice->getOriginal('total_amount_USD');
-
-//     if (!$totalBefore) {
-//         $totalBefore = $invoice->total_amount_USD;
-//     }
-
-//     $discountValue = ($totalBefore * $discount) / 100;
-
-//     $totalAfter = $totalBefore - $discountValue;
-
-//     // 💾 خزّن بعد الخصم
-//     $invoice->total_amount_USD_after_discount = $totalAfter;
-//     $invoice->total_amount_SYP_after_discount = $totalAfter * $invoice->exchange_rate;
-
-//     // ⚠️ مهم جداً: لا تلمس الأصل
-//     // ❌ لا تعدل total_amount_USD
-
-//     $invoice->save();
-
-//     return $invoice;
-// }
 private function updateStatus($invoice, $total)
 {
     if ($invoice->paid_amount == 0) {
@@ -246,6 +136,7 @@ private function updateStatus($invoice, $total)
         $invoice->status = 'paid';
     }
 }
+
 public function applyDiscount($invoiceId, $discount)
 {
     $invoice = Invoice::findOrFail($invoiceId);
@@ -284,80 +175,71 @@ public function applyDiscount($invoiceId, $discount)
     $this->updateStatus($invoice, $totalAfter);
 
     $invoice->save();
+// إضافة حساب المتبقي للريسبونس
+    $remaining = $totalAfter - $invoice->paid_amount;
 
-    return $invoice;
+    return [
+        'invoice' => $invoice,
+        'remaining' => $remaining
+    ];
 }
-// public function createForPatient($patientId, $planId)
-// {    return DB::transaction(function () use ($data) {
-//       $patient = patient::findOrFail($data['patient_id']);
-//       $plan = TreatmentPlan::findOrFail($data['plan_id']);
 
-//     $rate = app(ExchangeRateService::class)->getCurrentUsdToSypRate();
-//       $invoiceNumber = 'INV-' . date('Ymd') . '-' . strtoupper(uniqid());
-//     return Invoice::create([
-//         'number' => $invoiceNumber,
-//         'type' => 'patient',
-//         'patient_id' => $patient->id,
-//         'plan_id' => $plan->id,
-//         'status' => 'draft',
-//         'paid_amount' => 0,
-//         'total_amount_USD' => 0,
-//         'exchange_rate' => $rate->rate,
-//        'issued_at' => $data['issued_at'] ?? now(),
-//         'created_by' => Auth::id(),
-//     ]);
-// });
-// }
 // public function createForPatient(array $data)
-// {   
-//      return DB::transaction(function () use ($data) {
-//       $patient = patient::findOrFail($data['patient_id']);
-//       $plan = Treatment_plan::findOrFail($data['plan_id']);
+// {
+//     return DB::transaction(function () use ($data) {
 
-//     $rate = app(ExchangeRateService::class)->getCurrentUsdToSypRate();
-//        $invoiceNumber = 'INV-' . date('Ymd') . '-' . strtoupper(uniqid());
-//     return Invoice::create([
-//         'invoice_number' => $invoiceNumber,
-//         'type' => 'patient',
-//         'patient_id' => $patient->id,
-//         'plan_id' => $plan->id,
-//         'status' => 'draft',
-//         'paid_amount' => 0,
-//         'total_amount_USD' => 0,
-//         'total_amount_SYP' => 0,
-//         'exchange_rate' => $rate->rate,
-//        'issued_at' => $data['issued_at'] ?? now(),
-//         'created_by' => Auth::id(),
-//     ]);
-  
-// });
+//         $patient = Patient::findOrFail($data['patient_id']);
+//         $plan = Treatment_Plan::findOrFail($data['plan_id']);
+
+//         $rate = app(ExchangeRateService::class)->getCurrentUsdToSypRate();
+
+//         // 1️⃣ إنشاء الفاتورة بدون رقم نهائي
+//         $invoice = Invoice::create([
+//             'type' => 'patient',
+//             'patient_id' => $patient->id,
+//             'plan_id' => $plan->id,
+//             'status' => 'draft',
+//             'paid_amount' => 0,
+//             'total_amount_USD' => 0,
+//             'total_amount_SYP' => 0,
+//             'exchange_rate' => $rate->rate,
+//             'issued_at' => $data['issued_at'] ?? now(),
+//             'created_by' => Auth::id(),
+//         ]);
+
+//         // 2️⃣ توليد الرقم بعد ما صار عندنا ID
+//         $invoice->invoice_number =  'INV-' . date('Ymd') . '-' . strtoupper(uniqid());
+//         $invoice->save();
+
+//         return $invoice;
+//     });
 // }
-public function createForPatient(array $data)
+//انشاء فاتورة المريض 
+public function createPatientInvoice(array $data)
 {
     return DB::transaction(function () use ($data) {
-
         $patient = Patient::findOrFail($data['patient_id']);
         $plan = Treatment_Plan::findOrFail($data['plan_id']);
 
         $rate = app(ExchangeRateService::class)->getCurrentUsdToSypRate();
+        
+        // لنفترض أنكِ حددتِ سعر الخطة الإجمالي في جدول الخطط أو يأتي من الـ $data
+        $totalUsd = $data['total_amount'] ?? $plan->price_usd; 
 
-        // 1️⃣ إنشاء الفاتورة بدون رقم نهائي
+        // 1. إنشاء الفاتورة
         $invoice = Invoice::create([
             'type' => 'patient',
             'patient_id' => $patient->id,
             'plan_id' => $plan->id,
             'status' => 'draft',
             'paid_amount' => 0,
-            'total_amount_USD' => 0,
-            'total_amount_SYP' => 0,
+            'total_amount_USD' => $totalUsd,
+            'total_amount_SYP' => $totalUsd * $rate->rate,
             'exchange_rate' => $rate->rate,
-            'issued_at' => $data['issued_at'] ?? now(),
+            'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(uniqid()),
+            'issued_at' => now(),
             'created_by' => Auth::id(),
         ]);
-
-        // 2️⃣ توليد الرقم بعد ما صار عندنا ID
-        $invoice->invoice_number =  'INV-' . date('Ymd') . '-' . strtoupper(uniqid());
-        $invoice->save();
 
         return $invoice;
     });
@@ -400,5 +282,116 @@ private function status($invoice)
     return 'paid';
 }
 
+// إحصائيات شهرية للفواتير حسب الحالة
+public function getMonthlyStatusStats($year = null)
+{
+    $year = $year ?? date('Y');
+    return \App\Models\Invoice::where('type', 'patient')
+        ->whereYear('created_at', $year)
+        ->whereIn('status', ['draft', 'issued', 'partial', 'paid'])
+        // ->withoutAppends() // استبعاد الملغاة
+        ->selectRaw('
+            MONTH(created_at) as month,
+            SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as completed_count,
+            SUM(CASE WHEN status IN ("draft", "issued", "partial") THEN 1 ELSE 0 END) as pending_count
+        ')
+        ->groupBy('month')
+        ->get()
+        ->makeHidden(['patient_name', 'paid_percent', 'final_price']);
+}
+
+// إحصائيات الإيرادات لسنة
+public function getMonthlyRevenueStats($year = null)
+{
+    $year = $year ?? date('Y');
+
+    $stats = \App\Models\Payment::whereHas('invoice', function ($query) {
+            $query->where('type', 'patient');
+        })
+        ->whereYear('created_at', $year)
+        ->selectRaw('
+            MONTH(created_at) as month,
+            SUM(amount) as total_collected_usd
+        ')
+        ->groupBy('month')
+        ->get()
+        ->keyBy('month');
+
+    $months = collect(range(1, 12))->map(function ($month) use ($stats) {
+        return [
+            'month'             => $month,
+            'total_collected_usd' => (float) ($stats[$month]['total_collected_usd'] ?? 0),
+        ];
+    });
+
+    return [
+        'months'    => $months,                                          // شهر شهر
+        'yearly_total' => $months->sum('total_collected_usd'),           // مجموع السنة
+    ];
+}
+//الايرادات لشهر محدد 
+public function getMonthlyRevenueBySpecificMonth($month, $year = null)
+{
+    $year = $year ?? date('Y');
+
+    return \App\Models\Payment::whereHas('invoice', function ($query) {
+            $query->where('type', 'patient');
+        })
+        ->whereYear('created_at', $year)
+        ->whereMonth('created_at', $month) // الفلترة حسب الشهر هنا
+        ->sum('amount'); // نستخدم sum مباشرة للحصول على الرقم النهائي
+}
+
+//اشعارات للمرضى بالفواتير المتأخرة بالدفع
+public function sendPaymentReminders()
+{
+    $overdueInvoices = $this->getOverdueInvoices(); // الفواتير المتأخرة
+
+    foreach ($overdueInvoices as $invoice) {
+        // نتحقق: هل أرسلنا له خلال آخر 7 أيام؟
+        if ($invoice->last_reminder_sent_at && $invoice->last_reminder_sent_at->greaterThan(now()->subDays(7))) {
+            continue;
+        }
+
+        // إرسال الإشعار باستخدام الـ Job الموجود عندك
+        dispatch(new \App\Jobs\SendNotificationJob(
+            [$invoice->patient->user->id],
+            'تذكير بدفعة مستحقة',
+            "عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية.",
+            'payment_reminder',
+            ['invoice_id' => $invoice->id]
+        ));
+
+        // تسجيل تاريخ الإرسال
+        $invoice->update(['last_reminder_sent_at' => now()]);
+    }
+}
+//عرض لفواتير المتأخرة بالدفع
+public function getOverdueInvoices($fromDate = null, $toDate = null)
+{
+    $startDate = $fromDate ? Carbon::parse($fromDate) : now()->subMonths(12);
+    $endDate   = $toDate   ? Carbon::parse($toDate)->endOfDay() : now();
+
+    return Invoice::where('type', 'patient')
+        ->where('status', '!=', 'paid')
+        ->where('status', '!=', 'cancelled')
+        ->whereBetween('created_at', [$startDate, $endDate])
+        ->with(['patient.user', 'plans'])
+        ->get()
+        ->filter(function ($invoice) {
+            if (!$invoice->plans) return false;
+
+            $progress = $invoice->plans->progress_percent;
+            $paid     = $invoice->paid_percent;
+
+            // الحالة 1: الخطة مكتملة 100% والمريض لم يكمل الدفع
+            $case1 = ($progress == 100 && $paid < 100);
+
+            // الحالة 2: نسبة الإنجاز أكبر من نسبة الدفع بـ 20% أو أكثر
+            $case2 = ($progress > $paid + 20);
+
+            return $case1 || $case2;
+        });
+}
 
 }

@@ -64,7 +64,8 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
     Route::get('/myPatients', [DoctorController::class, 'myPatients']);
     Route::get('/todayAppointments', [DoctorController::class, 'todayAppointments']);
     Route::get('/upcomingAppointments', [DoctorController::class, 'upcomingAppointments']);
-    Route::post('/material-requests', [DoctorController::class, 'store']);
+    Route::post('/material-requests', [DoctorController::class, 'store']);// طلب مواد من المستودع
+    Route::get('/doctor/schedules', [DoctorController::class, 'getMyAvailableTimes']);//عرض الأوقات المتاحة للطبيب
 
 });
 
@@ -102,6 +103,12 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::post('/doctors/{doctorId}/payments', [DoctorFinanceController::class, 'recordPayment']);
     Route::get('/doctors/{doctorId}/finance/summary', [DoctorFinanceController::class, 'summary']);
     Route::post('/exchange-rates/refresh', [ExchangeRateController::class, 'refresh']);
+    Route::get('/reports/status-stats', [InvoiceController::class, 'getStatusStats']);// إحصائيات حالة الفواتير
+    Route::get('/reports/revenue-stats', [InvoiceController::class, 'getRevenueStats']);//  لسنة إحصائيات الإيرادات الشهرية
+    Route::get('/reports/overdue-invoices', [InvoiceController::class, 'getOverdue']);// إحصائيات الفواتير المتأخرة
+    Route::get('/reports/revenue', [InvoiceController::class, 'getRevenue']);// إحصائيات الإيرادات لشهر محدد
+});
+Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى
     Route::post('/invoices/{id}/approve', [InvoiceController::class, 'approve']);//اعتماد الفاتورة
@@ -109,6 +116,8 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/invoices/{id}/print', [InvoiceController::class, 'print']);//طباعة الفاتورة
     Route::post('/invoices/{id}/pay', [InvoiceController::class, 'pay']);//دفع الفاتورة
     Route::post('/invoices/{id}/apply-discount', [InvoiceController::class, 'applyDiscount']);//تطبيق الخصم
+    Route::get('/invoices/{id}', [InvoiceController::class, 'printReceipt']);//طباعة وصل
+    
 });
 
 
