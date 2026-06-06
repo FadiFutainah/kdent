@@ -45,7 +45,7 @@ class TreatmentPlanService
                 'patient_id'       => $data['patient_id'],
                 'doctor_id'        => $doctor->id,
                 'name'             => $data['name'],
-                'start_date'       => $data['start_date'],
+                'start_date'       => $data['start_date'] ?? now(),
                 'notes'            => $data['notes'] ?? null,
                 'exchange_rate_id' => $rateRecord->id,
                 'price_usd'        => $data['price_usd'],
