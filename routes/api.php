@@ -112,7 +112,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
 });
 
 
-Route::middleware(['auth:sanctum', 'role:doctor|admin|accountant'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:doctor|admin|accountant|storekeeper'])->group(function () {
     Route::get('/exchange-rates/current', [ExchangeRateController::class, 'current']);
     Route::get('/exchange-rates/history', [ExchangeRateController::class, 'history']);
 

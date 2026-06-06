@@ -196,6 +196,7 @@ public function login($data)
             'authenticated' => true,
             'user_id' => $user->id,
             'name' => $user->name,
+            'role' => $user->getRoleNames()->first(),
         ];
     }
 

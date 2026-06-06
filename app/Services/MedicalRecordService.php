@@ -30,7 +30,7 @@ class MedicalRecordService
         return $this->formatRecord($patient);
     }
 
-    public function updateMedicalRecord(int $patientId, array $data)
+    /*public function updateMedicalRecord(int $patientId, array $data)
     {
         $scope = $this->resolveAccessScope();
 
@@ -55,13 +55,18 @@ class MedicalRecordService
             'medical_history_pregnancy',
         ];
 
-        if (array_key_exists('name', $data)) {
-            $userUpdates['name'] = $data['name'];
-        }
-
-        if (array_key_exists('phone_number', $data)) {
-            $userUpdates['phone_number'] = $data['phone_number'];
-        }
+        $userUpdates = array_filter([
+            'name' => $data['name'] ?? null,
+            'phone_number' => $data['phone_number'] ?? null,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'email' => $data['email'] ?? null,
+            'gender' => $data['gender'] ?? null,
+            'address' => $data['address'] ?? null,
+            'occupation' => $data['occupation'] ?? null,
+            'file_open_date' => $data['file_open_date'] ?? null,
+            'current_medications' => $data['current_medications'] ?? null,
+            'known_allergies' => $data['known_allergies'] ?? null,
+        ], fn ($value) => !is_null($value) && $value !== '');
 
         foreach ($this->recordFields() as $field) {
 
@@ -88,7 +93,70 @@ class MedicalRecordService
         }
 
         return $this->formatRecord($patient->fresh('user'));
-    }
+    }*/
+
+    public function updateMedicalRecord(int $patientId, array $data)
+    {
+        $scope = $this->resolveAccessScope();
+
+        if ($scope['role'] !== 'doctor') {
+            throw new \Exception('لا تملك صلاحية تعديل السجل');
+        }
+
+        $patient = Patient::with('user')->findOrFail($patientId);
+
+        $booleanFields = [
+            'medical_history_heart_disease',
+            'medical_history_diabetes',
+            'medical_history_blood_pressure',
+            'medical_history_asthma',
+            'medical_history_allergies_meds',
+            'medical_history_liver_disease',
+            'medical_history_kidney_disease',
+            'medical_history_blood_disorders',
+            'medical_history_pregnancy',
+        ];
+
+        // حقول جدول users
+        $userUpdates = array_filter([
+            'name' => $data['name'] ?? null,
+            'phone_number' => $data['phone_number'] ?? null,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'email' => $data['email'] ?? null,
+        ], fn ($value) => !is_null($value) && $value !== '');
+
+        // حقول جدول patients
+        $patientUpdates = [];
+
+        foreach ($this->recordFields() as $field) {
+
+            if (!array_key_exists($field, $data)) {
+                continue;
+            }
+
+            // لا تحدث القيم المنطقية إذا كانت null
+            if (
+                in_array($field, $booleanFields, true)
+                && is_null($data[$field])
+            ) {
+                continue;
+            }
+
+            $patientUpdates[$field] = $data[$field];
+        }
+
+        if (!empty($userUpdates)) {
+            $patient->user()->update($userUpdates);
+        }
+
+        if (!empty($patientUpdates)) {
+            $patient->update($patientUpdates);
+        }
+
+        return $this->formatRecord(
+            $patient->fresh('user')
+        );
+    }    
 
     private function formatRecord(Patient $patient): array
     {
@@ -97,6 +165,7 @@ class MedicalRecordService
             'user_id' => $patient->user_id,
             'name' => $patient->user?->name,
             'phone_number' => $patient->user?->phone_number,
+            'date_of_birth' => $patient->user?->date_of_birth,
             'gender' => $patient->gender,
             'address' => $patient->address,
             'occupation' => $patient->occupation,
