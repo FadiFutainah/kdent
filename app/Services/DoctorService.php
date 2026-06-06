@@ -17,6 +17,7 @@ class DoctorService
 {
     $doctor = Auth::user()->doctor;
 
+
     if (!$doctor) {
         return [
             'success' => false,
@@ -97,6 +98,23 @@ class DoctorService
 
         return ['message' => 'تم حذف الفترة'];
     }
+    //عرض الاوقات المتاحة
+    public function getMyAvailableTimes()
+{
+    $doctor = Auth::user()->doctor;
+
+    if (!$doctor) {
+        return [
+            'success' => false,
+            'message' => "هذا المستخدم ليس دكتور"
+        ];
+    }
+    return Doctor_Schedules::where('doctor_id', $doctor->id)
+    ->orderByRaw("FIELD(day, 'sun', 'mon', 'tues', 'wed', 'thy', 'fri', 'sat')")
+    ->orderBy('start_time', 'asc')
+    ->get();
+}
+
     ////////////////////////////////////////////////////
 // public function getDoctorPatients()
 // {
@@ -109,20 +127,47 @@ class DoctorService
 //     ->distinct()
 //     ->get();
 // }
-
+//عرض مرضى الدكتور
 public function getDoctorPatients()
 {
     $doctorId = Auth::user()->doctor->id;
 
-    return Patient::whereHas('treatmentPlans', function ($planQuery) use ($doctorId) {
-        $planQuery->where('doctor_id', $doctorId)
-            ->whereHas('items.sessions', function ($sessionQuery) {
-                $sessionQuery->where('status', 'completed');
-            });
+    return Patient::where(function ($query) use ($doctorId) {
+        $query->whereHas('treatmentPlans', function ($planQuery) use ($doctorId) {
+            $planQuery->where('doctor_id', $doctorId)
+                ->whereHas('items.sessions', function ($sessionQuery) {
+                    $sessionQuery->where('status', 'completed');
+                });
+        })
+        ->orWhereHas('appointments', function ($appointmentQuery) use ($doctorId) {
+            $appointmentQuery->where('doctor_id', $doctorId)
+                             ->where('status', 'confirmed');
+        });
     })
-        ->distinct()
-        ->get();
+    ->with(['user:id,name,phone_number']) // جلب الاسم ورقم الهاتف فقط من جدول الـ Users
+    ->get(['id', 'user_id'])        // جلب الـ ID والـ user_id فقط من جدول المرضى
+    ->map(function ($patient) {
+        return [
+            'id'    => $patient->id,
+            'name'  => $patient->user->name,
+            'phone' => $patient->user->phone_number, // تأكدي أن اسم الحقل في جدول users هو phone
+        ];
+    });
 }
+
+// public function getDoctorPatients()
+// {
+//     $doctorId = Auth::user()->doctor->id;
+
+//     return Patient::whereHas('treatmentPlans', function ($planQuery) use ($doctorId) {
+//         $planQuery->where('doctor_id', $doctorId)
+//             ->whereHas('items.sessions', function ($sessionQuery) {
+//                 $sessionQuery->where('status', 'completed');
+//             });
+//     })
+//         ->distinct()
+//         ->get();
+// }
 
 public function getTodayAppointments()
 {

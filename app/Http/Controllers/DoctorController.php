@@ -46,6 +46,12 @@ class DoctorController extends Controller
 
         return response()->json($result);
     }
+    //عرض الاوقات المتاحة
+    public function getMyAvailableTimes()
+{
+    $schedules = $this->service->getMyAvailableTimes();
+    return response()->json($schedules);
+}
 ///////////////////////////////////////////////////
 //عرض قائمة المرضى
 public function myPatients()

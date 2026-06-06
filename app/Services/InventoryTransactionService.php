@@ -99,7 +99,22 @@ public function purchaseBulk(array $data)
                 // المادة موجودة مسبقاً
                 $item = $supplierItem->item;
             }
+// 🔥 التحقق من الحد الأعلى (Max Stock)
+    $maxStock = $item->max_stock;
 
+    // إذا كان الحد الأعلى معرفاً (أكبر من 0)
+    if ($maxStock > 0) {
+        $requestedQuantity = $row['quantity'];
+        $currentStock = $item->current_stock;
+        
+        // التحقق: هل الكمية الحالية + الكمية المطلوبة > الحد الأعلى؟
+        if (($currentStock + $requestedQuantity) > $maxStock) {
+            throw new \Exception(
+                "خطأ: لا يمكن إتمام العملية. كمية المادة '{$item->name}' ستتجاوز الحد الأعلى المسموح به (" . 
+                $maxStock . "). المخزون الحالي: " . $currentStock
+            );
+        }
+    }
             /**
              * 🔥 إدارة المخزون
              * إذا نفس المادة + نفس التشغيلة موجودين

@@ -45,7 +45,7 @@ class TreatmentPlanService
                 'patient_id'       => $data['patient_id'],
                 'doctor_id'        => $doctor->id,
                 'name'             => $data['name'],
-                'start_date'       => $data['start_date'] ?? now(),
+                'start_date'       => $data['start_date'],
                 'notes'            => $data['notes'] ?? null,
                 'exchange_rate_id' => $rateRecord->id,
                 'price_usd'        => $data['price_usd'],
@@ -56,9 +56,10 @@ class TreatmentPlanService
           //  $this->syncDoctorEarning($plan);
 
             $invoice = app(\App\Services\InvoiceService::class)
-                ->createForPatient([
+                ->createPatientInvoice([
                     'patient_id' => $plan->patient_id,
                     'plan_id'    => $plan->id,
+                    'amount_usd' => $plan->price_usd,
                 ]);
 
             if ($invoice->type !== 'patient') {
@@ -249,10 +250,6 @@ class TreatmentPlanService
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
-        if ($plan->status === 'completed' || $plan->is_locked) {
-            throw new \DomainException('الخطة مكتملة ومقفلة ولا يمكن إضافة مراحل');
-        }
-
         $item = Plan_Item::create([
             'plan_id'     => $plan->id,
             'category_id' => $data['category_id'],
@@ -274,10 +271,6 @@ class TreatmentPlanService
         $plan = Treatment_Plan::where('id', $planId)
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
-
-        if ($plan->status === 'completed' || $plan->is_locked) {
-            throw new \DomainException('الخطة مكتملة ومقفلة ولا يمكن تعديل المراحل');
-        }
 
         $item = Plan_Item::where('plan_id', $plan->id)
             ->where('id', $itemId)

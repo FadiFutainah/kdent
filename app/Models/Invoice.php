@@ -6,6 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class invoice extends Model
 {
+    //protected $appends = []; // لكي تظهر النسبة تلقائياً في الريسبونس
+    protected $hidden = ['patient'];
+    protected $appends = ['patient_name','paid_percent','final_price'];
+    protected $casts = [
+    'last_reminder_sent_at' => 'datetime',
+    'issued_at'             => 'datetime',
+];
      protected $fillable = [
         'type',
         'supplier_id',
@@ -18,13 +25,12 @@ class invoice extends Model
         'discount',
         'total_amount_USD_after_discount',
         'total_amount_SYP_after_discount',
-        'currency',
         'exchange_rate',
         'created_by',
         'status',
         'notes',
-        'pdf_url',
-        'issued_at'
+        'issued_at',
+        'last_reminder_sent_at',
     ];
 
     public function items()
@@ -51,9 +57,33 @@ public function payments()
 {
     return $this->hasMany(Payment::class);
 }
+
 public function plans()
 {
     return $this->belongsTo(Treatment_Plan::class, 'plan_id');
 }
+
+// تعريف الـ Attribute الذي سيجلب الاسم
+    public function getPatientNameAttribute()
+    {
+        // نصل للاسم من المريض ثم المستخدم، وإذا لم يوجد نرجع '-'
+        return $this->patient?->user?->name ?? 'غير معروف';
+    }
+// التابع المركزي للسعر (يغنيكِ عن تكرار شرط الخصم)
+    public function getFinalPriceAttribute()
+    {
+        return ($this->total_amount_USD_after_discount > 0) 
+               ? $this->total_amount_USD_after_discount 
+               : $this->total_amount_USD;
+    }
+
+    // التابع المركزي لنسبة السداد
+    public function getPaidPercentAttribute()
+    {
+        $finalAmount = $this->final_price;
+        if ($finalAmount <= 0) return 100;
+        
+        return (int) round(($this->paid_amount / $finalAmount) * 100);
+    }
 
 }

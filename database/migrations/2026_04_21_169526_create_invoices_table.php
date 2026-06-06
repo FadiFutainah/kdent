@@ -24,12 +24,13 @@ return new class extends Migration
             $table->decimal('discount', 12, 2)->default(0);
              $table->decimal('total_amount_USD_after_discount', 12, 2)->default(0)->nullable();
             $table->decimal('total_amount_SYP_after_discount', 12, 2)->default(0)->nullable();
-            $table->string('currency')->default('USD');
+           // $table->string('currency')->default('USD');
             $table->decimal('exchange_rate', 12, 4)->default(1);
             $table->unsignedBigInteger('created_by')->nullable();
             $table->enum('status', ['draft', 'issued', 'partial', 'paid', 'cancelled'])->default('draft');
             $table->text('notes')->nullable();
-            $table->string('pdf_url')->nullable();
+            $table->timestamp('last_reminder_sent_at')->nullable();
+          //  $table->string('pdf_url')->nullable();
             $table->timestamp('issued_at')->nullable();
             $table->timestamps();
         });
