@@ -19,6 +19,7 @@ use App\Http\Controllers\MedicalReportController;
 use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\SecretaryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AccountantController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -117,7 +118,8 @@ Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
     Route::post('/invoices/{id}/pay', [InvoiceController::class, 'pay']);//دفع الفاتورة
     Route::post('/invoices/{id}/apply-discount', [InvoiceController::class, 'applyDiscount']);//تطبيق الخصم
     Route::get('/invoices/{id}', [InvoiceController::class, 'printReceipt']);//طباعة وصل
-    
+    Route::get('/doctor/{doctorId}/plans/dues',[AccountantController::class, 'doctorPlansDues']
+);
 });
 
 

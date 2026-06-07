@@ -156,18 +156,20 @@ class DoctorFinanceService
         return $this->getDoctorSummary($doctor->id);
     }
 
-    public function getDoctorPlansDues()
+    public function getDoctorPlansDues(int $doctorId)
     {
         $doctor = Auth::user()->doctor;
 
         $plans = Treatment_Plan::with('patient')
-            ->where('doctor_id', $doctor->id)
+            ->where('doctor_id', $doctorId)
+            ->orderByDesc('created_at') // الأحدث أولاً
             ->get();
 
         return $plans->map(function ($plan) {
 
             return [
                 'plan_id' => $plan->id,
+                'name' => $plan->name,
 
                 'patient' => [
                     'id' => $plan->patient?->id,

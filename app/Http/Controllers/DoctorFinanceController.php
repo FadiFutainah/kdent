@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\DoctorFinanceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DoctorFinanceController extends Controller
 {
@@ -47,8 +48,10 @@ class DoctorFinanceController extends Controller
 
     public function doctorPlansDues()
     {
+        $doctor = Auth::user()->doctor;
+
         return response()->json([
-            'data' => $this->service->getDoctorPlansDues()
+            'data' => $this->service->getDoctorPlansDues($doctor->id)
         ]);
     }
 
