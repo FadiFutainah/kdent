@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class invoice extends Model
+class Invoice extends Model
 {
     //protected $appends = []; // لكي تظهر النسبة تلقائياً في الريسبونس
     protected $hidden = ['patient'];

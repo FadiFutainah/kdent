@@ -141,4 +141,24 @@ class MedicalReportService
 
         throw new \Exception('غير مصرح');
     }
+
+    public function getReportForPdf(int $reportId): Medical_Report
+    {
+        $scope = $this->resolveAccessScope();
+
+        $query = Medical_Report::with([
+            'patient.user',
+            'doctor.user'
+        ])->where('id', $reportId);
+
+        if ($scope['role'] === 'doctor') {
+            $query->where('doctor_id', $scope['doctor_id']);
+        }
+
+        if ($scope['role'] === 'patient') {
+            $query->where('patient_id', $scope['patient_id']);
+        }
+
+        return $query->firstOrFail();
+    }
 }

@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Services\MedicalReportService;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
+use ArPHP\I18N\Arabic; 
 
 class MedicalReportController extends Controller
 {
@@ -40,4 +43,27 @@ class MedicalReportController extends Controller
             $this->service->getReportDetails($reportId)
         );
     }
+
+    
+public function downloadPdf(int $reportId)
+{
+    $report = $this->service->getReportForPdf($reportId);
+
+    $mpdf = new \Mpdf\Mpdf([
+        'mode'        => 'utf-8',
+        'format'      => 'A4',
+        'orientation' => 'P',
+        'directionality' => 'rtl',
+    ]);
+
+    $html = view('pdf.medical-report', compact('report'))->render();
+
+    $mpdf->WriteHTML($html);
+
+    return response($mpdf->Output('', 'S'), 200, [
+        'Content-Type'        => 'application/pdf',
+        'Content-Disposition' => "attachment; filename=medical-report-{$report->id}.pdf",
+    ]);
+}
+
 }

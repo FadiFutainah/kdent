@@ -98,6 +98,8 @@ Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
 Route::middleware(['auth:sanctum', 'role:doctor|secretary'])->group(function () {
     Route::post('/patients/search', [DoctorController::class, 'searchPatients']);
     Route::get('/doctor/schedules', [AppointmentController::class, 'getAvailableSlots']);
+    Route::post('/medical-records/{patientId}', [MedicalRecordController::class, 'update']);
+
 });
 
 Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () {
@@ -108,6 +110,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/reports/revenue-stats', [InvoiceController::class, 'getRevenueStats']);//  لسنة إحصائيات الإيرادات الشهرية
     Route::get('/reports/overdue-invoices', [InvoiceController::class, 'getOverdue']);// إحصائيات الفواتير المتأخرة
     Route::get('/reports/revenue', [InvoiceController::class, 'getRevenue']);// إحصائيات الإيرادات لشهر محدد
+    Route::get('/payments/{paymentId}/pdf', [DoctorFinanceController::class, 'downloadPaymentPdf']);
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
@@ -153,7 +156,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     
     Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
     Route::post('/medical-reports', [MedicalReportController::class, 'store']);
-    Route::post('/medical-records/{patientId}', [MedicalRecordController::class, 'update']);
+   // Route::post('/medical-records/{patientId}', [MedicalRecordController::class, 'update']);
     Route::get('/doctor/plans/dues', [DoctorFinanceController::class, 'doctorPlansDues']);
 
 });
@@ -192,6 +195,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::post('/profile', [ProfileController::class, 'update']);
+    Route::get('/reports/{reportId}/pdf',[MedicalReportController::class, 'downloadPdf']);
 
 
 });
+

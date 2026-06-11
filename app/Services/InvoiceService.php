@@ -1,7 +1,7 @@
 <?php
 namespace App\Services;
 use App\Models\Invoice;
-use App\Models\patient;
+use App\Models\Patient;
 use App\Models\Payment;
 use App\Models\Treatment_plan;
 use Illuminate\Support\Facades\Auth;

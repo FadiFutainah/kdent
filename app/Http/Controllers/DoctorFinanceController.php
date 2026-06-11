@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Services\DoctorFinanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use ArPHP\I18N\Arabic;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DoctorFinanceController extends Controller
 {
@@ -52,6 +54,26 @@ class DoctorFinanceController extends Controller
 
         return response()->json([
             'data' => $this->service->getDoctorPlansDues($doctor->id)
+        ]);
+    }
+
+    public function downloadPaymentPdf(int $paymentId)
+    {
+        $payment = $this->service->getPaymentForPdf($paymentId);
+
+        $mpdf = new \Mpdf\Mpdf([
+            'mode'           => 'utf-8',
+            'format'         => 'A4',
+            'orientation'    => 'P',
+            'directionality' => 'rtl',
+        ]);
+
+        $html = view('pdf.doctor-payment', compact('payment'))->render();
+        $mpdf->WriteHTML($html);
+
+        return response($mpdf->Output('', 'S'), 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=payment-{$payment['id']}.pdf",
         ]);
     }
 

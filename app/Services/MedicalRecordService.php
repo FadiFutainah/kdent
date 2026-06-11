@@ -99,7 +99,10 @@ class MedicalRecordService
     {
         $scope = $this->resolveAccessScope();
 
-        if ($scope['role'] !== 'doctor') {
+        if (
+            $scope['role'] !== 'doctor' &&
+            $scope['role'] !== 'secretary'
+        ) {
             throw new \Exception('لا تملك صلاحية تعديل السجل');
         }
 

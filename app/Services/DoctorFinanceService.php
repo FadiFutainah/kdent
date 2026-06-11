@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\doctor;
+use App\Models\Doctor;
 use App\Models\Doctor_Earning;
 use App\Models\Doctor_Payment;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +16,7 @@ class DoctorFinanceService
 
     public function recordPayment(int $doctorId, array $data)
     {
-        $doctor = doctor::findOrFail($doctorId);
+        $doctor = Doctor::findOrFail($doctorId);
 
         $amountUsdProvided = array_key_exists('amount_usd', $data) && !is_null($data['amount_usd']);
         $amountSypProvided = array_key_exists('amount_syp', $data) && !is_null($data['amount_syp']);
@@ -182,6 +182,21 @@ class DoctorFinanceService
                 'status' => $plan->status,
             ];
         });
+    }
+
+    public function getPaymentForPdf(int $paymentId): array
+    {
+        $payment = Doctor_Payment::with(['doctor.user', 'exchangeRate'])
+            ->findOrFail($paymentId);
+
+        return [
+            'id'            => $payment->id,
+            'doctor_name'   => $payment->doctor?->user?->name,
+            'exchange_rate' => $payment->exchangeRate?->rate,
+            'amount_usd'    => $payment->amount_usd,
+            'amount_syp'    => $payment->amount_syp,
+            'payment_date'  => $payment->payment_date,
+        ];
     }
 
     
