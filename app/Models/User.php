@@ -10,6 +10,7 @@ use Spatie\Permission\Traits\HasRoles; // لتفعيل مكتبة سباتي
 
 class User extends Authenticatable
 {
+    use FixJsonDateFormat;
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens,HasFactory, Notifiable,HasRoles;
 protected $guard_name = 'api';
@@ -18,6 +19,7 @@ protected $guard_name = 'api';
      *
      * @var list<string>
      */
+    
     protected $fillable = [
         'name',
         'email',           // للموظفين (طبيب، محاسب...)
@@ -59,7 +61,7 @@ protected $guard_name = 'api';
     }
 public function patient()
     {
-        return $this->hasOne(patient::class);
+        return $this->hasOne(Patient::class);
     }
     public function notifications()
 {

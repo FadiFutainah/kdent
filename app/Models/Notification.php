@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
+    use FixJsonDateFormat;
       protected $fillable = [
          'user_id',
         'title',

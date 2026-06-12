@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\Doctor;
-use App\Models\Doctor_Schedules;
+use App\Models\Doctor_Schedule;
 use App\Models\Patient;
 use App\Models\User;
 use Carbon\Carbon;
@@ -170,7 +170,7 @@ class AppointmentService
             $date = Carbon::today()->addDays($i);
             $day = $this->normalizeDay($date);
 
-            $schedules = Doctor_Schedules::where('doctor_id', $doctor->id)
+            $schedules = Doctor_Schedule::where('doctor_id', $doctor->id)
                 ->where('day', $day)
                 ->get();
 
@@ -297,7 +297,7 @@ class AppointmentService
         $day = $this->normalizeDay($appointmentDateTime);
 
         // 2. التحقق من وجود جدول دوام في هذا اليوم
-        $schedules = Doctor_Schedules::where('doctor_id', $doctor->id)
+        $schedules = Doctor_Schedule::where('doctor_id', $doctor->id)
             ->where('day', $day)
             ->get();
 
@@ -427,7 +427,7 @@ class AppointmentService
 
         $dayOrder = ['sat', 'sun', 'mon', 'tues', 'wed', 'thy', 'fri'];
 
-        return Doctor_Schedules::where('doctor_id', $doctorId)
+        return Doctor_Schedule::where('doctor_id', $doctorId)
             ->get()
             ->unique('day')
             ->sortBy(fn($schedule) => array_search($schedule->day, $dayOrder))

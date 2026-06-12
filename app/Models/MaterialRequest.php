@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class MaterialRequest extends Model
 {
+    use FixJsonDateFormat;
     
     protected $fillable = [
 'requisition_number',

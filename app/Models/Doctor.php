@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Doctor extends Model
 {
+    use FixJsonDateFormat;
      protected $fillable = [
         'user_id',
         'specialization_id',
@@ -24,7 +25,7 @@ class Doctor extends Model
 
     public function schedules()
     {
-        return $this->hasMany(Doctor_Schedules::class);
+        return $this->hasMany(Doctor_Schedule::class);
     }
 
     public function treatmentPlans()

@@ -4,9 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Doctor_Schedules extends Model
+class Doctor_Schedule extends Model
 {
-    
+    use FixJsonDateFormat;
+    protected $table = 'doctor_schedules';
     protected $fillable = [
         'doctor_id',
         'day',

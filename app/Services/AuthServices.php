@@ -37,7 +37,7 @@ class AuthServices {
         ]);
         $user->assignRole('patient');
  // 2️⃣ إنشاء patient مباشرة
-        patient::create([
+        Patient::create([
             'user_id' => $user->id,
             'file_open_date' => now(),
             // باقي الحقول فاضية بالبداية

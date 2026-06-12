@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
+    use FixJsonDateFormat;
     protected $fillable = [
         'invoice_id',
         'amount',

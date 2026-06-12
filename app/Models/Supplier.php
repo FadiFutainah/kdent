@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Supplier extends Model
 {
+    use FixJsonDateFormat;
      protected $fillable = ['name', 'phone', 'notes'];
 
     public function transactions()

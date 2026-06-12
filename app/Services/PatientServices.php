@@ -1,6 +1,6 @@
 <?php
 namespace App\Services;
-use App\Models\Doctor_Schedules;
+use App\Models\Doctor_Schedule;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
@@ -43,7 +43,7 @@ public function getAvailableSlotsForDays($doctorId)
         $date = Carbon::today()->addDays($i);
         $day = $this->normalizeDay($date);
 
-        $schedules = Doctor_Schedules::where('doctor_id', $doctor->id)
+        $schedules = Doctor_Schedule::where('doctor_id', $doctor->id)
             ->where('day', $day) ->get();
 
 
@@ -166,7 +166,7 @@ public function getAvailableSlotsForDays($doctorId)
 
         $day = $this->normalizeDay($appointmentDateTime);
 
-        $hasSchedule = Doctor_Schedules::where('doctor_id', $doctor->id)
+        $hasSchedule = Doctor_Schedule::where('doctor_id', $doctor->id)
             ->where('day', $day)
             ->exists();
 

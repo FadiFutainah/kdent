@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Invoice_Item extends Model
 {
+    use FixJsonDateFormat;
     protected $fillable = [
         'invoice_id',
         'item_id',

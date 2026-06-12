@@ -1,6 +1,6 @@
 <?php
 namespace App\Services;
-use App\Models\Doctor_Schedules;
+use App\Models\Doctor_Schedule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Appointment;
@@ -27,7 +27,7 @@ class DoctorService
     }
 
     // 🔥 منع التداخل
-    $overlap = Doctor_Schedules::where('doctor_id', $doctor->id)
+    $overlap = Doctor_Schedule::where('doctor_id', $doctor->id)
         ->where('day', $data['day'])
         ->where(function ($q) use ($data) {
             $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
@@ -51,7 +51,7 @@ class DoctorService
     //throw new \Exception("وقت البداية لازم يكون قبل النهاية");
 }
 
-    return Doctor_Schedules::create([
+    return Doctor_Schedule::create([
         'doctor_id' => $doctor->id,
         'day' => $data['day'],
         'start_time' => $data['start_time'],
@@ -63,7 +63,7 @@ class DoctorService
     {
         $doctor = Auth::user()->doctor;
 
-        $schedule = Doctor_Schedules::where('id', $id)
+        $schedule = Doctor_Schedule::where('id', $id)
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
@@ -90,7 +90,7 @@ class DoctorService
     {
         $doctor = Auth::user()->doctor;
 
-        $schedule = Doctor_Schedules::where('id', $id)
+        $schedule = Doctor_Schedule::where('id', $id)
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
@@ -109,7 +109,7 @@ class DoctorService
             'message' => "هذا المستخدم ليس دكتور"
         ];
     }
-    return Doctor_Schedules::where('doctor_id', $doctor->id)
+    return Doctor_Schedule::where('doctor_id', $doctor->id)
     ->orderByRaw("FIELD(day, 'sun', 'mon', 'tues', 'wed', 'thy', 'fri', 'sat')")
     ->orderBy('start_time', 'asc')
     ->get();

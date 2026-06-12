@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Doctor_Payment extends Model
 {
+    use FixJsonDateFormat;
     protected $table = 'doctor_payments';
 
     protected $fillable = [

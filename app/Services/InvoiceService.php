@@ -3,7 +3,7 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\Patient;
 use App\Models\Payment;
-use App\Models\Treatment_plan;
+use App\Models\Treatment_Plan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;

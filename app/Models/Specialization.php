@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Specialization extends Model
 {
+    use FixJsonDateFormat;
     
     protected $fillable = ['name','description'];
 

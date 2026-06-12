@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Patient extends Model
 {
+    use FixJsonDateFormat;
       protected $fillable = [
         'user_id',
         'gender',

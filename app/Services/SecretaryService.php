@@ -7,7 +7,7 @@ use App\Models\Patient;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Doctor_Schedules;
+use App\Models\Doctor_Schedule;
 use Illuminate\Support\Facades\DB;
 
 class SecretaryService

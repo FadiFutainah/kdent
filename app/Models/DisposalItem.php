@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class DisposalItem extends Model
 {
+    use FixJsonDateFormat;
     protected $fillable = [
         'disposal_id', 
         'item_id',

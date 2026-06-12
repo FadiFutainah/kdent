@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Exchange_Rate extends Model
 {
+    use FixJsonDateFormat;
     protected $table = 'exchange_rates';
 
     protected $fillable = [
