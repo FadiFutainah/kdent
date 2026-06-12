@@ -20,6 +20,11 @@ class SecretaryService
                     $sessionQuery->where('status', 'completed');
                 });
         })
+                ->orWhereHas('appointments', function ($appointmentQuery) use ($doctorId) {
+                    $appointmentQuery->where('doctor_id', $doctorId)
+                    ->where('status', 'confirmed');
+        })
+
             ->distinct()
             ->get()
             ->map(function (Patient $patient) {
