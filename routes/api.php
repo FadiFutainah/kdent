@@ -138,7 +138,7 @@ Route::middleware(['auth:sanctum', 'role:patient|doctor|secretary'])->group(func
     Route::get('/items/{itemId}', [TreatmentPlanController::class, 'showItem']);
     Route::get('/sessions/{sessionId}', [TreatmentPlanController::class, 'showSession']);
     Route::get('/medical-reports/{patientId}', [MedicalReportController::class, 'index']);
-    Route::get('/medical-reports/{reportId}', [MedicalReportController::class, 'show']);
+    Route::get('/medical-reportD/{reportId}', [MedicalReportController::class, 'show']);
     Route::get('/medical-records/{patientId}', [MedicalRecordController::class, 'show']);
 });
 
