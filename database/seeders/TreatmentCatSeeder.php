@@ -17,7 +17,6 @@ class TreatmentCatSeeder extends Seeder
             'التشخيص',
             'التحضير',
             'حشو',
-            'الانهاء',
         ];
 
         foreach ($names as $name) {
