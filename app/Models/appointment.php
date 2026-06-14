@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Appointment extends Model
 {
     use FixJsonDateFormat;
-
+protected $table = 'appointments';
        protected $fillable = [
         'patient_id',
         'doctor_id',

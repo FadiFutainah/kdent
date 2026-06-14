@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Disposal extends Model
 {
     use FixJsonDateFormat;
+    protected $table = 'disposals';
     protected $fillable = [
         'disposal_number', 
         'disposal_date', 

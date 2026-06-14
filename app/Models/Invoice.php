@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Invoice extends Model
 {
     use FixJsonDateFormat;
+    protected $table = 'invoices';
     //protected $appends = []; // لكي تظهر النسبة تلقائياً في الريسبونس
     protected $hidden = ['patient'];
     protected $appends = ['patient_name','paid_percent','final_price'];

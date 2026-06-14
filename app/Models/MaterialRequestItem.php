@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class MaterialRequestItem extends Model
 {
     use FixJsonDateFormat;
+    protected $table = 'material_request_items';
       protected $fillable = [
         'material_request_id',
         'item_id',

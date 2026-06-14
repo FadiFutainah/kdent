@@ -451,7 +451,7 @@ public function approveMaterialRequest(int $requestId): MaterialRequest
                         ->decrement('current_stock', $takeQty);
 //////////////////////////
 // بعد سطر الـ decrement
-Item::where('id', $requestItem->item_id)->decrement('current_stock', $takeQty);
+//Item::where('id', $requestItem->item_id)->decrement('current_stock', $takeQty);
 
 // فحص يدوي لنقص المخزون بعد الصرف
 $updatedItem = Item::find($requestItem->item_id);

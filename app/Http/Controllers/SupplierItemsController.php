@@ -39,7 +39,7 @@ public function store(Request $request)
 {
     $data = $request->validate([
         'name' => 'required|string',
-        'phone' => 'nullable|string',
+        'phone' => ['nullable|string', 'regex:/^09[0-9]{8}$/'],
         'notes' => 'nullable|string',
         'items' => 'required|array',
         
