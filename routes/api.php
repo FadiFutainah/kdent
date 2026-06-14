@@ -53,7 +53,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::get('/pending_approvals', [InventoryTransactionController::class, 'getPendingAuditsReport']);// عرض الجردات في انتظار الموافقة
     Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد 
     Route::get('getDisposedItemsHistory', [InventoryTransactionController::class, 'getDisposedItemsHistory']);//عرض جميع المواد التي تم اتلافها للادمن 
-    
+    Route::post('/invoices/{id}/approve', [InvoiceController::class, 'approve']);//اعتماد الفاتورة
     Route::get('/Allpatients', [PatientController::class, 'listAllPatients']);
 
 });
@@ -111,11 +111,11 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/reports/overdue-invoices', [InvoiceController::class, 'getOverdue']);// إحصائيات الفواتير المتأخرة
     Route::get('/reports/revenue', [InvoiceController::class, 'getRevenue']);// إحصائيات الإيرادات لشهر محدد
     Route::get('/payments/{paymentId}/pdf', [DoctorFinanceController::class, 'downloadPaymentPdf']);
+    Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
-    Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
+  
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى
-    Route::post('/invoices/{id}/approve', [InvoiceController::class, 'approve']);//اعتماد الفاتورة
    // Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);//وضع علامة مدفوعة على الفاتورة
     Route::get('/invoices/{id}/print', [InvoiceController::class, 'print']);//طباعة الفاتورة
     Route::post('/invoices/{id}/pay', [InvoiceController::class, 'pay']);//دفع الفاتورة
@@ -153,6 +153,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::post('/treatment-sessions/{sessionId}', [TreatmentSessionController::class, 'update']);
     Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
     Route::post('/consume', [InventoryTransactionController::class, 'storee']);//طلب مواد من المستودع
+    Route::get('/available', [InventoryTransactionController::class, 'getAvailableItemsForDoctor']);//عرض المواد المتاحة للطبيب
     
     Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
     Route::post('/medical-reports', [MedicalReportController::class, 'store']);
@@ -175,6 +176,8 @@ Route::get('/shows', [InventoryTransactionController::class, 'shows']);// عرض
 Route::get('/showss', [InventoryTransactionController::class, 'showss']);// عرض تفاصيل جرد محدد      
 Route::post('/audits/{id}/items', [InventoryTransactionController::class, 'addItem']);// إضافة مادة إلى جرد
 Route::get('/audits/{id}/complete', [InventoryTransactionController::class, 'complete']);// انهاء الجرد
+Route::get('/material-requests/pending', [InventoryTransactionController::class, 'getPendingDoctorRequests']);// عرض طلبات المواد القادمة من الأطباء بانتظار الموافقة
+Route::get('/material-requests/{id}/details', [InventoryTransactionController::class, 'getDoctorRequestDetails']);// عرض تفاصيل طلب محدد مع فحص FIFO
 // روابط الإتلاف الخاصة بأمينة المستودع
 Route::post('/disposals/manual-immediate', [InventoryTransactionController::class, 'storeManualImmediate']); // زر إتلاف فوري للمواد المكسورة/التالفة
 Route::get('/disposals/pending', [InventoryTransactionController::class, 'getPendingDisposals']);          // عرض طلبات الإتلاف "التلقائية" القادمة من الجوب ليلاً بانتظار تأكيدها

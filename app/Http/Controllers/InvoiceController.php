@@ -353,6 +353,22 @@ public function print($id)
             <h3 style="color: ' . ($remaining > 0 ? 'red' : 'green') . ';">المتبقي: ' . number_format($remaining, 2) . ' USD</h3>
         </div>
     ';
+    // قائمة الدفعات (أرقام فقط بدون تفاصيل)
+    $payments = $invoice->payments;
+    if ($payments->count() > 0) {
+        $html .= '<div class="section"><h3>سجل الدفعات</h3><table style="width:100%; border-collapse: collapse;">';
+        $html .= '<tr><th style="border:1px solid #ccc; padding:5px;">#</th><th style="border:1px solid #ccc; padding:5px;">التاريخ</th><th style="border:1px solid #ccc; padding:5px;">المبلغ (USD)</th></tr>';
+
+        foreach ($payments as $index => $payment) {
+            $html .= '<tr>
+                <td style="border:1px solid #ccc; padding:5px; text-align:center;">' . ($index + 1) . '</td>
+                <td style="border:1px solid #ccc; padding:5px; text-align:center;">' . $payment->created_at->format('Y-m-d') . '</td>
+                <td style="border:1px solid #ccc; padding:5px; text-align:center;">' . number_format($payment->amount, 2) . '</td>
+            </tr>';
+        }
+
+        $html .= '</table></div>';
+    }
 
     // قسم التوقيع
     $html .= '
@@ -419,7 +435,10 @@ public function printReceipt($paymentId)
             <p><strong>' . $partyLabel . ':</strong> ' . $partyName . '</p>
             <p><strong>المبلغ المدفوع في هذه الدفعة:</strong> ' . number_format($payment->amount, 2) . ' USD</p>
             <p><strong>طريقة الدفع:</strong> ' . $payment->method . '</p>
-            
+            <div style="margin-top: 15px; border-top: 1px dashed #999; padding-top: 10px;">
+                <p style="font-size: 14px;"><strong>إجمالي قيمة الفاتورة:</strong> ' . number_format($finalTotal, 2) . ' USD</p>
+                <p style="font-size: 14px;"><strong>إجمالي المدفوع حتى الآن:</strong> ' . number_format($invoice->paid_amount, 2) . ' USD</p>
+            </div>
             <div style="margin-top: 20px; border-top: 1px solid #000; padding-top: 10px;">
                 <p style="font-size: 14px;">
                     ' . $actionLabel . ': 

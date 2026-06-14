@@ -904,6 +904,7 @@ public function getByItem($item_id)
 //         ->with('item')
 //         ->get();
 // }
+
 public function getExpiredItems()
 {
     return Inventory::where('is_active', false)
@@ -920,6 +921,7 @@ public function getExpiredItems()
         ->with('item')
         ->get();
 }
+
 //عرض جميع المواد التي تم اتلافها للادمن 
 public function getDisposedItemsHistory()
 {
@@ -937,4 +939,36 @@ public function getLowStockItems()
         ->whereColumn('current_stock', '<=', 'minimum_stock')
         ->get();
 }
+// عرض طلبات الأطباء المعلقة
+public function getPendingDoctorRequests()
+{
+    $data = $this->service->getPendingDoctorRequests();
+
+    return response()->json([
+        'success' => true,
+        'data'    => $data,
+    ]);
+}
+
+// عرض تفاصيل طلب محدد
+public function getDoctorRequestDetails($id)
+{
+    $data = $this->service->getDoctorRequestDetails($id);
+
+    return response()->json([
+        'success' => true,
+        'data'    => $data,
+    ]);
+}
+
+public function getAvailableItemsForDoctor()
+{
+    $data = $this->service->getAvailableItemsForDoctor();
+
+    return response()->json([
+        'success' => true,
+        'data'    => $data,
+    ]);
+}
+
 }

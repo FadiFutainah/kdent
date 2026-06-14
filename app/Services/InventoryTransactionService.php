@@ -1442,4 +1442,85 @@ public function executeImmediateManualDisposal(array $data, int $userId)
         return $disposal->fresh()->load('items.item');
     });
 }
+// عرض طلبات الأطباء المعلقة لأمين المستودع
+public function getPendingDoctorRequests()
+{
+    return MaterialRequest::with(['doctor.user', 'doctor.specialization', 'items.item'])
+        ->where('status', 'pending')
+        ->orderBy('requested_date', 'asc')
+        ->get()
+        ->map(function ($req) {
+            return [
+                'id'                 => $req->id,
+                'requisition_number' => $req->requisition_number,
+                'status'             => $req->status,
+                'requested_date'     => $req->requested_date,
+                'notes'              => $req->notes,
+                'doctor' => [
+                    'id'             => $req->doctor->id,
+                    'name'           => $req->doctor->user->name ?? 'غير معروف',
+                    'specialization' => $req->doctor->specialization->name ?? 'غير محدد',
+                ],
+                'items_count' => $req->items->count(),
+            ];
+        });
+}
+
+// عرض تفاصيل طلب محدد مع فحص FIFO
+public function getDoctorRequestDetails(int $id): array
+{
+    $req = MaterialRequest::with(['doctor.user', 'doctor.specialization', 'items.item'])
+        ->findOrFail($id);
+
+    $items = $req->items->map(function ($requestItem) {
+        $item = $requestItem->item;
+
+        $batches = Inventory::where('item_id', $item->id)
+            ->where('quantity', '>', 0)
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('expiry_date')
+                  ->orWhere('expiry_date', '>', now()->toDateString());
+            })
+            ->orderBy('expiry_date', 'ASC')
+            ->orderBy('received_date', 'ASC')
+            ->get();
+
+        $availableQty = $batches->sum('quantity');
+        $canFulfill   = $availableQty >= $requestItem->quantity_requested;
+
+        return [
+            'item_id'            => $item->id,
+            'item_name'          => $item->name,
+             'requested_date'     => $item->requested_date,  
+            'quantity_requested' => $requestItem->quantity_requested,
+            'available_quantity' => $availableQty,
+            'can_fulfill'        => $canFulfill,
+            'fifo_message'       => $canFulfill
+                ? "متوفر — سيُصرف من {$batches->count()} دفعة/دفعات"
+                : 'لا توجد دفعات نشطة أو صالحة بالمخزن',
+        ];
+    });
+
+    return [
+        'id'                 => $req->id,
+        'requisition_number' => $req->requisition_number,
+        'status'             => $req->status,
+        'requested_date'     => $req->requested_date,
+        'notes'              => $req->notes,
+        'doctor' => [
+            'id'             => $req->doctor->id,
+            'name'           => $req->doctor->user->name ?? 'غير معروف',
+            'specialization' => $req->doctor->specialization->name ?? 'غير محدد',
+        ],
+        'items' => $items,
+    ];
+}
+
+public function getAvailableItemsForDoctor()
+{
+    return Item::where('is_active', true)
+        ->get(['id', 'name', 'unit']);
+}
+
 }
