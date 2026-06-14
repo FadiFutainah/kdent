@@ -81,9 +81,10 @@ class ProfileService
             if (!empty($patientData)) {
                 $user->patient()->update($patientData);
             }
+        }
 
         // رجّع نفس تنسيق getProfile
         return $this->getProfile();
-    }}
+    }
 
 }
