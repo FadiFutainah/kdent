@@ -25,6 +25,7 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamp('last_otp_sent_at')->nullable();// لتتبع آخر مرة تم فيها إرسال OTP
             $table->string('fcm_token')->nullable();
+            //$table->softDeletes();
             $table->timestamps();
         });
 
@@ -41,6 +42,7 @@ return new class extends Migration
             $table->text('user_agent')->nullable();
             $table->longText('payload');
             $table->integer('last_activity')->index();
+
         });
     }
 
@@ -52,5 +54,6 @@ return new class extends Migration
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        
     }
 };

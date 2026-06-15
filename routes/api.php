@@ -56,6 +56,12 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::post('/invoices/{id}/approve', [InvoiceController::class, 'approve']);//اعتماد الفاتورة
     Route::get('/Allpatients', [PatientController::class, 'listAllPatients']);
 
+    Route::delete('/DeUsers/{id}', [AdminController::class, 'deleteUser']);
+    Route::post('/ReUsers/{id}/restore', [AdminController::class, 'restoreUser']);
+    Route::get('/deleted-users', [AdminController::class, 'deletedUsers']);
+    Route::post('/EditDoctors/{doctorId}',[AdminController::class, 'updateDoctorInfo']
+);
+
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
@@ -114,7 +120,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
-  
+    Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى
    // Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);//وضع علامة مدفوعة على الفاتورة
     Route::get('/invoices/{id}/print', [InvoiceController::class, 'print']);//طباعة الفاتورة

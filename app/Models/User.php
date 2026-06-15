@@ -6,14 +6,16 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles; // لتفعيل مكتبة سباتي
 
 class User extends Authenticatable
 {
     use FixJsonDateFormat;
+   // use SoftDeletes;
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens,HasFactory, Notifiable,HasRoles;
-protected $guard_name = 'api';
+    protected $guard_name = 'api';
     /**
      * The attributes that are mass assignable.
      *
@@ -28,7 +30,7 @@ protected $guard_name = 'api';
         'password',
         'otp_code',        // كود التحقق المرسل للواتساب
         'otp_expires_at',  // تاريخ انتهاء الكود
-        'is_verified',     // حالة تفعيل حساب المريض 
+        'is_verified',     // حالة تفعيل حساب المريض    
     ];
 
     /**

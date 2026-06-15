@@ -86,10 +86,77 @@ public function getEmployees()
             'role' => $user->roles->first()?->name,
 
             'doctor_info' => $user->doctor ? [
+                'doctor_id' => $user->doctor->id,
                 'specialization' => $user->doctor->specialization?->name,
                 'percentage' => $user->doctor->percentage,
             ] : null,
         ]);
     });
 }
+
+    public function deleteUser(int $userId): array
+    {
+        $user = User::findOrFail($userId);
+
+        if ($user->hasRole('admin')) {
+            throw new \Exception('لا يمكن حذف الأدمن');
+        }
+
+        $user->delete();
+
+        return [
+            'message' => 'User deleted successfully'
+        ];
+    }
+
+    public function restoreUser(int $userId): array
+    {
+        $user = User::withTrashed()
+            ->findOrFail($userId);
+
+        $user->restore();
+
+        return [
+            'message' => 'User restored successfully'
+        ];
+    }
+    public function getDeletedUsers()
+    {
+        return User::onlyTrashed()
+            ->with('roles')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number,
+                    'role' => $user->getRoleNames()->first(),
+                    'deleted_at' => $user->deleted_at,
+                ];
+            });
+    }
+
+
+    public function updateDoctorInfo(int $doctorId, array $data)
+    {
+        $doctor = Doctor::with('specialization')
+            ->findOrFail($doctorId);
+
+        $doctor->update(array_filter([
+            'percentage' => $data['percentage'] ?? null,
+            'specialization_id' => $data['specialization_id'] ?? null,
+        ], fn ($value) => !is_null($value)));
+
+        $doctor->load('specialization');
+
+        return [
+            'doctor_id' => $doctor->id,
+            'doctor_name' => $doctor->user?->name,
+            'percentage' => $doctor->percentage,
+            'specialization_id' => $doctor->specialization_id,
+            'specialization' => $doctor->specialization?->name,
+        ];
+    }
+    
 }
