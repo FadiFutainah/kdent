@@ -193,7 +193,6 @@ Route::put('/suppliers/{id}', [SupplierItemsController::class, 'update']);//تع
 
 });
 
-
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show']);

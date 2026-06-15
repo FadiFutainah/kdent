@@ -219,9 +219,9 @@ public function approveRequest(Request $request, int $requestId)
      */
     public function shows()
     {
-        $audits = Audit::with('items.item')
+        $audits = Audit::with('items')
             ->latest()
-            ->paginate(20);
+            ->get();
 
         return response()->json([
             'success' => true,

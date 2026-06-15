@@ -195,7 +195,8 @@ public function getAvailableSlotsForDays($doctorId)
             'patient_id' => $patientId,
             'doctor_id' => $doctor->id,
             'appointment_date' => $appointmentDateTime,
-            'status' => 'scheduled'
+            'status' => 'scheduled',
+             'day' => $day
         ]);
 
         // notification (لازم قبل return)
