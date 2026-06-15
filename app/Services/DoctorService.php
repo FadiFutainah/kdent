@@ -256,5 +256,22 @@ $requisitionNumber = 'REQ-' . str_pad((string) ($lastId + 1), 4, '0', STR_PAD_LE
         return $request->load('items');
     });
 }
+    public function getDoctors()
+        {
+            return Doctor::with(['user', 'specialization'])
+                ->get()
+                ->map(function ($doctor) {
+                    return [
+                        'doctor_id' => $doctor->id,
+                        'user_id' => $doctor->user_id,
+                        'name' => $doctor->user?->name,
+                        'phone_number' => $doctor->user?->phone_number,
+                        'email' => $doctor->user?->email,
+                        'specialization_id' => $doctor->specialization_id,
+                        'specialization' => $doctor->specialization?->name,
+                        'percentage' => $doctor->percentage,
+                    ];
+                });
+        }
 
-}
+    }

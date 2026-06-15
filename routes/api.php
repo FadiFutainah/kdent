@@ -56,6 +56,12 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::post('/invoices/{id}/approve', [InvoiceController::class, 'approve']);//اعتماد الفاتورة
     Route::get('/Allpatients', [PatientController::class, 'listAllPatients']);
 
+    Route::delete('/DeUsers/{id}', [AdminController::class, 'deleteUser']);
+    Route::post('/ReUsers/{id}/restore', [AdminController::class, 'restoreUser']);
+    Route::get('/deleted-users', [AdminController::class, 'deletedUsers']);
+    Route::post('/EditDoctors/{doctorId}',[AdminController::class, 'updateDoctorInfo']
+);
+
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
@@ -113,9 +119,10 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/payments/{paymentId}/pdf', [DoctorFinanceController::class, 'downloadPaymentPdf']);
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
     Route::get('/employees', [AdminController::class, 'employees']);//عرض الموظفين
+    Route::get('/Alldoctors', [DoctorController::class, 'index']);
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
-  
+    Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى
    // Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);//وضع علامة مدفوعة على الفاتورة
     Route::get('/invoices/{id}/print', [InvoiceController::class, 'print']);//طباعة الفاتورة
@@ -139,7 +146,7 @@ Route::middleware(['auth:sanctum', 'role:patient|doctor|secretary'])->group(func
     Route::get('/items/{itemId}', [TreatmentPlanController::class, 'showItem']);
     Route::get('/sessions/{sessionId}', [TreatmentPlanController::class, 'showSession']);
     Route::get('/medical-reports/{patientId}', [MedicalReportController::class, 'index']);
-    Route::get('/medical-reports/{reportId}', [MedicalReportController::class, 'show']);
+    Route::get('/medical-reportD/{reportId}', [MedicalReportController::class, 'show']);
     Route::get('/medical-records/{patientId}', [MedicalRecordController::class, 'show']);
 });
 

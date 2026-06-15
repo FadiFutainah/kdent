@@ -76,6 +76,13 @@ class DoctorFinanceController extends Controller
             'Content-Disposition' => "attachment; filename=payment-{$payment['id']}.pdf",
         ]);
     }
+    public function centerSummary()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->service->getCenterDoctorsSummary(),
+        ]);
+    }
 
     
 }

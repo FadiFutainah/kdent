@@ -30,12 +30,46 @@ class AdminController extends Controller
             $this->service->createEmployee($data)
         );
     }
-public function employees()
-{
-    return response()->json(
-        $this->service->getEmployees()
-    );
-}
+    public function employees()
+    {
+        return response()->json(
+            $this->service->getEmployees()
+        );
+    }
+    public function deleteUser($id)
+    {
+        return response()->json(
+            $this->service->deleteUser($id)
+        );
+    }
+    public function restoreUser($id)
+    {
+        return response()->json(
+            $this->service->restoreUser($id)
+        );
+    }
+    public function deletedUsers()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->service->getDeletedUsers()
+        ]);
+    }
+    public function updateDoctorInfo(Request $request, int $doctorId)
+    {
+        $request->validate([
+            'percentage' => 'sometimes|numeric|min:0|max:100',
+            'specialization_id' => 'sometimes|exists:specializations,id',
+        ]);
+
+        return response()->json([
+            'message' => 'Doctor updated successfully',
+            'data' => $this->service->updateDoctorInfo(
+                $doctorId,
+                $request->all()
+            )
+        ]);
+    }
 
 }
 
