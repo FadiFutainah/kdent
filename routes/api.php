@@ -48,7 +48,7 @@ Route::get('/specializations', [SpecializationController::class,'index']);//عر
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::post('/create-employee', [AdminController::class, 'createEmployee']);
-    Route::get('/employees', [AdminController::class, 'employees']);//عرض الموظفين
+   
     Route::get('/audit/{id}', [InventoryTransactionController::class, 'approved']);//موافقة المدير على الجرد + تنفيذ التسوية
     Route::get('/pending_approvals', [InventoryTransactionController::class, 'getPendingAuditsReport']);// عرض الجردات في انتظار الموافقة
     Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد 
@@ -112,6 +112,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/reports/revenue', [InvoiceController::class, 'getRevenue']);// إحصائيات الإيرادات لشهر محدد
     Route::get('/payments/{paymentId}/pdf', [DoctorFinanceController::class, 'downloadPaymentPdf']);
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
+    Route::get('/employees', [AdminController::class, 'employees']);//عرض الموظفين
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
   
