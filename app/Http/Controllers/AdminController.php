@@ -18,7 +18,7 @@ class AdminController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string',
-            'phone_number' => 'required|unique:users',
+            'phone_number' => ['required', 'unique:users', 'regex:/^09[0-9]{8}$/'],
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8',
             'role' => 'required|in:doctor,accountant,secretary,storekeeper',

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class AuditItem extends Model
 {
     use FixJsonDateFormat;
+    protected $table = 'audit_items';
      protected $fillable = [
         'audit_id',
          'item_id', 

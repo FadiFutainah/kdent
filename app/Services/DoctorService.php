@@ -225,15 +225,18 @@ public function searchPatientsByName(string $name)
 public function createRequest(array $data)
 {
     return DB::transaction(function () use ($data) {
-
         // $request = MaterialRequest::create([
         //     'doctor_id' => Auth::id(),
         //     'notes' => $data['notes'] ?? null,
         // ]);
          $doctor = Doctor::where('user_id', Auth::id())->firstOrFail();
-
+// توليد رقم طلب فريد (REQ-XXXX) مع قفل لمنع التضارب عند الطلبات المتزامنة
+$lastId = MaterialRequest::lockForUpdate()->max('id') ?? 0;
+$requisitionNumber = 'REQ-' . str_pad((string) ($lastId + 1), 4, '0', STR_PAD_LEFT);
         $request = MaterialRequest::create([
+             'requisition_number' => $requisitionNumber, // ✅ أضيف
             'doctor_id' => $doctor->id, // ✅ هون الصح
+             'requested_by' => Auth::id(),  
             'notes' => $data['notes'] ?? null,
         ]);
 
@@ -242,7 +245,7 @@ public function createRequest(array $data)
             MaterialRequestItem::create([
                 'material_request_id' => $request->id,
                 'item_id' => $item['item_id'],
-                'quantity' => $item['quantity'],
+                 'quantity_requested'  => $item['quantity'],
             ]);
         }
 
