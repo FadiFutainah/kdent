@@ -118,6 +118,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/reports/revenue', [InvoiceController::class, 'getRevenue']);// إحصائيات الإيرادات لشهر محدد
     Route::get('/payments/{paymentId}/pdf', [DoctorFinanceController::class, 'downloadPaymentPdf']);
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
+    Route::get('/Alldoctors', [DoctorController::class, 'index']);
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
     Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);

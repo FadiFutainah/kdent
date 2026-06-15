@@ -96,6 +96,13 @@ public function store(Request $request)
         'data' => $req
     ]);
 }
+    public function index()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->service->getDoctors(),
+        ]);
+    }
 
 
 
