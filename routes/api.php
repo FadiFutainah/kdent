@@ -119,9 +119,10 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/payments/{paymentId}/pdf', [DoctorFinanceController::class, 'downloadPaymentPdf']);
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
     Route::get('/Alldoctors', [DoctorController::class, 'index']);
+    Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
+
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
-    Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى
    // Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);//وضع علامة مدفوعة على الفاتورة
     Route::get('/invoices/{id}/print', [InvoiceController::class, 'print']);//طباعة الفاتورة
