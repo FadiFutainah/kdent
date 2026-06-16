@@ -110,60 +110,7 @@ class InventoryTransactionController extends Controller
 
 //     return $request;
 // }
-// الموافقة على طلب المواد
-// public function approve(Request $request, $id)
-// {
-//     $data = $request->validate([
-//         'items' => 'nullable|array',
-//         'items.*.item_id' => 'required_with:items|exists:items,id',
-//         'items.*.approved_quantity' => 'nullable|integer|min:0'
-//     ]);
 
-//     $result = $this->service->approveRequest($id, $data['items'] ?? null);
-
-//     return response()->json([
-//         'message' => 'Request processed successfully',
-//         'data' => $result
-//     ]);
-// }
-//     /**
-//      * الموافقة على طلب مواد
-//      */
-//    public function approveRequest(Request $request, int $requestId)
-// {
-//     $validated = $request->validate([
-//         'items' => 'nullable|array',
-
-//         'items.*.item_id' =>
-//             'required_with:items|exists:items,id',
-
-//         'items.*.approved_quantity' =>
-//             'required_with:items|integer|min:0',
-//     ]);
-
-//     try {
-
-//         $result = $this->service->approveMaterialRequest(
-//             $requestId,
-//             $validated['items'] ?? null
-//         );
-        
-
-//         return response()->json([
-//             'success' => true,
-//             'message' => 'تمت معالجة الطلب بنجاح',
-//             'data' => $result
-//         ]);
- 
-
-//     } catch (\Exception $e) {
-
-//         return response()->json([
-//             'success' => false,
-//             'message' => $e->getMessage()
-//         ], 400);
-//     }
-// }
 /**
  * الموافقة على طلب مواد بالكامل وصرفه
  */
