@@ -12,7 +12,7 @@ use Spatie\Permission\Traits\HasRoles; // لتفعيل مكتبة سباتي
 class User extends Authenticatable
 {
     use FixJsonDateFormat;
-   // use SoftDeletes;
+    use SoftDeletes;
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens,HasFactory, Notifiable,HasRoles;
     protected $guard_name = 'api';

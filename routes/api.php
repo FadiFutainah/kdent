@@ -120,6 +120,8 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
     Route::get('/employees', [AdminController::class, 'employees']);//عرض الموظفين
     Route::get('/Alldoctors', [DoctorController::class, 'index']);
+    Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
+
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
     Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);

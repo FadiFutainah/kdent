@@ -17,10 +17,10 @@ class RoleSeeder extends Seeder
         // إنشاء الأدوار (Roles)
       $adminRole = Role::firstOrCreate(['name' => 'admin','guard_name' => 'api']);
       Role::create(['name' => 'doctor', 'guard_name' => 'api']);
-    Role::create(['name' => 'patient', 'guard_name' => 'api']);
-    Role::create(['name' => 'accountant', 'guard_name' => 'api']);
-    Role::create(['name' => 'secretary', 'guard_name' => 'api']);
-     Role::create(['name' => 'storekeeper', 'guard_name' => 'api']);
+      Role::create(['name' => 'patient', 'guard_name' => 'api']);
+      Role::create(['name' => 'accountant', 'guard_name' => 'api']);
+      Role::create(['name' => 'secretary', 'guard_name' => 'api']);
+      Role::create(['name' => 'storekeeper', 'guard_name' => 'api']);
 
         // 2. إنشاء حساب الأدمن
         $admin = User::updateOrCreate(
