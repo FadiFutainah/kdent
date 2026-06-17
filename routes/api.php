@@ -54,7 +54,6 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد 
     Route::get('getDisposedItemsHistory', [InventoryTransactionController::class, 'getDisposedItemsHistory']);//عرض جميع المواد التي تم اتلافها للادمن 
     Route::post('/invoices/{id}/approve', [InvoiceController::class, 'approve']);//اعتماد الفاتورة
-    Route::get('/Allpatients', [PatientController::class, 'listAllPatients']);
 
     Route::delete('/DeUsers/{id}', [AdminController::class, 'deleteUser']);
     Route::post('/ReUsers/{id}/restore', [AdminController::class, 'restoreUser']);
@@ -121,6 +120,8 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/employees', [AdminController::class, 'employees']);//عرض الموظفين
     Route::get('/Alldoctors', [DoctorController::class, 'index']);
     Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
+    Route::get('/Allpatients', [PatientController::class, 'listAllPatients']);
+
 
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {

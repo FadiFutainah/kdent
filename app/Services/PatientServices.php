@@ -18,7 +18,8 @@ public function getAllPatients()
         ->get()
         ->map(function (Patient $patient) {
             return [
-                'id' => $patient->id,
+                'patient_id'   => $patient->id,            
+                'user_id'      => $patient->user_id,
                 'name' => $patient->user?->name,
                 'phone_number' => $patient->user?->phone_number,
             ];

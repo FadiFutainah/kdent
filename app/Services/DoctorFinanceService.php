@@ -89,7 +89,7 @@ class DoctorFinanceService
 
     public function getDoctorSummary(int $doctorId)
     {
-        Doctor::findOrFail($doctorId);
+        Doctor::withTrashed()->findOrFail($doctorId);
 
         $totalDueUsd = (float) Doctor_Earning::where('doctor_id', $doctorId)->sum('amount_usd');
         $totalPaidUsd = (float) Doctor_Payment::where('doctor_id', $doctorId)->sum('amount_usd');
@@ -186,8 +186,11 @@ class DoctorFinanceService
 
     public function getPaymentForPdf(int $paymentId): array
     {
-        $payment = Doctor_Payment::with(['doctor.user', 'exchangeRate'])
-            ->findOrFail($paymentId);
+        $payment = Doctor_Payment::with(['doctor' => function($query) {
+            $query->withTrashed()->with(['user' => function($q) {
+            $q->withTrashed();
+        }]);
+        }, 'exchangeRate'])->findOrFail($paymentId);
 
         return [
             'id'            => $payment->id,

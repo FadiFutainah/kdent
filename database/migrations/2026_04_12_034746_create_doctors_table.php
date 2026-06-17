@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('specialization_id')->constrained()->cascadeOnDelete();
             $table->decimal('percentage', 5, 2)->default(0); // نسبة الطبيب من جلسات العلاج
             $table->boolean('is_active')->default(true); // الدكتور الحالي
+            $table->softDeletes();
             $table->timestamps();
         });
     }

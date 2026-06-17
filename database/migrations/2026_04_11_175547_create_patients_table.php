@@ -11,17 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('patients', function (Blueprint $table) {
-            $table->id();
-
-              $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-
+    Schema::create('patients', function (Blueprint $table) {
+    
+    $table->id();
+    $table->foreignId('user_id')->constrained();
     $table->enum('gender', ['male', 'female'])->nullable();
     $table->string('address')->nullable();
     $table->string('occupation')->nullable();
-
     $table->date('file_open_date')->nullable();
-
     // 🩺 medical history
     $table->boolean('medical_history_heart_disease')->default(false);
     $table->boolean('medical_history_diabetes')->default(false);
@@ -35,8 +32,8 @@ return new class extends Migration
 
     $table->text('current_medications')->nullable();
     $table->text('known_allergies')->nullable();
-
-            $table->timestamps();
+    $table->softDeletes();
+    $table->timestamps();
         });
     }
 

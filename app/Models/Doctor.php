@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class Doctor extends Model
 {
     use FixJsonDateFormat;
+    use SoftDeletes;
     protected $table = 'doctors';
      protected $fillable = [
         'user_id',
@@ -16,7 +19,8 @@ class Doctor extends Model
     ];
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)
+            ->withTrashed();
     }
 
     public function specialization()

@@ -102,9 +102,24 @@ class AppointmentController extends Controller
 
 	public function confirmBySecretary(int $appointmentId)
 	{
-		$appointment = $this->service->confirmAppointmentBySecretary($appointmentId);
+		try {
 
-		return response()->json($appointment);
+			$appointment = $this->service
+				->confirmAppointmentBySecretary($appointmentId);
+
+			return response()->json([
+				'success' => true,
+				'message' => 'تم تأكيد الموعد بنجاح.',
+				'data' => $appointment,
+			]);
+
+		} catch (\Exception $e) {
+
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage(),
+			], 422);
+		}
 	}
 
 	public function cancelBySecretary(int $appointmentId)

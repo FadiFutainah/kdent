@@ -3,6 +3,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\Doctor;
+use App\Models\Patient;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -82,9 +83,7 @@ public function getEmployees()
             'name' => $user->name,
             'phone_number' => $user->phone_number,
             'email' => $user->email,
-
             'role' => $user->roles->first()?->name,
-
             'doctor_info' => $user->doctor ? [
                 'doctor_id' => $user->doctor->id,
                 'specialization' => $user->doctor->specialization?->name,
@@ -102,36 +101,65 @@ public function getEmployees()
             throw new \Exception('لا يمكن حذف الأدمن');
         }
 
-        $user->delete();
+        DB::transaction(function () use ($user) {
+            // 1️⃣ إذا كان طبيب، احذف ملف الطبيب (Soft Delete)
+            if ($user->doctor) {
+                $user->doctor->delete();
+            }
+
+            // 2️⃣ إذا كان مريض، احذف ملف المريض (Soft Delete)
+            if ($user->patient) {
+                $user->patient->delete();
+            }
+            
+            // 3️⃣ احذف المستخدم نفسه (Soft Delete)
+            $user->delete();
+        });
 
         return [
-            'message' => 'User deleted successfully'
+            'message' => 'User and associated profile deleted successfully'
         ];
     }
 
     public function restoreUser(int $userId): array
     {
-        $user = User::withTrashed()
-            ->findOrFail($userId);
+        $user = User::withTrashed()->findOrFail($userId);
 
-        $user->restore();
+        DB::transaction(function () use ($user) {
+            // 1️⃣ استعادة المستخدم
+            $user->restore();
+
+            // 2️⃣ استعادة سجل الطبيب إن وجد
+            $doctor = Doctor::withTrashed()->where('user_id', $user->id)->first();
+            if ($doctor) {
+                $doctor->restore();
+            }
+
+            // 3️⃣ استعادة سجل المريض إن وجد
+            $patient = Patient::withTrashed()->where('user_id', $user->id)->first();
+            if ($patient) {
+                $patient->restore();
+            }
+        });
 
         return [
-            'message' => 'User restored successfully'
+            'message' => 'User and associated profile restored successfully'
         ];
     }
+
     public function getDeletedUsers()
     {
         return User::onlyTrashed()
             ->with('roles')
+            ->latest('deleted_at')
             ->get()
             ->map(function ($user) {
                 return [
-                    'id' => $user->id,
+                    'user_id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
                     'phone_number' => $user->phone_number,
-                    'role' => $user->getRoleNames()->first(),
+                    'role' => $user->roles->first()?->name,
                     'deleted_at' => $user->deleted_at,
                 ];
             });

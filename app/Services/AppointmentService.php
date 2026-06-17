@@ -86,10 +86,16 @@ class AppointmentService
             return [
                 'id' => $appointment->id,
                 'patient_id' => $appointment->patient_id,
-                'patient_name' => $appointment->patient?->user?->name,
+                'patient_name' =>
+                    $appointment->patient?->trashed()
+                        ? $appointment->patient->user->name . ' (محذوف)'
+                        : $appointment->patient?->user?->name,
                 'patient_phone' => $appointment->patient?->user?->phone_number,
                 'doctor_id' => $appointment->doctor_id,
-                'doctor_name' => $appointment->doctor?->user?->name,
+                'doctor_name' =>
+                    $appointment->doctor?->trashed()
+                        ? $appointment->doctor->user->name . ' (محذوف)'
+                        : $appointment->doctor?->user?->name,
                 'day' => $appointment->day,
                 'appointment_date' => optional($appointment->appointment_date)->toDateTimeString(),
                 'status' => $appointment->status,
@@ -258,13 +264,24 @@ class AppointmentService
 
     public function confirmAppointmentBySecretary(int $appointmentId): Appointment
     {
-         $appointment = Appointment::findOrFail($appointmentId);
+        $appointment = Appointment::with([
+            'patient.user',
+            'doctor.user'
+        ])->findOrFail($appointmentId);
+
+        if (
+            $appointment->patient?->user?->trashed() ||
+            $appointment->doctor?->user?->trashed()
+        ) {
+            throw new \Exception(
+                'لا يمكن تأكيد الموعد لأن الطبيب أو المريض محذوف'
+            );
+        }
 
         if ($appointment->status !== 'scheduled') {
-          
+
             throw new \Exception('لا يمكن تأكيد هذا الموعد');
         }
-     
 
         $appointment->status = 'confirmed';
         $appointment->save();
