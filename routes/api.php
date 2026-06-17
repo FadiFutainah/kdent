@@ -123,6 +123,10 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
     Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
+    Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
+});
+Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
+  
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى
    // Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);//وضع علامة مدفوعة على الفاتورة
     Route::get('/invoices/{id}/print', [InvoiceController::class, 'print']);//طباعة الفاتورة
@@ -186,6 +190,7 @@ Route::post('/audits/{id}/items', [InventoryTransactionController::class, 'addIt
 Route::get('/audits/{id}/complete', [InventoryTransactionController::class, 'complete']);// انهاء الجرد
 Route::get('/material-requests/pending', [InventoryTransactionController::class, 'getPendingDoctorRequests']);// عرض طلبات المواد القادمة من الأطباء بانتظار الموافقة
 Route::get('/material-requests/{id}/details', [InventoryTransactionController::class, 'getDoctorRequestDetails']);// عرض تفاصيل طلب محدد مع فحص FIFO
+Route::put('/items/{id}', [InventoryTransactionController::class, 'updateItem']);// تعديل بيانات مادة محددة بالمخزن
 // روابط الإتلاف الخاصة بأمينة المستودع
 Route::post('/disposals/manual-immediate', [InventoryTransactionController::class, 'storeManualImmediate']); // زر إتلاف فوري للمواد المكسورة/التالفة
 Route::get('/disposals/pending', [InventoryTransactionController::class, 'getPendingDisposals']);          // عرض طلبات الإتلاف "التلقائية" القادمة من الجوب ليلاً بانتظار تأكيدها

@@ -350,11 +350,11 @@ public function addItem(Request $request, int $auditId)
         'message' => 'تم تسجيل الكمية بنجاح'
     ]);
 }
-//عرض نتيجة الجرد
 
+//عرض نتيجة الجرد
 public function getAuditResult($auditId)
 {
-    // 1. جلب البيانات المجمعة لكل مادة
+    // 1. جلب البيانات المجمعة لكل مادة، مع تجميع أسباب النقص المسجّلة لها
     $results = AuditItem::where('audit_id', $auditId)
         ->select('item_id', DB::raw('SUM(quantity_actual) as total_actual'))
         ->groupBy('item_id')
@@ -366,16 +366,23 @@ public function getAuditResult($auditId)
     foreach ($results as $row) {
         $expected = Inventory::where('item_id', $row->item_id)->sum('quantity');
         $variance = $row->total_actual - $expected;
-        
+
         // تراكم الفارق الكلي
         $grandTotalVariance += $variance;
+
+       // جلب سبب النقص المسجّل لهذه المادة ضمن هذا الجرد
+        $reason = AuditItem::where('audit_id', $auditId)
+            ->where('item_id', $row->item_id)
+            ->whereNotNull('variance_reason')
+            ->value('variance_reason');
 
         $itemsReport[] = [
             'item_id' => $row->item_id,
             'item_name' => \App\Models\Item::find($row->item_id)->name ?? 'غير معروف',
             'total_actual' => (int) $row->total_actual,
             'total_expected' => (int) $expected,
-            'variance' => (int) $variance
+            'variance' => (int) $variance,
+            'variance_reason' => $reason ?? 'لا يوجد سبب مسجل',
         ];
     }
 
@@ -389,6 +396,43 @@ public function getAuditResult($auditId)
         ]
     ]);
 }
+// public function getAuditResult($auditId)
+// {
+//     // 1. جلب البيانات المجمعة لكل مادة
+//     $results = AuditItem::where('audit_id', $auditId)
+//         ->select('item_id', DB::raw('SUM(quantity_actual) as total_actual'))
+//         ->groupBy('item_id')
+//         ->get();
+
+//     $itemsReport = [];
+//     $grandTotalVariance = 0; // متغير لحساب النقص أو الفائض الكلي
+
+//     foreach ($results as $row) {
+//         $expected = Inventory::where('item_id', $row->item_id)->sum('quantity');
+//         $variance = $row->total_actual - $expected;
+        
+//         // تراكم الفارق الكلي
+//         $grandTotalVariance += $variance;
+
+//         $itemsReport[] = [
+//             'item_id' => $row->item_id,
+//             'item_name' => \App\Models\Item::find($row->item_id)->name ?? 'غير معروف',
+//             'total_actual' => (int) $row->total_actual,
+//             'total_expected' => (int) $expected,
+//             'variance' => (int) $variance
+//         ];
+//     }
+
+//     return response()->json([
+//         'success' => true,
+//         'details' => $itemsReport, // تفاصيل كل مادة
+//         'summary' => [
+//             'total_items_count' => count($itemsReport),
+//             'grand_total_variance' => (int) $grandTotalVariance,
+//             'status' => $grandTotalVariance === 0 ? 'مطابق' : ($grandTotalVariance > 0 ? 'فائض' : 'عجز')
+//         ]
+//     ]);
+// }
 // مسار خاص لتحديث سبب النقص
 // public function updateVarianceReason(Request $request, $auditItemId) 
 // {
@@ -915,6 +959,48 @@ public function getAvailableItemsForDoctor()
     return response()->json([
         'success' => true,
         'data'    => $data,
+    ]);
+}
+
+// تعديل بيانات مادة محددة بالمخزن (الاسم، الحد الأدنى، الحد الأعلى، الوحدة...)
+public function updateItem(Request $request, $itemId)
+{
+    $item = Item::findOrFail($itemId);
+
+    $validated = $request->validate([
+        'name'           => 'sometimes|string|max:255',
+        'code'           => 'sometimes|string|max:255|unique:items,code,' . $item->id,
+        'unit'           => 'sometimes|string|max:50',
+        'minimum_stock'  => 'sometimes|integer|min:0',
+        'max_stock'      => 'sometimes|integer|min:0',
+        'is_active'      => 'sometimes|boolean',
+    ]);
+
+    // التحقق المنطقي: الحد الأدنى يجب أن يبقى أقل من أو يساوي الحد الأعلى
+    $newMin = $validated['minimum_stock'] ?? $item->minimum_stock;
+    $newMax = $validated['max_stock'] ?? $item->max_stock;
+
+    if ($newMin > $newMax) {
+        return response()->json([
+            'success' => false,
+            'message' => 'الحد الأدنى لا يمكن أن يكون أكبر من الحد الأعلى للمخزون.',
+        ], 422);
+    }
+
+    // التحقق المنطقي الثاني: الكمية الحالية لا يجوز أن تتجاوز الحد الأعلى الجديد
+    if ($item->current_stock > $newMax) {
+        return response()->json([
+            'success' => false,
+            'message' => "لا يمكن تخفيض الحد الأعلى إلى {$newMax} لأن الكمية الحالية بالمخزن ({$item->current_stock}) تتجاوزه. قم بتصريف أو إتلاف الفائض أولاً.",
+        ], 422);
+    }
+
+    $item->update($validated);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'تم تعديل بيانات المادة بنجاح',
+        'data'    => $item,
     ]);
 }
 
