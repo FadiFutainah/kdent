@@ -65,5 +65,35 @@ public function downloadPdf(int $reportId)
         'Content-Disposition' => "attachment; filename=medical-report-{$report->id}.pdf",
     ]);
 }
+    public function update(Request $request, int $reportId)
+    {
+        $data = $request->validate([
+            'content' => 'required|string',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|max:10240',
+        ]);
+
+        $files = $request->file('attachments', []);
+
+        return response()->json(
+            $this->service->updateReport(
+                $reportId,
+                $data,
+                $files
+            )
+        );
+    }
+    public function destroy(int $reportId)
+    {
+        $this->service->deleteReport($reportId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حذف التقرير بنجاح'
+        ]);
+    }
+
+
+
 
 }

@@ -125,7 +125,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
 
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
-    Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
+   // Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
@@ -174,6 +174,8 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::post('/medical-reports', [MedicalReportController::class, 'store']);
    // Route::post('/medical-records/{patientId}', [MedicalRecordController::class, 'update']);
     Route::get('/doctor/plans/dues', [DoctorFinanceController::class, 'doctorPlansDues']);
+    Route::post('/Edit-reports/{reportId}',[MedicalReportController::class, 'update']);
+    Route::delete('/Del-reports/{reportId}',[MedicalReportController::class, 'destroy']);
 
 });
 

@@ -32,7 +32,14 @@ class MedicalReportService
     {
         $scope = $this->resolveAccessScope();
 
-        $query = Medical_Report::with(['patient.user', 'doctor.user']);
+        $query = Medical_Report::with([
+            'patient.user',
+            'doctor' => function ($q) {
+            $q->withTrashed()->with(['user' => function ($userQuery) {
+                $userQuery->withTrashed();
+            }]);
+        }
+    ]);
 
         if ($scope['role'] === 'doctor') {
             $query->where('doctor_id', $scope['doctor_id']);
@@ -65,8 +72,15 @@ class MedicalReportService
     {
         $scope = $this->resolveAccessScope();
 
-        $query = Medical_Report::with(['patient.user', 'doctor.user'])
-            ->where('id', $reportId);
+        $query = Medical_Report::with([
+            'patient.user', 
+            'doctor' => function ($q) {
+                $q->withTrashed()->with(['user' => function ($userQuery) {
+                    $userQuery->withTrashed();
+                }]);
+            }
+        ])->where('id', $reportId);
+
 
         if ($scope['role'] === 'doctor') {
             $query->where('doctor_id', $scope['doctor_id']);
@@ -148,7 +162,12 @@ class MedicalReportService
 
         $query = Medical_Report::with([
             'patient.user',
-            'doctor.user'
+            'patient.user', 
+            'doctor' => function ($q) {
+                $q->withTrashed()->with(['user' => function ($userQuery) {
+                    $userQuery->withTrashed();
+                }]);
+            }
         ])->where('id', $reportId);
 
         if ($scope['role'] === 'doctor') {
@@ -160,5 +179,54 @@ class MedicalReportService
         }
 
         return $query->firstOrFail();
+    }
+
+    public function updateReport(int $reportId, array $data, array $files = [])
+    {
+        $doctor = Auth::user()->doctor;
+
+        if (!$doctor) {
+            throw new \Exception('هذا المستخدم ليس دكتور');
+        }
+
+        $report = Medical_Report::where('id', $reportId)
+            ->where('doctor_id', $doctor->id)
+            ->firstOrFail();
+
+        $attachments = $report->attachments ?? [];
+
+        if (!empty($files)) {
+            $newAttachments = $this->storeAttachments(
+                $files,
+                $doctor->id,
+                (int) $report->patient_id
+            );
+
+            $attachments = array_merge(
+                $attachments,
+                $newAttachments
+            );
+        }
+
+        $report->update([
+            'content' => $data['content'],
+            'attachments' => $attachments,
+        ]);
+
+        return $report->fresh();
+    }
+    public function deleteReport(int $reportId): void
+    {
+        $doctor = Auth::user()->doctor;
+
+        if (!$doctor) {
+            throw new \Exception('هذا المستخدم ليس دكتور');
+        }
+
+        $report = Medical_Report::where('id', $reportId)
+            ->where('doctor_id', $doctor->id)
+            ->firstOrFail();
+
+        $report->delete();
     }
 }
