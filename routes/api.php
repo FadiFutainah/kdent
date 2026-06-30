@@ -58,9 +58,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::delete('/DeUsers/{id}', [AdminController::class, 'deleteUser']);
     Route::post('/ReUsers/{id}/restore', [AdminController::class, 'restoreUser']);
     Route::get('/deleted-users', [AdminController::class, 'deletedUsers']);
-    Route::post('/EditDoctors/{doctorId}',[AdminController::class, 'updateDoctorInfo']
-);
-
+    Route::post('/EditDoctors/{doctorId}',[AdminController::class, 'updateDoctorInfo']);
+    
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
@@ -123,9 +122,12 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/Allpatients', [PatientController::class, 'listAllPatients']);
 
 
+   
 });
+
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
    // Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
+  
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {

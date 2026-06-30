@@ -292,7 +292,7 @@ public function print($id)
     $invoice = $this->service->getById($id);
 
     $supplierName = $invoice->supplier?->name ?? '-';
-   $patientName = $invoice->patient?->user?->name ?? ($invoice->patient?->name ?? 'غير معروف');
+   $patientName = $invoice->patient?->user?->name ?? ($invoice->patient?->user?->name ?? 'غير معروف');
 
     $label = ($invoice->type === 'patient') ? 'المريض' : 'المورد';
     $partyName = ($invoice->type === 'patient') ? $patientName : $supplierName;
