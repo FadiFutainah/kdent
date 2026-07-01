@@ -12,18 +12,27 @@ class TreatmentCatSeeder extends Seeder
      * Run the database seeds.
      */
     public function run(): void
-    {
-        $names = [
-            'التشخيص',
-            'التحضير',
-            'حشو',
-        ];
+{
+    $categories = [
+        [
+            'name' => 'التشخيص',
+            'price_usd' => 10,
+        ],
+        [
+            'name' => 'التحضير',
+            'price_usd' => 20,
+        ],
+        [
+            'name' => 'حشو',
+            'price_usd' => 30,
+        ],
+    ];
 
-        foreach ($names as $name) {
-            DB::table('treatment_categories')->updateOrInsert(
-                ['name' => $name],
-                ['name' => $name]
-            );
-        }
+    foreach ($categories as $category) {
+        DB::table('treatment_categories')->updateOrInsert(
+            ['name' => $category['name']],
+            $category
+        );
     }
+}
 }

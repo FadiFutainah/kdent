@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Services\AdminService;
 
+
 class AdminController extends Controller
 {
      protected $service;
@@ -70,6 +71,81 @@ class AdminController extends Controller
             )
         ]);
     }
+        public function getTreatmentCategories()
+    {
+        return response()->json(
+            $this->service->getTreatmentCategories()
+        );
+    }
+
+    public function createTreatmentCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:treatment_categories,name',
+            'price_usd' => 'required|numeric|min:0',
+        ]);
+
+        return response()->json(
+            $this->service->createTreatmentCategory($validated),
+            201
+        );
+    }
+
+    public function updateTreatmentCategory(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255|unique:treatment_categories,name,' . $id,
+            'price_usd' => 'sometimes|numeric|min:0',
+        ]);
+
+        return response()->json(
+            $this->service->updateTreatmentCategory($id, $validated)
+        );
+    }
+
+    public function deleteTreatmentCategory($id)
+    {
+        return response()->json(
+            $this->service->deleteTreatmentCategory($id)
+        );
+    }
+    public function getDoctorsPerformance(Request $request)
+    {
+        $validated = $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+        ]);
+
+        return response()->json(
+            $this->service->getDoctorsPerformance(
+                $validated['from'],
+                $validated['to']
+            )
+        );
+    }
+
+    public function getPatientsCount(Request $request)
+    {
+        $validated = $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+        ]);
+
+        return response()->json(
+            $this->service->getPatientsCount(
+                $validated['from'],
+                $validated['to']
+            )
+        );
+    }
+
+    public function getCompletedTreatmentPlansCount()
+    {
+        return response()->json(
+            $this->service->getCompletedTreatmentPlansCount()
+        );
+    }
+    
 
 }
 

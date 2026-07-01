@@ -12,6 +12,7 @@ class Treatment_Category extends Model
 
     protected $fillable = [
         'name',
+        'price_usd',
     ];
 
     public function planItems()

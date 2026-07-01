@@ -18,7 +18,7 @@ class Exchange_Rate extends Model
     ];
 
     protected $casts = [
-        'rate' => 'decimal:6',
+        'rate' => 'decimal:2',
         'fetched_at' => 'datetime',
     ];
 
