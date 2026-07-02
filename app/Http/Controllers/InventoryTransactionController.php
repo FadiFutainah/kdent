@@ -99,17 +99,6 @@ class InventoryTransactionController extends Controller
 //         'data' => $result
 //     ]);
 // }
-// //رفض طلب المواد
-// public function reject($id)
-// {
-//     $request = MaterialRequest::findOrFail($id);
-
-//     $request->update([
-//         'status' => 'rejected'
-//     ]);
-
-//     return $request;
-// }
 
 /**
  * الموافقة على طلب مواد بالكامل وصرفه
@@ -229,105 +218,7 @@ public function showss(int $id)
     ]);
 }
 
-    // /**
-    //  * إضافة مادة للجرد
-    //  */
-    // public function addItem(Request $request, int $auditId)
-    // {
-    //     $validated = $request->validate([
-    //         'item_id' => 'required|exists:items,id',
-    //         'actual_quantity' => 'required|integer|min:0',
-    //         'variance_reason' => 'nullable|string',
-    //     ]);
-
-    //     $audit = Audit::findOrFail($auditId);
-
-    //     if ($audit->status !== 'pending') {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'الجرد غير قابل للتعديل'
-    //         ], 400);
-    //     }
-
-    //     $exists = AuditItem::where('audit_id', $auditId)
-    //         ->where('item_id', $validated['item_id'])
-    //         ->exists();
-
-    //     if ($exists) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'المادة موجودة مسبقاً'
-    //         ], 400);
-    //     }
-
-    //     $expectedQuantity = Inventory::where('item_id', $validated['item_id'])
-    //         ->where('is_active', true)
-    //         ->sum('quantity');
-
-    //     $variance = $validated['actual_quantity'] - $expectedQuantity;
-
-    //     $auditItem = AuditItem::create([
-    //         'audit_id' => $auditId,
-    //         'item_id' => $validated['item_id'],
-    //         'expected_quantity' => $expectedQuantity,
-    //         'actual_quantity' => $validated['actual_quantity'],
-    //         'variance' => $variance,
-    //         'variance_reason' => $validated['variance_reason'] ?? null,
-    //     ]);
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'تمت إضافة المادة للجرد',
-    //         'data' => $auditItem->load('item'),
-    //     ], 201);
-    // }
-
-    /**
- * إضافة مادة للجرد (تسمح بالتكرار على دفعات)
- */
-// public function addItem(Request $request, int $auditId)
-// {
-//     $validated = $request->validate([
-//         'item_id' => 'required|exists:items,id',
-//         'quantity_actual' => 'required|integer|min:0',
-//         'variance_reason' => 'nullable|string',
-        
-//     ]);
-
-//     $audit = Audit::findOrFail($auditId);
-
-//     if ($audit->status !== 'pending') {
-//         return response()->json([
-//             'success' => false,
-//             'message' => 'الجرد مغلق وغير قابل للتعديل'
-//         ], 400);
-//     }
-
-//     // 🚀 [تم حذف شرط التحقق من الوجود المسبق هنا للسماح بالإدخال المتكرر]
-
-//     // جلب المتوقع الإجمالي الحالي في النظام لهذه المادة
-//     $expectedQuantity = Inventory::where('item_id', $validated['item_id'])
-//         ->where('is_active', true)
-//         ->sum('quantity');
-
-//     // حساب فارق مبدئي لهذا السطر (سيتم ضبط الفارق الحقيقي النهائي عند التجميع والموافقة)
-//     $variance = $validated['quantity_actual'] - $expectedQuantity;
-
-//     $auditItem = AuditItem::create([
-//         'audit_id' => $auditId,
-//         'item_id' => $validated['item_id'],
-//         'quantity_expected' => $expectedQuantity, 
-//         'quantity_actual' => $validated['quantity_actual'],
-//         'variance' => $variance,
-//         'variance_reason' => $validated['variance_reason'] ?? null,
-//     ]);
-
-//     return response()->json([
-//         'success' => true,
-//         'message' => 'تم تسجيل كمية المادة في الجرد بنجاح',
-//         'data' => $auditItem->load('item'),
-//     ], 201);
-// }
+   
 //اضافة مواد للجرد
 public function addItem(Request $request, int $auditId)
 {

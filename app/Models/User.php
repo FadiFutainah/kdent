@@ -30,7 +30,8 @@ class User extends Authenticatable
         'password',
         'otp_code',        // كود التحقق المرسل للواتساب
         'otp_expires_at',  // تاريخ انتهاء الكود
-        'is_verified',     // حالة تفعيل حساب المريض    
+        'is_verified', 
+        'base_salary_usd',    // حالة تفعيل حساب المريض    
     ];
 
     /**

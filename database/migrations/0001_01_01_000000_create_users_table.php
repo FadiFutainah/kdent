@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('email')->unique()->nullable();//الموظف يدخل بالايميل
             $table->date('date_of_birth')->nullable();
             $table->string('phone_number')->unique()->nullable(); // المريض يدخل بالرقم
+            // $table->decimal('base_salary_usd', 10, 2)->nullable();// الراتب الأساسي بالدولار
             $table->timestamp('email_verified_at')->nullable();
             $table->string('otp_code')->nullable();
             $table->timestamp('otp_expires_at')->nullable();

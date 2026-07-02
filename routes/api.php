@@ -20,6 +20,7 @@ use App\Http\Controllers\MedicalRecordController;
 use App\Http\Controllers\SecretaryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AccountantController;
+use App\Http\Controllers\EmployeeSalaryController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -120,6 +121,14 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/Alldoctors', [DoctorController::class, 'index']);
     Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
     Route::get('/Allpatients', [PatientController::class, 'listAllPatients']);
+
+    Route::post('/employees/{userId}/base-salary', [EmployeeSalaryController::class, 'setBaseSalary']);//تحديد الراتب الأساسي لموظف
+    Route::post('/employees/{userId}/salary-payments', [EmployeeSalaryController::class, 'pay']);// دفع راتب لموظف عن شهر معين
+    Route::get('/employees/{userId}/salary-pay', [EmployeeSalaryController::class, 'history']);// عرض تاريخ دفع الرواتب لموظف معين
+    Route::get('/salary-payments', [EmployeeSalaryController::class, 'index']);//كشف عام للادمن كل دفعات اللرواتب 
+    Route::post('/employees/{userId}/salary-adjustments', [EmployeeSalaryController::class, 'addAdjustment']);// إضافة مكافأة أو خصم لموظف عن شهر معين
+    Route::get('/employees/{userId}/salary-adjustments/pending', [EmployeeSalaryController::class, 'pendingAdjustments']);// عرض المكافآت/الخصومات غير المدفوعة بعد لموظف عن شهر معين
+    Route::delete('/salary-adjustments/{adjustmentId}', [EmployeeSalaryController::class, 'deleteAdjustment']);//
 
 
    
