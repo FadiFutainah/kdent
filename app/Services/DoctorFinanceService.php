@@ -202,7 +202,7 @@ class DoctorFinanceService
         ];
     }
 
-    public function getCenterDoctorsSummary(): array
+  /*  public function getCenterDoctorsSummary(): array
     {
         $totalDueUsd = (float) Doctor_Earning::sum('amount_usd');
         $totalPaidUsd = (float) Doctor_Payment::sum('amount_usd');
@@ -257,6 +257,30 @@ class DoctorFinanceService
 
                 'remaining_usd' => $remainingUsd,
                 'remaining_syp' => round($remainingUsd * $currentRate, 2),
+            ],
+        ];
+    }*/
+    public function getCenterDoctorsSummary(): array
+    {
+        $totalDueUsd = (float) Doctor_Earning::sum('amount_usd');
+        $totalPaidUsd = (float) Doctor_Payment::sum('amount_usd');
+
+        $totalDueSyp = (float) Doctor_Earning::sum('amount_syp');
+        $totalPaidSyp = (float) Doctor_Payment::sum('amount_syp');
+
+        $remainingUsd = max($totalDueUsd - $totalPaidUsd, 0);
+        $remainingSyp = max($totalDueSyp - $totalPaidSyp, 0);
+
+        return [
+            'totals' => [
+                'due_usd'       => round($totalDueUsd, 2),
+                'due_syp'       => round($totalDueSyp, 2),
+
+                'paid_usd'      => round($totalPaidUsd, 2),
+                'paid_syp'      => round($totalPaidSyp, 2),
+
+                'remaining_usd' => round($remainingUsd, 2),
+                'remaining_syp' => round($remainingSyp, 2),
             ],
         ];
     }

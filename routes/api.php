@@ -62,6 +62,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::get('/deleted-users', [AdminController::class, 'deletedUsers']);
     Route::post('/EditDoctors/{doctorId}',[AdminController::class, 'updateDoctorInfo']);
     
+    Route::get('/categories', [AdminController::class, 'getTreatmentCategories']);
+    Route::post('/createCate', [AdminController::class, 'createTreatmentCategory']);
+    Route::post('/updateCate/{id}', [AdminController::class, 'updateTreatmentCategory']);
+    Route::delete('/delCate/{id}', [AdminController::class, 'deleteTreatmentCategory']);
+    Route::get('/doctor-performance', [AdminController::class, 'getDoctorsPerformance']);
+    Route::get('/patients/count', [AdminController::class, 'getPatientsCount']);
+    Route::get('/plans/completed/count',[AdminController::class, 'getCompletedTreatmentPlansCount']);
+
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
@@ -85,8 +93,8 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
 Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
     Route::get('/secretary/doctors/all', [AppointmentController::class, 'listAllDoctorsForSecretary']);
     // لازم get 
-    Route::post('/secretary/doctors', [AppointmentController::class, 'listDoctorsBySpecialization']); 
-    Route::post('/secretary/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
+    Route::get('/secretary/doctors', [AppointmentController::class, 'listDoctorsBySpecialization']); 
+    Route::get('/secretary/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
 
     Route::get('/secretary/doctors/{doctorId}/available-slots7', [AppointmentController::class, 'availableSlotsByDoctor7Days']);//للحذف
     Route::get('/secretary/doctors/{doctorId}/patients', [SecretaryController::class, 'doctorPatients']);

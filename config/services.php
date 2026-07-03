@@ -38,10 +38,16 @@ return [
         'instance' => env('ULTRAMSG_INSTANCE_ID'),
         'token'    => env('ULTRAMSG_TOKEN'),
     ],
-
+    // أضيفي هذا الجزء هنا ليتعرف لارافيل على المتغيرات الجديدة
+    'sptoday' => [
+        'base_url' => env('SPTODAY_BASE_URL', 'https://api-v2.sp-today.com/api/v1'),
+        'api_key'  => env('SPTODAY_API_KEY'),
+        'timeout'  => env('SPTODAY_TIMEOUT', 10),
+    ],
+/*
     'lirascope' => [
         'base_url' => env('LIRASCOPE_BASE_URL', 'https://lirascope.syria-cloud.sy'),
         'timeout' => env('LIRASCOPE_TIMEOUT', 10),
-    ],
+    ],*/
 
 ];

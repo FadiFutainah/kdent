@@ -6,6 +6,10 @@ use App\Models\Doctor;
 use App\Models\Patient;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use App\Models\Treatment_Category;
+use App\Models\Treatment_Session;
+use App\Models\Treatment_Plan;
+use Carbon\Carbon;
 use Exception;
 
 class AdminService
@@ -184,6 +188,103 @@ public function getEmployees()
             'percentage' => $doctor->percentage,
             'specialization_id' => $doctor->specialization_id,
             'specialization' => $doctor->specialization?->name,
+        ];
+    }
+
+    public function getTreatmentCategories()
+    {
+        $rate = app(ExchangeRateService::class)
+            ->getCurrentUsdToSypRate()
+            ->rate;
+
+        return Treatment_Category::all()->map(function ($category) use ($rate) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'price_usd' => (float)$category->price_usd,
+                'price_syp' => round($category->price_usd * $rate),
+            ];
+        });
+    }
+
+    public function createTreatmentCategory(array $data)
+    {
+        return Treatment_Category::create([
+            'name' => $data['name'],
+            'price_usd' => $data['price_usd'],
+        ]);
+    }
+
+    public function updateTreatmentCategory(int $id, array $data)
+    {
+        $category = Treatment_Category::findOrFail($id);
+
+        $category->update(array_filter([
+            'name' => $data['name'] ?? null,
+            'price_usd' => $data['price_usd'] ?? null,
+        ], fn ($value) => !is_null($value)));
+
+        return $category;
+    }
+
+    public function deleteTreatmentCategory(int $id)
+    {
+        $category = Treatment_Category::findOrFail($id);
+
+        $category->delete();
+
+        return [
+            'message' => 'Treatment category deleted successfully.'
+        ];
+    }
+    public function getDoctorsPerformance(?string $from = null, ?string $to = null)
+    {
+        $fromDate = Carbon::parse($from)->startOfDay();
+        $toDate = Carbon::parse($to)->endOfDay();
+
+        return Treatment_Session::with([
+            'planItem.plan.doctor.user',
+            'planItem.plan.doctor.specialization'
+        ])
+            ->where('status', 'completed')
+            ->whereBetween('session_date', [$fromDate, $toDate])
+            ->get()
+            ->groupBy(function ($session) {
+                return optional($session->planItem?->plan?->doctor)->id;
+            })
+            ->filter()
+            ->map(function ($sessions) {
+
+                $doctor = $sessions->first()->planItem->plan->doctor;
+
+                return [
+                    'doctor_name' => $doctor->user->name,
+                    'specialization' => $doctor->specialization->name,
+                    'completed_sessions' => $sessions->count(),
+                ];
+            })
+            ->sortByDesc('completed_sessions')
+            ->values();
+    }
+
+    public function getPatientsCount(string $from, string $to): array
+    {
+        $count = Patient::whereBetween('created_at', [
+            Carbon::parse($from)->startOfDay(),
+            Carbon::parse($to)->endOfDay(),
+        ])->count();
+
+        return [
+            'total_patients' => $count,
+        ];
+    }
+
+    public function getCompletedTreatmentPlansCount(): array
+    {
+        $count = Treatment_Plan::where('status', 'completed')->count();
+
+        return [
+            'completed_treatment_plans' => $count,
         ];
     }
     
