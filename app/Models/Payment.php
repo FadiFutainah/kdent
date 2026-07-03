@@ -8,6 +8,7 @@ class Payment extends Model
 {
     use FixJsonDateFormat;
     protected $table = 'payments';
+     protected $appends = ['paid_at'];
     protected $fillable = [
         'invoice_id',
         'amount',
@@ -25,4 +26,10 @@ class Payment extends Model
 {
     return $this->belongsTo(User::class, 'created_by');
 }
+
+    public function getPaidAtAttribute()
+    {
+        return $this->created_at->format('Y-m-d H:i:s');
+    }
+
 }

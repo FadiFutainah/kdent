@@ -17,6 +17,16 @@ class InvoiceController extends Controller
     {
         $this->service = $service;
     }
+    
+    public function show($id)
+{
+    $invoice = $this->service->getById($id);
+
+    return response()->json([
+        'success' => true,
+        'data' => $invoice
+    ]);
+}
 
 public function applyDiscount(Request $request, $id)
     {

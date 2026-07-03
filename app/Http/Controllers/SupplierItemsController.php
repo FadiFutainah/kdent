@@ -129,12 +129,23 @@ public function availableItems()
     ]);
 }
 ////////
+
 public function getAllSuppliers()
 {
-    return Supplier::with('supplierItems') // لجلب المواد المرتبطة بكل مورد
-        ->orderBy('name', 'ASC')
-        ->get();
+    return Supplier::orderBy('name', 'ASC')->get();
 }
+
+public function show($id)
+{
+    $supplier = $this->service->getSupplierDetails($id);
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $supplier
+    ]);
+}
+
+
 //تعديل مورد
 public function update(Request $request, $id)
     {

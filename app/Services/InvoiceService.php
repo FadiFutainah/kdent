@@ -64,6 +64,14 @@ public function approve($id)
 public function payInvoice($invoiceId, $amount)
 {
     $invoice = Invoice::with('payments')->findOrFail($invoiceId);
+    
+// ✅ هون بس — فاتورة المورد لازم تكون issued قبل ما تنقبل دفعات
+    if ($invoice->type === 'supplier' && $invoice->status === 'draft') {
+        return [
+            'success' => false,
+            'message' => 'لا يمكن إضافة دفعة لفاتورة مورد بحالة مسودة، يجب أن يوافق عليها الأدمن أولاً',
+        ];
+    }
 
     $total = $invoice->total_amount_USD_after_discount > 0
         ? $invoice->total_amount_USD_after_discount
@@ -121,7 +129,8 @@ public function getById($id)
         'items',
         'supplier',
         'patient.user',
-        'plans'
+        'plans',
+         'payments' 
     ])->findOrFail($id);
 }
 

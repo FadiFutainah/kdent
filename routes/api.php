@@ -21,6 +21,7 @@ use App\Http\Controllers\SecretaryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AccountantController;
 use App\Http\Controllers\EmployeeSalaryController;
+use App\Http\Controllers\ExpenseStatsController;
 
 Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify']);
@@ -129,6 +130,9 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::post('/employees/{userId}/salary-adjustments', [EmployeeSalaryController::class, 'addAdjustment']);// إضافة مكافأة أو خصم لموظف عن شهر معين
     Route::get('/employees/{userId}/salary-adjustments/pending', [EmployeeSalaryController::class, 'pendingAdjustments']);// عرض المكافآت/الخصومات غير المدفوعة بعد لموظف عن شهر معين
     Route::delete('/salary-adjustments/{adjustmentId}', [EmployeeSalaryController::class, 'deleteAdjustment']);//
+    Route::get('/invoices/{id}/details', [InvoiceController::class, 'show']);// عرض تفاصيل فاتورة محددة
+    Route::get('/expenses/stats/yearly',  [ExpenseStatsController::class, 'yearly']);// إحصائيات سنة كاملة
+    Route::get('/expenses/stats/monthly', [ExpenseStatsController::class, 'monthly']);// إحصائيات شهر محدد
 
 
    
@@ -155,6 +159,10 @@ Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
 Route::middleware(['auth:sanctum', 'role:doctor|admin|accountant|storekeeper'])->group(function () {
     Route::get('/exchange-rates/current', [ExchangeRateController::class, 'current']);
     Route::get('/exchange-rates/history', [ExchangeRateController::class, 'history']);
+    Route::get('/getAllSuppliers', [SupplierItemsController::class, 'getAllSuppliers']);//عرض جميع الموردين
+    Route::get('/suppliers/{id}', [SupplierItemsController::class, 'show']); // تفاصيل مورد واحد
+
+
 
 });
 
@@ -216,7 +224,7 @@ Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResu
 Route::post('/reason/{id}/{item_id}', [InventoryTransactionController::class, 'updateVarianceReason']);//اضافة سبب للنقص 
 Route::get('/getExpiredItems', [InventoryTransactionController::class, 'getExpiredItems']);//عرض جميع المواد منتهية الصلاحية قبل اتلافها 
 Route::get('/getLowStockItems', [InventoryTransactionController::class, 'getLowStockItems']);//عرض المواد التي وصلت إلى حدها الأدنى من المخزون
-Route::get('/getAllSuppliers', [SupplierItemsController::class, 'getAllSuppliers']);//عرض جميع الموردين
+//Route::get('/getAllSuppliers', [SupplierItemsController::class, 'getAllSuppliers']);//عرض جميع الموردين
 Route::put('/suppliers/{id}', [SupplierItemsController::class, 'update']);//تعديل مورد
 
 

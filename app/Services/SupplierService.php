@@ -9,6 +9,16 @@ use Illuminate\Support\Facades\DB;
 class SupplierService
 {
 
+public function getSupplierDetails(int $id)
+{
+    return Supplier::with([
+        'supplierItems',
+        'invoices' => function ($query) {
+            $query->orderBy('created_at', 'desc');
+        }
+    ])->findOrFail($id);
+}
+
 //تثبيت المواد كدفعة وحدة
 public function createBulkItems(array $items)
 {
