@@ -23,10 +23,10 @@ use App\Http\Controllers\AccountantController;
 use App\Http\Controllers\EmployeeSalaryController;
 use App\Http\Controllers\ExpenseStatsController;
 
-Route::post('/register', [AuthController::class, 'register']); // للمريض فقط
-Route::post('/verify', [AuthController::class, 'verify']);
-Route::post('/resendOtp', [AuthController::class, 'resendOtp']);  // للمريض فقط
-Route::post('/login', [AuthController::class, 'login']);       // للجميع مع إرسال الرول
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1'); // للمريض فقط
+Route::post('/verify', [AuthController::class, 'verify'])->middleware('throttle:5,1');
+Route::post('/resendOtp', [AuthController::class, 'resendOtp'])->middleware('throttle:3,1'); // للمريض فقط
+Route::post('/login', [AuthController::class, 'login']) ->middleware('throttle:5,1'); // 5 محاولات كحد أقصى كل دقيقة، بعدها لازم تنتظر       // للجميع مع إرسال الرول
 
 Route::middleware('auth:sanctum')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout']); });// تسجيل الخروج
@@ -121,6 +121,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/doctors/{doctorId}/finance/summary', [DoctorFinanceController::class, 'summary']);
     Route::post('/exchange-rates/refresh', [ExchangeRateController::class, 'refresh']);
     Route::get('/reports/status-stats', [InvoiceController::class, 'getStatusStats']);// إحصائيات حالة الفواتير
+    Route::get('/reports/supplier-status-stats', [InvoiceController::class, 'getSupplierStatusStats']); // إحصائيات حالة فواتير الموردين
     Route::get('/reports/revenue-stats', [InvoiceController::class, 'getRevenueStats']);//  لسنة إحصائيات الإيرادات الشهرية
     Route::get('/reports/overdue-invoices', [InvoiceController::class, 'getOverdue']);// إحصائيات الفواتير المتأخرة
     Route::get('/reports/revenue', [InvoiceController::class, 'getRevenue']);// إحصائيات الإيرادات لشهر محدد

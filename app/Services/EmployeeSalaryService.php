@@ -47,6 +47,18 @@ private function parseMonth(mixed $input): array
         ->findOrFail($userId);
 
     $month = $this->parseMonth($data['salary_month'] ?? now()); // ← هون
+   // 🔒 تحقق: هل راتب هاد الشهر مدفوع أصلاً؟
+    $alreadyPaid = SalaryPayment::where('user_id', $employee->id)
+        ->whereYear('salary_month', $month['year'])
+        ->whereMonth('salary_month', $month['month'])
+        ->exists();
+
+    if ($alreadyPaid) {
+        return [
+            'success' => false,
+            'message' => 'تم دفع راتب شهر ' . $month['str'] . ' لهذا الموظف مسبقاً، لا يمكن إضافة مكافأة أو خصم عليه الآن.',
+        ];
+    }
 
     $adjustment = SalaryAdjustment::create([
         'user_id'      => $employee->id,

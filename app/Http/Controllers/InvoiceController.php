@@ -94,10 +94,11 @@ public function approve($id)
 public function pay(Request $request, $id)
 {
     $request->validate([
-        'amount' => 'required|numeric|min:0.01'
+        'amount' => 'required|numeric|min:0.01',
+        'idempotency_key' => 'required|string|max:100', // ← جديد، إجباري
     ]);
 
-    $invoice = $this->service->payInvoice($id, $request->amount);
+    $invoice = $this->service->payInvoice($id, $request->amount,$request->idempotency_key);
 
     return response()->json([
         'message' => 'Payment recorded successfully',
@@ -479,7 +480,7 @@ public function printReceipt($paymentId)
         ->header('Content-Type', 'application/pdf');
 }
 
-// إحصائيات حالة الفواتير
+// إحصائيات حالة الفواتير المرضى
 public function getStatusStats(Request $request)
     {
         $year = $request->input('year', date('Y'));
@@ -488,6 +489,15 @@ public function getStatusStats(Request $request)
             'data' => $this->service->getMonthlyStatusStats($year)
         ]);
     }
+    // إحصائيات حالة فواتير الموردين
+    public function getSupplierStatusStats(Request $request)
+{
+    $year = $request->input('year', date('Y'));
+    return response()->json([
+        'success' => true,
+        'data' => $this->service->getMonthlySupplierStatusStats($year)
+    ]);
+}
     
     // إحصائيات الإيرادات لسنة
 public function getRevenueStats(Request $request)

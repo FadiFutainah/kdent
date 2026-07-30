@@ -15,16 +15,15 @@ public function getAllPatients()
 {
     return Patient::with('user')
         ->orderBy('id')
-        ->get()
-        ->map(function (Patient $patient) {
+        ->paginate(20)
+        ->through(function (Patient $patient) {
             return [
                 'patient_id'   => $patient->id,            
                 'user_id'      => $patient->user_id,
                 'name' => $patient->user?->name,
                 'phone_number' => $patient->user?->phone_number,
             ];
-        })
-        ->values();
+        });
 }
  
 public function getAvailableSlotsForDays($doctorId)

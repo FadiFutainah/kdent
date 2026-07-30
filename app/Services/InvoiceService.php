@@ -17,7 +17,7 @@ class InvoiceService
   return Invoice::where('type', 'supplier')
     ->with(['items', 'supplier'])
     ->orderByDesc('created_at')
-    ->get();
+    ->paginate(20);  
 }
 
 //عرض فواتير المرضى
@@ -31,7 +31,7 @@ public function getAllPatientInvoices()
             'plans'          // الخطة (اختياري)
         ])
         ->orderByDesc('created_at')
-        ->get();       
+         ->paginate(20);        
 }
 
 //اعتماد الفاتورة بس للموردين
@@ -61,8 +61,47 @@ public function approve($id)
     return $invoice;
 }
 
-public function payInvoice($invoiceId, $amount)
+public function payInvoice($invoiceId, $amount , string $idempotencyKey)
 {
+    // 🔑 أول شي: هل هاد المفتاح انعالج قبل؟ إذا إيه رجّعي نفس النتيجة القديمة
+    $existing = Payment::where('idempotency_key', $idempotencyKey)->first();
+    if ($existing) {
+        return [
+            'message'   => 'Payment already recorded (duplicate request ignored)',
+            'data'      => $existing->invoice->load('payments'),
+            //'receipt'   => $existing->receipt_number,
+            'duplicate' => true, // فيدك تعرفي بالفرونت إنه هاد رد مكرر مش دفعة جديدة
+        ];
+    }
+
+    return DB::transaction(function () use ($invoiceId, $amount, $idempotencyKey) {
+        $invoice = Invoice::with('payments')->findOrFail($invoiceId);
+    
+        // ✅ هون بس — فاتورة المورد لازم تكون issued قبل ما تنقبل دفعات
+        if ($invoice->type === 'supplier' && $invoice->status === 'draft') {
+            return [
+                'success' => false,
+                'message' => 'لا يمكن إضافة دفعة لفاتورة مورد بحالة مسودة، يجب أن يوافق عليها الأدمن أولاً',
+            ];
+        }
+    
+        $total = $invoice->total_amount_USD_after_discount > 0
+            ? $invoice->total_amount_USD_after_discount
+            : $invoice->total_amount_USD;
+    
+        if ($invoice->paid_amount >= $total) {
+            return [
+                'success' => false,
+                'message' => "Invoice already fully paid"
+            ];
+        }
+    
+        if (($invoice->paid_amount + $amount) > $total) {
+            return [
+                'success' => false,
+                'message' => "Payment exceeds remaining amount"
+            ];
+        }
     $invoice = Invoice::with('payments')->findOrFail($invoiceId);
     
 // ✅ هون بس — فاتورة المورد لازم تكون issued قبل ما تنقبل دفعات
@@ -96,6 +135,7 @@ public function payInvoice($invoiceId, $amount)
 
     Payment::create([
         'invoice_id' => $invoice->id,
+        'idempotency_key' => $idempotencyKey, // حفظ المفتاح
         'amount' => $amount,
         'method' => 'cash',
         'exchange_rate' => $rate->rate,
@@ -121,7 +161,9 @@ public function payInvoice($invoiceId, $amount)
         'data' => $invoice->load('payments'),
         'remaining' => $remaining
     ];
+     });
 }
+
 
 public function getById($id)
 {
@@ -291,14 +333,14 @@ private function status($invoice)
     return 'paid';
 }
 
-// إحصائيات شهرية للفواتير حسب الحالة
+//  للمرضى: إحصائيات شهرية للفواتير حسب الحالة
 public function getMonthlyStatusStats($year = null)
 {
     $year = $year ?? date('Y');
-    return \App\Models\Invoice::where('type', 'patient')
+
+    $results = \App\Models\Invoice::where('type', 'patient')
         ->whereYear('created_at', $year)
         ->whereIn('status', ['draft', 'issued', 'partial', 'paid'])
-        // ->withoutAppends() // استبعاد الملغاة
         ->selectRaw('
             MONTH(created_at) as month,
             SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as completed_count,
@@ -306,7 +348,63 @@ public function getMonthlyStatusStats($year = null)
         ')
         ->groupBy('month')
         ->get()
-        ->makeHidden(['patient_name', 'paid_percent', 'final_price']);
+        ->keyBy('month'); // ← فهرسة النتائج برقم الشهر عشان نلاقيها بسرعة
+
+    // نبني مصفوفة من 1 لـ 12 ونعبي الفاضي بصفر
+    $stats = [];
+    for ($month = 1; $month <= 12; $month++) {
+        if ($results->has($month)) {
+            $stats[] = [
+                'month'           => $month,
+                'completed_count' => (int) $results[$month]->completed_count,
+                'pending_count'   => (int) $results[$month]->pending_count,
+            ];
+        } else {
+            $stats[] = [
+                'month'           => $month,
+                'completed_count' => 0,
+                'pending_count'   => 0,
+            ];
+        }
+    }
+
+    return $stats;
+}
+// إحصائيات شهرية للفواتير حسب الحالة للموردين
+public function getMonthlySupplierStatusStats($year = null)
+{
+    $year = $year ?? date('Y');
+
+    $results = \App\Models\Invoice::where('type', 'supplier')
+        ->whereYear('created_at', $year)
+        ->whereIn('status', ['draft', 'issued', 'partial', 'paid'])
+        ->selectRaw('
+            MONTH(created_at) as month,
+            SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as completed_count,
+            SUM(CASE WHEN status IN ("draft", "issued", "partial") THEN 1 ELSE 0 END) as pending_count
+        ')
+        ->groupBy('month')
+        ->get()
+        ->keyBy('month');
+
+    $stats = [];
+    for ($month = 1; $month <= 12; $month++) {
+        if ($results->has($month)) {
+            $stats[] = [
+                'month'           => $month,
+                'completed_count' => (int) $results[$month]->completed_count,
+                'pending_count'   => (int) $results[$month]->pending_count,
+            ];
+        } else {
+            $stats[] = [
+                'month'           => $month,
+                'completed_count' => 0,
+                'pending_count'   => 0,
+            ];
+        }
+    }
+
+    return $stats;
 }
 
 // إحصائيات الإيرادات لسنة
