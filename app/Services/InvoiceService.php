@@ -7,6 +7,7 @@ use App\Models\Treatment_Plan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Events\InvoiceApproved; 
 
 class InvoiceService
 {
@@ -57,6 +58,7 @@ public function approve($id)
     $invoice->update([
         'status' => 'issued'
     ]);
+     event(new InvoiceApproved($invoice)); 
 
     return $invoice;
 }

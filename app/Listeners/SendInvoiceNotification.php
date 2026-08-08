@@ -29,7 +29,7 @@ class SendInvoiceNotification
 {
     dispatch(new SendNotificationJob(
         // User::where('role', 'accountant')->pluck('id'),
-          User::role('accountant')->pluck('id'),
+          User::role('admin')->pluck('id'),
         'فاتورة جديدة',
         "تم إنشاء فاتورة جديدة",
         'invoice',

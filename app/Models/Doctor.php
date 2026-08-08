@@ -61,5 +61,11 @@ class Doctor extends Model
         return $this->hasMany(Medical_Report::class, 'doctor_id');
     }
 
+    public function toothTreatments()
+{
+    return $this->hasMany(ToothTreatment::class, 'doctor_id');
+}
+
+
 
 }

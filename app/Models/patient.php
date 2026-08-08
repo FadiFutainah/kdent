@@ -69,4 +69,8 @@ class Patient extends Model
     {
         return $this->hasMany(Invoice::class, 'patient_id');
     }
+    public function toothTreatments()
+{
+    return $this->hasMany(ToothTreatment::class, 'patient_id');
+}
 }

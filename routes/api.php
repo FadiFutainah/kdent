@@ -22,6 +22,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AccountantController;
 use App\Http\Controllers\EmployeeSalaryController;
 use App\Http\Controllers\ExpenseStatsController;
+use App\Http\Controllers\ToothTreatmentController;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1'); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify'])->middleware('throttle:5,1');
@@ -183,6 +184,7 @@ Route::middleware(['auth:sanctum', 'role:patient|doctor|secretary'])->group(func
     Route::get('/medical-reports/{patientId}', [MedicalReportController::class, 'index']);
     Route::get('/medical-reportD/{reportId}', [MedicalReportController::class, 'show']);
     Route::get('/medical-records/{patientId}', [MedicalRecordController::class, 'show']);
+    Route::get('/patient/{patientId}/dental-chart', [ToothTreatmentController::class, 'index']);//عرض الخارطة السنية للمريض
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
@@ -204,6 +206,10 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::get('/doctor/plans/dues', [DoctorFinanceController::class, 'doctorPlansDues']);
     Route::post('/Edit-reports/{reportId}',[MedicalReportController::class, 'update']);
     Route::delete('/Del-reports/{reportId}',[MedicalReportController::class, 'destroy']);
+    // خارطة الأسنان - إضافة/تعديل وحذف
+    Route::post('/patients/{patientId}/dental-chart', [ToothTreatmentController::class, 'store']);
+    Route::put('/patients/{patientId}/dental-chart/{recordId}', [ToothTreatmentController::class, 'update']);
+    Route::delete('/patients/{patientId}/teeth/{recordId}', [ToothTreatmentController::class, 'destroy']);
 
 });
 

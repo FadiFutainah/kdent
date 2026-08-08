@@ -25,6 +25,9 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\ExpiredItemsDetected::class => [
             \App\Listeners\ExpiredItemsNotification::class,
         ],
+         \App\Events\InvoiceApproved::class => [                    // ← جديد
+        \App\Listeners\SendInvoiceApprovedNotification::class, // ← جديد
+    ],
     ];
 
     public function boot(): void
