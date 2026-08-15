@@ -17,6 +17,7 @@
         "mpdf/mpdf": "^8.3",
         "openai-php/client": "^0.19.2",
         "owen-it/laravel-auditing": "^14.0",
+        "predis/predis": "^3.5",
         "spatie/laravel-permission": "^6.25"
     },
     "require-dev": {

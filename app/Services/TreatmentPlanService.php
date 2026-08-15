@@ -250,6 +250,11 @@ class TreatmentPlanService
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
+        if ($plan->is_locked) {
+            throw new \DomainException(
+                'الخطة مكتملة ومقفلة ولا يمكن إضافة مراحل جديدة'
+            );
+        }
         $item = Plan_Item::create([
             'plan_id'     => $plan->id,
             'category_id' => $data['category_id'],
@@ -272,13 +277,19 @@ class TreatmentPlanService
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
+            if ($plan->is_locked) {
+            throw new \DomainException(
+                'الخطة مكتملة ومقفلة ولا يمكن تعديل المراحل'
+            );
+        }
+
         $item = Plan_Item::where('plan_id', $plan->id)
             ->where('id', $itemId)
             ->firstOrFail();
 
         $updates = [];
 
-        foreach (['category_id', 'notes', 'status'] as $field) {
+        foreach (['category_id', 'notes'] as $field) {
             if (array_key_exists($field, $data)) {
                 $updates[$field] = $data[$field];
             }
@@ -307,11 +318,10 @@ class TreatmentPlanService
             ->where('doctor_id', $doctor->id)
             ->firstOrFail();
 
-        if ($plan->status === 'completed' || $plan->is_locked) {
-            return [
-                'success' => false,
-                'message' => 'الخطة مكتملة ومقفلة ولا يمكن حذف المراحل',
-            ];
+        if ($plan->is_locked) {
+            throw new \DomainException(
+                'الخطة مكتملة ومقفلة ولا يمكن حذف المراحل'
+            );
         }
 
         $item = Plan_Item::where('plan_id', $plan->id)
