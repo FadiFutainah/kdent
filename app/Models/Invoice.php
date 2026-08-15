@@ -53,7 +53,7 @@ class Invoice extends Model
     }*/
     public function getTotalSypAttribute()
 {
-    return $this->total_amount * $this->exchange_rate;
+    return $this->total_amount_USD * $this->exchange_rate;
 }
 public function payments()
 {
