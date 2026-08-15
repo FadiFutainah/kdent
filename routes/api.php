@@ -36,7 +36,7 @@ Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::clas
 );
 
 Route::middleware(['auth:sanctum', 'role:patient'])->group(function () {
-Route::get('/specializations', [SpecializationController::class,'index'])->middleware('role:patient');//عرض الاختصاصات 
+//Route::get('/specializations', [SpecializationController::class,'index'])->middleware('role:patient');//عرض الاختصاصات 
 Route::get('/specializations/{id}', [SpecializationController::class,'show']);//عرض تفاصيل الاختصاص 
 Route::get('/specializations/{id}/doctors', [SpecializationController::class,'getDoctorsBySpecialization']);//عرض الأطباء حسب الاختصاص
 Route::get('/available-slots/{doctorId}', [PatientController::class, 'getAvailableSlotsForDays']);
@@ -200,7 +200,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::post('/consume', [InventoryTransactionController::class, 'storee']);//طلب مواد من المستودع
     Route::get('/available', [InventoryTransactionController::class, 'getAvailableItemsForDoctor']);//عرض المواد المتاحة للطبيب
     
-    Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
+   // Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
     Route::post('/medical-reports', [MedicalReportController::class, 'store']);
    // Route::post('/medical-records/{patientId}', [MedicalRecordController::class, 'update']);
     Route::get('/doctor/plans/dues', [DoctorFinanceController::class, 'doctorPlansDues']);

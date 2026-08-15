@@ -66,6 +66,21 @@ public function patient()
     {
         return $this->hasOne(Patient::class);
     }
+
+    public function salaryPayments()
+    {
+        return $this->hasMany(SalaryPayment::class, 'user_id');
+    }
+
+    public function salaryAdjustments()
+    {
+        return $this->hasMany(SalaryAdjustment::class, 'user_id');
+    }
+    public function paidSalaries()
+    {
+        return $this->hasMany(SalaryPayment::class, 'paid_by');
+    }
+
     public function notifications()
 {
     return $this->hasMany(Notification::class);
