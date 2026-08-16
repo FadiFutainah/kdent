@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Services\TreatmentSessionService;
 use Illuminate\Http\Request;
 
+
 class TreatmentSessionController extends Controller
 {
     public function __construct(private TreatmentSessionService $service)
