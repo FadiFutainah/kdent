@@ -44,6 +44,11 @@ return [
         'api_key'  => env('SPTODAY_API_KEY'),
         'timeout'  => env('SPTODAY_TIMEOUT', 10),
     ],
+    'firebase' => [
+    'credentials' => storage_path(
+        'app/firebase/karamdint-a6c19-firebase-adminsdk-fbsvc-03128e8b16.json'
+    ),
+],
 /*
     'lirascope' => [
         'base_url' => env('LIRASCOPE_BASE_URL', 'https://lirascope.syria-cloud.sy'),

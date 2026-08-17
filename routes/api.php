@@ -25,6 +25,11 @@ use App\Http\Controllers\ExpenseStatsController;
 use App\Http\Controllers\ToothTreatmentController;
 use App\Http\Controllers\NotificationController;
 
+
+use App\Http\Controllers\NotificationTestController;
+ Route::post('/test', [NotificationTestController::class, 'testMe'])
+       ;
+
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1'); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify'])->middleware('throttle:5,1');
 Route::post('/resendOtp', [AuthController::class, 'resendOtp'])->middleware('throttle:3,1'); // للمريض فقط
@@ -39,37 +44,37 @@ Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::clas
 );
 
 Route::middleware(['auth:sanctum', 'role:patient'])->group(function () {
-//Route::get('/specializations', [SpecializationController::class,'index'])->middleware('role:patient');//عرض الاختصاصات 
-Route::get('/specializations/{id}', [SpecializationController::class,'show']);//عرض تفاصيل الاختصاص 
+//Route::get('/specializations', [SpecializationController::class,'index'])->middleware('role:patient');//عرض الاختصاصات
+Route::get('/specializations/{id}', [SpecializationController::class,'show']);//عرض تفاصيل الاختصاص
 Route::get('/specializations/{id}/doctors', [SpecializationController::class,'getDoctorsBySpecialization']);//عرض الأطباء حسب الاختصاص
 Route::get('/available-slots/{doctorId}', [PatientController::class, 'getAvailableSlotsForDays']);
 Route::post('/book-appointment', [PatientController::class, 'bookAppointment']);
-Route::get('/patient/appointments/next', [AppointmentController::class, 'myNextAppointment']);// عرض الموعد القادم 
+Route::get('/patient/appointments/next', [AppointmentController::class, 'myNextAppointment']);// عرض الموعد القادم
 Route::get('/patient/appointments/confirmed', [AppointmentController::class, 'myConfirmedAppointments']);// عرض المواعيد المؤكدة
-Route::get('/patient/appointments/pending', [AppointmentController::class, 'myPendingAppointments']);// عرض المواعيد قيد الانتظار 
+Route::get('/patient/appointments/pending', [AppointmentController::class, 'myPendingAppointments']);// عرض المواعيد قيد الانتظار
 Route::get('/patient/appointments/cancelled', [AppointmentController::class, 'myCancelledAppointments']);// عرض المواعيد الملغاة
 });
 
 
 Route::middleware(['auth:sanctum', 'role:patient|secretary'])->group(function () {
-Route::get('/specializations', [SpecializationController::class,'index']);//عرض الاختصاصات 
+Route::get('/specializations', [SpecializationController::class,'index']);//عرض الاختصاصات
 
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::post('/create-employee', [AdminController::class, 'createEmployee']);
-   Route::post('/admin/backup/run', [AdminController::class, 'runBackupNow']);//نسخ احتياطي 
+   Route::post('/admin/backup/run', [AdminController::class, 'runBackupNow']);//نسخ احتياطي
     Route::get('/audit/{id}', [InventoryTransactionController::class, 'approved']);//موافقة المدير على الجرد + تنفيذ التسوية
     Route::get('/pending_approvals', [InventoryTransactionController::class, 'getPendingAuditsReport']);// عرض الجردات في انتظار الموافقة
-    Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد 
-    Route::get('getDisposedItemsHistory', [InventoryTransactionController::class, 'getDisposedItemsHistory']);//عرض جميع المواد التي تم اتلافها للادمن 
+    Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد
+    Route::get('getDisposedItemsHistory', [InventoryTransactionController::class, 'getDisposedItemsHistory']);//عرض جميع المواد التي تم اتلافها للادمن
     Route::post('/invoices/{id}/approve', [InvoiceController::class, 'approve']);//اعتماد الفاتورة
 
     Route::delete('/DeUsers/{id}', [AdminController::class, 'deleteUser']);
     Route::post('/ReUsers/{id}/restore', [AdminController::class, 'restoreUser']);
     Route::get('/deleted-users', [AdminController::class, 'deletedUsers']);
     Route::post('/EditDoctors/{doctorId}',[AdminController::class, 'updateDoctorInfo']);
-    
+
     Route::get('/categories', [AdminController::class, 'getTreatmentCategories']);
     Route::post('/createCate', [AdminController::class, 'createTreatmentCategory']);
     Route::post('/updateCate/{id}', [AdminController::class, 'updateTreatmentCategory']);
@@ -100,8 +105,8 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){
 
 Route::middleware(['auth:sanctum', 'role:secretary'])->group(function () {
     Route::get('/secretary/doctors/all', [AppointmentController::class, 'listAllDoctorsForSecretary']);
-    // لازم get 
-    Route::get('/secretary/doctors', [AppointmentController::class, 'listDoctorsBySpecialization']); 
+    // لازم get
+    Route::get('/secretary/doctors', [AppointmentController::class, 'listDoctorsBySpecialization']);
     Route::get('/secretary/doctors/{doctorId}/available-slots', [AppointmentController::class, 'availableSlotsByDoctor']);
 
     Route::get('/secretary/doctors/{doctorId}/available-slots7', [AppointmentController::class, 'availableSlotsByDoctor7Days']);//للحذف
@@ -143,7 +148,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::post('/employees/{userId}/base-salary', [EmployeeSalaryController::class, 'setBaseSalary']);//تحديد الراتب الأساسي لموظف
     Route::post('/employees/{userId}/salary-payments', [EmployeeSalaryController::class, 'pay']);// دفع راتب لموظف عن شهر معين
     Route::get('/employees/{userId}/salary-pay', [EmployeeSalaryController::class, 'history']);// عرض تاريخ دفع الرواتب لموظف معين
-    Route::get('/salary-payments', [EmployeeSalaryController::class, 'index']);//كشف عام للادمن كل دفعات اللرواتب 
+    Route::get('/salary-payments', [EmployeeSalaryController::class, 'index']);//كشف عام للادمن كل دفعات اللرواتب
     Route::post('/employees/{userId}/salary-adjustments', [EmployeeSalaryController::class, 'addAdjustment']);// إضافة مكافأة أو خصم لموظف عن شهر معين
     Route::get('/employees/{userId}/salary-adjustments/pending', [EmployeeSalaryController::class, 'pendingAdjustments']);// عرض المكافآت/الخصومات غير المدفوعة بعد لموظف عن شهر معين
     Route::delete('/salary-adjustments/{adjustmentId}', [EmployeeSalaryController::class, 'deleteAdjustment']);//
@@ -152,16 +157,16 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/expenses/stats/monthly', [ExpenseStatsController::class, 'monthly']);// إحصائيات شهر محدد
 
 
-   
+
 });
 
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
    // Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
-  
+
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
 });
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
-  
+
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى
    // Route::post('/invoices/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid']);//وضع علامة مدفوعة على الفاتورة
     Route::get('/invoices/{id}/print', [InvoiceController::class, 'print']);//طباعة الفاتورة
@@ -206,7 +211,7 @@ Route::middleware(['auth:sanctum', 'role:doctor'])->group(function () {
     Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
     Route::post('/consume', [InventoryTransactionController::class, 'storee']);//طلب مواد من المستودع
     Route::get('/available', [InventoryTransactionController::class, 'getAvailableItemsForDoctor']);//عرض المواد المتاحة للطبيب
-    
+
    // Route::post('/treatment-sessions/{sessionId}/complete', [TreatmentSessionController::class, 'complete']);
     Route::post('/medical-reports', [MedicalReportController::class, 'store']);
    // Route::post('/medical-records/{patientId}', [MedicalRecordController::class, 'update']);
@@ -225,13 +230,13 @@ Route::middleware(['auth:sanctum', 'role:storekeeper'])->group(function () {
 Route::post('/suppliers', [SupplierItemsController::class, 'store']);// إضافة مورد جديد
 Route::post('/purchase', [InventoryTransactionController::class, 'purchase']);// تسجيل عملية شراء مواد من مورد
 //Route::post('/consume', [InventoryTransactionController::class, 'consume']);
-//Route::post('/returnItems', [InventoryTransactionController::class, 'returnItems']);// 
+//Route::post('/returnItems', [InventoryTransactionController::class, 'returnItems']);//
 Route::post('/storeitems', [SupplierItemsController::class, 'stores']);// تثبيت مواد في النظام
 Route::get('/available_items', [SupplierItemsController::class, 'availableItems']);//عرض المواد
 Route::post('/{id}/approve', [InventoryTransactionController::class, 'approveRequest']);// موافقة على طلب مواد
 Route::post('/audit', [InventoryTransactionController::class, 'audit']);// إنشاء جرد جديد
 Route::get('/shows', [InventoryTransactionController::class, 'shows']);// عرض كل الجردات
-Route::get('/showss', [InventoryTransactionController::class, 'showss']);// عرض تفاصيل جرد محدد      
+Route::get('/showss', [InventoryTransactionController::class, 'showss']);// عرض تفاصيل جرد محدد
 Route::post('/audits/{id}/items', [InventoryTransactionController::class, 'addItem']);// إضافة مادة إلى جرد
 Route::get('/audits/{id}/complete', [InventoryTransactionController::class, 'complete']);// انهاء الجرد
 Route::get('/material-requests/pending', [InventoryTransactionController::class, 'getPendingDoctorRequests']);// عرض طلبات المواد القادمة من الأطباء بانتظار الموافقة
@@ -241,10 +246,10 @@ Route::put('/items/{id}', [InventoryTransactionController::class, 'updateItem'])
 Route::post('/disposals/manual-immediate', [InventoryTransactionController::class, 'storeManualImmediate']); // زر إتلاف فوري للمواد المكسورة/التالفة
 Route::get('/disposals/pending', [InventoryTransactionController::class, 'getPendingDisposals']);          // عرض طلبات الإتلاف "التلقائية" القادمة من الجوب ليلاً بانتظار تأكيدها
 Route::post('/disposals/{id}/approve', [InventoryTransactionController::class, 'approve']);                // زر تأكيد وإتلاف الطلبات التلقائية بعد فحص الرف
-Route::get('/inventory/by-item/{item_id}', [InventoryTransactionController::class, 'getByItem']);//الحصول على الدفعات لمادة محددة 
-Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد 
-Route::post('/reason/{id}/{item_id}', [InventoryTransactionController::class, 'updateVarianceReason']);//اضافة سبب للنقص 
-Route::get('/getExpiredItems', [InventoryTransactionController::class, 'getExpiredItems']);//عرض جميع المواد منتهية الصلاحية قبل اتلافها 
+Route::get('/inventory/by-item/{item_id}', [InventoryTransactionController::class, 'getByItem']);//الحصول على الدفعات لمادة محددة
+Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد
+Route::post('/reason/{id}/{item_id}', [InventoryTransactionController::class, 'updateVarianceReason']);//اضافة سبب للنقص
+Route::get('/getExpiredItems', [InventoryTransactionController::class, 'getExpiredItems']);//عرض جميع المواد منتهية الصلاحية قبل اتلافها
 Route::get('/getLowStockItems', [InventoryTransactionController::class, 'getLowStockItems']);//عرض المواد التي وصلت إلى حدها الأدنى من المخزون
 //Route::get('/getAllSuppliers', [SupplierItemsController::class, 'getAllSuppliers']);//عرض جميع الموردين
 Route::put('/suppliers/{id}', [SupplierItemsController::class, 'update']);//تعديل مورد
@@ -257,6 +262,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::post('/profile', [ProfileController::class, 'update']);
     Route::get('/reports/{reportId}/pdf',[MedicalReportController::class, 'downloadPdf']);
+
+
 
 
 });
