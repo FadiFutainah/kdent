@@ -24,6 +24,91 @@ services:
       mysql:
         condition: service_healthy
 
+
+  # Queue worker
+  queue-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: laravel-queue-worker
+
+    restart: unless-stopped
+
+    working_dir: /var/www
+
+    env_file:
+      - .env
+
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+
+    volumes:
+      - ./storage:/var/www/storage
+
+    networks:
+      - laravel
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+
+  # Check expired inventory
+  inventory-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: laravel-inventory-worker
+
+    restart: unless-stopped
+
+    working_dir: /var/www
+
+    env_file:
+      - .env
+
+    command: php artisan inventory:check-expired
+
+    volumes:
+      - ./storage:/var/www/storage
+
+    networks:
+      - laravel
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+
+  # Send payment reminders
+  payment-reminder-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: laravel-payment-reminder-worker
+
+    restart: unless-stopped
+
+    working_dir: /var/www
+
+    env_file:
+      - .env
+
+    command: php artisan reminders:send-payment
+
+    volumes:
+      - ./storage:/var/www/storage
+
+    networks:
+      - laravel
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+
   nginx:
     image: nginx:1.27-alpine
 
@@ -43,6 +128,7 @@ services:
 
     networks:
       - laravel
+
 
   mysql:
     image: mysql:8.0
@@ -78,8 +164,10 @@ services:
       timeout: 5s
       retries: 5
 
+
 networks:
   laravel:
+
 
 volumes:
   mysql_data:
