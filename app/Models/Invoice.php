@@ -47,13 +47,13 @@ class Invoice extends Model
     {
         return $this->belongsTo(Patient::class);
     }
-    public function plan()
+ /*   public function plan()
     {
         return $this->belongsTo(Plan_Item::class);
-    }
+    }*/
     public function getTotalSypAttribute()
 {
-    return $this->total_amount * $this->exchange_rate;
+    return $this->total_amount_USD * $this->exchange_rate;
 }
 public function payments()
 {

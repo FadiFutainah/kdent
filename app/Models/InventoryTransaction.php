@@ -39,6 +39,6 @@ class InventoryTransaction extends Model
        // 🔗 الطلب (اختياري لكن مهم)
     public function request()
     {
-        return $this->belongsTo(MaterialRequest::class, 'request_id');
+        return $this->belongsTo(MaterialRequest::class, 'reference_id');
     }
 }

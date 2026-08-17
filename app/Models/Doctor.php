@@ -62,10 +62,22 @@ class Doctor extends Model
     }
 
     public function toothTreatments()
-{
-    return $this->hasMany(ToothTreatment::class, 'doctor_id');
-}
+    {
+        return $this->hasMany(ToothTreatment::class, 'doctor_id');
+    }
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
+    }
+    public function doctorEarning()
+    {
+        return $this->hasOne(Doctor_Earning::class, 'treatment_plans_id');
+    }
 
+    public function doctorPayments()
+    {
+        return $this->hasMany(Doctor_Payment::class);
+    }
 
 
 }

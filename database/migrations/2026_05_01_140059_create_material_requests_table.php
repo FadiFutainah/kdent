@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('material_requests', function (Blueprint $table) {
             $table->id();
             $table->string('requisition_number')->unique();
-            $table->foreignId('doctor_id')->constrained('users');
+            $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->text('notes')->nullable();
               // أضف هذه الحقول:
