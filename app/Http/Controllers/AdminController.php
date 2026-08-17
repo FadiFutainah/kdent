@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\Request;
 use App\Services\AdminService;
 
@@ -138,6 +138,38 @@ class AdminController extends Controller
             )
         );
     }
+
+//     public function runBackupNow()
+// {
+//     Artisan::call('backup:run');
+
+//     return response()->json([
+//         'status' => 'success',
+//         'message' => 'تم إنشاء نسخة احتياطية جديدة بنجاح',
+//         'output' => Artisan::output(),
+//     ]);
+// }
+
+
+public function runBackupNow()
+{
+    $exitCode = Artisan::call('backup:run');
+    $output = Artisan::output();
+
+    if ($exitCode !== 0) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'فشلت عملية النسخ الاحتياطي',
+            'output' => $output,
+        ], 500);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'تم إنشاء نسخة احتياطية جديدة بنجاح',
+        'output' => $output,
+    ]);
+}
 
     public function getCompletedTreatmentPlansCount()
     {

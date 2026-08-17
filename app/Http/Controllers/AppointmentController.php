@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\AppointmentService;
+use Illuminate\Support\Facades\Auth;
 
 class AppointmentController extends Controller
 {
 	public function __construct(private AppointmentService $service)
 	{
 	}
+
+	
 
 	public function bookBySecretary(Request $request)
 	{
@@ -143,6 +146,41 @@ class AppointmentController extends Controller
         // إرجاع المصفوفة مباشرة لتكون النتيجة مطابقة تماماً للـ JSON المطلوب
         return response()->json($schedules, 200);
     }
+	
+public function myNextAppointment(Request $request)
+{
+    $patientId = Auth::user()->patient->id;
+    $appointment = $this->service->getNextAppointmentForPatient($patientId);
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $appointment,
+    ]);
+}
+
+public function myConfirmedAppointments(Request $request)
+{
+    $patientId = Auth::user()->patient->id;
+    $appointments = $this->service->getPatientAppointmentsByStatus($patientId, 'confirmed');
+
+    return response()->json(['status' => 'success', 'data' => $appointments]);
+}
+
+public function myPendingAppointments(Request $request)
+{
+    $patientId = Auth::user()->patient->id;
+    $appointments = $this->service->getPatientAppointmentsByStatus($patientId, 'scheduled');
+
+    return response()->json(['status' => 'success', 'data' => $appointments]);
+}
+
+public function myCancelledAppointments(Request $request)
+{
+    $patientId = Auth::user()->patient->id;
+    $appointments = $this->service->getPatientAppointmentsByStatus($patientId, 'cancelled');
+
+    return response()->json(['status' => 'success', 'data' => $appointments]);
+}
 
 
 }

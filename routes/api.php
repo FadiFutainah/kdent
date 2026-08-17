@@ -23,6 +23,7 @@ use App\Http\Controllers\AccountantController;
 use App\Http\Controllers\EmployeeSalaryController;
 use App\Http\Controllers\ExpenseStatsController;
 use App\Http\Controllers\ToothTreatmentController;
+use App\Http\Controllers\NotificationController;
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1'); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify'])->middleware('throttle:5,1');
@@ -30,7 +31,9 @@ Route::post('/resendOtp', [AuthController::class, 'resendOtp'])->middleware('thr
 Route::post('/login', [AuthController::class, 'login']) ->middleware('throttle:5,1'); // 5 محاولات كحد أقصى كل دقيقة، بعدها لازم تنتظر       // للجميع مع إرسال الرول
 
 Route::middleware('auth:sanctum')->group(function () {
-Route::post('/logout', [AuthController::class, 'logout']); });// تسجيل الخروج
+Route::post('/logout', [AuthController::class, 'logout']);
+ Route::post('/fcm/token',[NotificationController::class, 'updateFcmToken']);
+ });// تسجيل الخروج
 
 Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::class, 'checkToken']
 );
@@ -41,6 +44,10 @@ Route::get('/specializations/{id}', [SpecializationController::class,'show']);//
 Route::get('/specializations/{id}/doctors', [SpecializationController::class,'getDoctorsBySpecialization']);//عرض الأطباء حسب الاختصاص
 Route::get('/available-slots/{doctorId}', [PatientController::class, 'getAvailableSlotsForDays']);
 Route::post('/book-appointment', [PatientController::class, 'bookAppointment']);
+Route::get('/patient/appointments/next', [AppointmentController::class, 'myNextAppointment']);// عرض الموعد القادم 
+Route::get('/patient/appointments/confirmed', [AppointmentController::class, 'myConfirmedAppointments']);// عرض المواعيد المؤكدة
+Route::get('/patient/appointments/pending', [AppointmentController::class, 'myPendingAppointments']);// عرض المواعيد قيد الانتظار 
+Route::get('/patient/appointments/cancelled', [AppointmentController::class, 'myCancelledAppointments']);// عرض المواعيد الملغاة
 });
 
 
@@ -51,7 +58,7 @@ Route::get('/specializations', [SpecializationController::class,'index']);//عر
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::post('/create-employee', [AdminController::class, 'createEmployee']);
-   
+   Route::post('/admin/backup/run', [AdminController::class, 'runBackupNow']);//نسخ احتياطي 
     Route::get('/audit/{id}', [InventoryTransactionController::class, 'approved']);//موافقة المدير على الجرد + تنفيذ التسوية
     Route::get('/pending_approvals', [InventoryTransactionController::class, 'getPendingAuditsReport']);// عرض الجردات في انتظار الموافقة
     Route::get('/showss/{id}', [InventoryTransactionController::class, 'getAuditResult']);// عرض تفاصيل جرد محدد 

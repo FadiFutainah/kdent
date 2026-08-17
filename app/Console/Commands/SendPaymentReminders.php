@@ -30,4 +30,5 @@ class SendPaymentReminders extends Command
     $service->sendPaymentReminders();
     $this->info('تم إرسال التنبيهات بنجاح.');
     }
+    
 }
