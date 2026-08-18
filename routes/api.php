@@ -24,9 +24,9 @@ use App\Http\Controllers\EmployeeSalaryController;
 use App\Http\Controllers\ExpenseStatsController;
 use App\Http\Controllers\ToothTreatmentController;
 use App\Http\Controllers\NotificationController;
-
-
 use App\Http\Controllers\NotificationTestController;
+
+
  Route::post('/test', [NotificationTestController::class, 'testMe'])
        ;
 
@@ -37,7 +37,11 @@ Route::post('/login', [AuthController::class, 'login']) ->middleware('throttle:5
 
 Route::middleware('auth:sanctum')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout']);
- Route::post('/fcm/token',[NotificationController::class, 'updateFcmToken']);
+ //Route::post('/fcm/token',[NotificationController::class, 'updateFcmToken']);
+ // آخر الملف
+Route::middleware('auth:sanctum')->post('/fcm/token',
+    [NotificationTestController::class, 'testMe']
+);
  });// تسجيل الخروج
 
 Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::class, 'checkToken']

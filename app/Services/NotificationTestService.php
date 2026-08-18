@@ -25,14 +25,14 @@ class NotificationTestService
     {
         try {
 
-            $fcmToken = 'ct1QzVKmRfekgki8qxjdjJ:APA91bEOhMMl4kUZGf_rxZ9oU2UUoQvnhCYhEH545hYCKmQ_GFJG6yA6W3C1G2uuklxUhVH_q9cZ1OQxjg1x9lMOhk6j6FipChjvuW8BBCUSx-cAY-v9lrY';
+            $fcmToken = 'fXuRuNgBT7qvMeCITSQka2:APA91bGk8849MC6UpvBYGfKv6i6ZF6ggs41FHnJfCXQxnqD8tUp_nXWXBcJmwdk3dAaVs83c8elMmkoaoAAzA8plm-8uRea7F6Sf57pOU1H4623N-ZoKJDc';
 
             $title = 'Test Notification - إشعار تجريبي';
 
             $body = 'This is a test notification from Karam Dent system. نظام الإشعارات يعمل بنجاح!';
 
             $message = CloudMessage::new()
-                ->withToken($fcmToken)
+                ->toToken($fcmToken)
                 ->withNotification(
                     Notification::create(
                         $title,

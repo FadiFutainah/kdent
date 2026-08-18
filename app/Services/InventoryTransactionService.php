@@ -18,13 +18,19 @@ use App\Models\Disposal;
 use App\Models\Audit;
 use App\Models\DisposalItem;
 use App\Models\AuditItem;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
 
 
 
 class InventoryTransactionService
 {
+    
+    protected $messaging;
+     
       public function __construct(
-        private ExchangeRateService $exchangeService
+        private ExchangeRateService $exchangeService,
+        
     ) {}
 
 //شراء مواد من المورد
@@ -228,21 +234,19 @@ public function purchaseBulk(array $data)
 
 //إنشاء طلب مواد من الدكتور
     public function create(int $doctorId,array $data) {
+       
         return DB::transaction(function () use ($doctorId,$data) {
-
+ $title = 'طلب مواد جديد';
+$body  = 'تم إنشاء طلب مواد جديد في النظام.';
             $request = MaterialRequest::create([
                 'doctor_id' => $doctorId,
 'requested_by' => Auth::id(),
                 'requisition_number' =>
                     'REQ-' . date('YmdHis'),
-
                 'status' => 'pending',
-
                 'notes' => $data['notes'] ?? null,
             ]);
-
             foreach ($data['items'] as $item) {
-
                 MaterialRequestItem::create([
                     'material_request_id' => $request->id,
 
@@ -250,8 +254,21 @@ public function purchaseBulk(array $data)
 
                     'quantity_requested' =>
                         $item['quantity'],
-                ]);
-            }
+                ]); }
+                
+            $message = CloudMessage::new()
+ ->withToken($fcmToken)
+ ->withNotification(
+ Notification::create(
+ $title,
+ $body
+)
+) ->withData([
+ 'type' => 'test',
+'timestamp' => now()->toDateTimeString(),
+ ]);
+ $response = $this->messaging->send($message);
+
             event(new \App\Events\MaterialRequestCreated($request));
 
             return $request->load('items.item');
@@ -455,7 +472,23 @@ public function approveMaterialRequest(int $requestId): MaterialRequest
 
 // فحص يدوي لنقص المخزون بعد الصرف
 $updatedItem = Item::find($requestItem->item_id);
+ $title = 'صرف مواد ';
+$body  = 'تم خفض المادة عن الحد الأدنى';
 if ($updatedItem->current_stock <= $updatedItem->minimum_stock) {
+
+      $message = CloudMessage::new()
+ ->withToken($fcmToken)
+ ->withNotification(
+ Notification::create(
+ $title,
+ $body
+)
+) ->withData([
+ 'type' => 'test',
+'timestamp' => now()->toDateTimeString(),
+ ]);
+ $response = $this->messaging->send($message);
+
      event(new \App\Events\LowStockDetected($updatedItem));
 }
 /////////////////////////////////////////

@@ -8,10 +8,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Events\InvoiceApproved; 
-
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
 class InvoiceService
 {
-
+  protected $messaging;
 //عرض فواتير المورد
     public function getAll()
 {
@@ -461,15 +462,30 @@ public function sendPaymentReminders()
         if ($invoice->last_reminder_sent_at && $invoice->last_reminder_sent_at->greaterThan(now()->subDays(7))) {
             continue;
         }
+$title ='تذكير بدفعة مستحقة';
+$body  ='عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية ';
+     $message = CloudMessage::new()
+ ->withToken($fcmToken)
+ ->withNotification(
+ Notification::create(
+ $title,
+ $body
+)
+) ->withData([
+ 'type' => 'test',
+'timestamp' => now()->toDateTimeString(),
+ ]);
+ $response = $this->messaging->send($message);
 
-        // إرسال الإشعار باستخدام الـ Job الموجود عندك
-        dispatch(new \App\Jobs\SendNotificationJob(
-            [$invoice->patient->user->id],
-            'تذكير بدفعة مستحقة',
-            "عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية.",
-            'payment_reminder',
-            ['invoice_id' => $invoice->id]
-        ));
+
+        // // إرسال الإشعار باستخدام الـ Job الموجود عندك
+        // dispatch(new \App\Jobs\SendNotificationJob(
+        //     [$invoice->patient->user->id],
+        //     'تذكير بدفعة مستحقة',
+        //     "عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية.",
+        //     'payment_reminder',
+        //     ['invoice_id' => $invoice->id]
+        // ));
 
         // تسجيل تاريخ الإرسال
         $invoice->update(['last_reminder_sent_at' => now()]);

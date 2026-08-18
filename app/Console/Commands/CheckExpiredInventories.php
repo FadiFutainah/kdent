@@ -65,6 +65,7 @@ class CheckExpiredInventories extends Command
             $this->info('جاري إطلاق الحدث...');
             event(new ExpiredItemsDetected($disposal));
 $this->info('تم إطلاق الحدث بنجاح.');
+
             $this->info("تم بنجاح حظر المواد وإنشاء مستند الإتلاف التلقائي رقم: {$disposal->disposal_number}");
         });
 

@@ -26,7 +26,8 @@ class SendPaymentReminders extends Command
      */
     public function handle()
     {
-    $service = new \App\Services\InvoiceService();
+   // $service = new \App\Services\InvoiceService();
+   $service = app(\App\Services\InvoiceService::class);
     $service->sendPaymentReminders();
     $this->info('تم إرسال التنبيهات بنجاح.');
     }
