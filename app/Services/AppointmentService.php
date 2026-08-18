@@ -15,6 +15,13 @@ use Illuminate\Validation\ValidationException;
 
 class AppointmentService
 {
+
+ // الحالات "النشطة" التي يُطبَّق عليها فلتر النافذة الزمنية (قريبة من الحاضر)
+    private const ACTIVE_STATUSES = ['scheduled', 'confirmed'];
+
+    // فترة السماح بالدقائق: كم دقيقة بعد وقت الموعد يبقى معروضاً كـ"نشط"
+    private const GRACE_PERIOD_MINUTES = 60;
+
     public function getAllDoctorsForSecretary(): array
     {
         return Doctor::with(['user', 'specialization'])
@@ -450,4 +457,67 @@ class AppointmentService
             ->sortBy(fn($schedule) => array_search($schedule->day, $dayOrder))
             ->values();
 }
+
+// ==================================================
+    // ============ الدوال الجديدة - رول المريض ============
+    // ==================================================
+
+    /**
+     * الموعد القادم للمريض (أقرب موعد ضمن الحالات النشطة scheduled/confirmed)
+     */
+    public function getNextAppointmentForPatient(int $patientId): ?array
+    {
+        $query = Appointment::with(['doctor.user'])
+            ->where('patient_id', $patientId)
+            ->whereIn('status', self::ACTIVE_STATUSES);
+
+        $this->applyActiveWindowFilter($query, 'confirmed');
+
+        $appointment = $query->orderBy('appointment_date')->first();
+
+        return $appointment ? $this->formatPatientAppointment($appointment) : null;
+    }
+
+    /**
+     * قائمة مواعيد المريض حسب الحالة (confirmed / scheduled / cancelled / completed)
+     * الحالات النشطة (scheduled, confirmed) تُفلتَر بفترة سماح زمنية،
+     * أما الحالات الأرشيفية (cancelled, completed) فتُعرض كاملة بدون قيد وقت
+     */
+    public function getPatientAppointmentsByStatus(int $patientId, string $status): array
+    {
+        $query = Appointment::with(['doctor.user'])
+            ->where('patient_id', $patientId)
+            ->where('status', $status);
+
+        $this->applyActiveWindowFilter($query, $status);
+
+        return $query->orderBy('appointment_date', 'desc')
+            ->get()
+            ->map(fn (Appointment $a) => $this->formatPatientAppointment($a))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * يطبّق فلتر النافذة الزمنية (فترة سماح) فقط إذا كانت الحالة من الحالات النشطة
+     */
+    private function applyActiveWindowFilter($query, string $status)
+    {
+        if (in_array($status, self::ACTIVE_STATUSES, true)) {
+            $query->where('appointment_date', '>=', now()->subMinutes(self::GRACE_PERIOD_MINUTES));
+        }
+
+        return $query;
+    }
+
+    private function formatPatientAppointment(Appointment $appointment): array
+    {
+        return [
+            'id' => $appointment->id,
+            'doctor_id' => $appointment->doctor_id,
+            'doctor_name' => $appointment->doctor?->user?->name,
+            'appointment_date' => optional($appointment->appointment_date)->toDateTimeString(),
+            'status' => $appointment->status,
+        ];
+    }
 }

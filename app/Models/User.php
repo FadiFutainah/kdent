@@ -8,11 +8,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles; // لتفعيل مكتبة سباتي
+use OwenIt\Auditing\Contracts\Auditable;
 
-class User extends Authenticatable
+
+class User extends Authenticatable implements Auditable
 {
     use FixJsonDateFormat;
     use SoftDeletes;
+    use \OwenIt\Auditing\Auditable;
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens,HasFactory, Notifiable,HasRoles;
     protected $guard_name = 'api';
@@ -21,7 +24,13 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    
+    protected $auditExclude = [
+    'password',
+    'remember_token',
+    'otp_code',
+    'otp_expires_at',
+    'last_otp_sent_at'
+];
     protected $fillable = [
         'name',
         'email',           // للموظفين (طبيب، محاسب...)
@@ -31,7 +40,8 @@ class User extends Authenticatable
         'otp_code',        // كود التحقق المرسل للواتساب
         'otp_expires_at',  // تاريخ انتهاء الكود
         'is_verified', 
-        'base_salary_usd',    // حالة تفعيل حساب المريض    
+        'base_salary_usd',  
+        'fcm_token',  // حالة تفعيل حساب المريض    
     ];
 
     /**
@@ -55,7 +65,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'otp_expires_at' => 'datetime',
-        'is_verified' => 'boolean',
+            'is_verified' => 'boolean',
         ];
     }
  public function doctor()
@@ -85,7 +95,5 @@ public function patient()
 {
     return $this->hasMany(Notification::class);
 }
-protected $casts = [
-    'is_verified' => 'boolean',
-];
+
 }

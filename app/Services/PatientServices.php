@@ -224,4 +224,6 @@ public function getAvailableSlotsForDays($doctorId)
         };
     }
 
+
+
 }

@@ -31,4 +31,5 @@ class LowStockNotification
         ['item_id' => $event->item->id]
     ));
     }
+    
 }

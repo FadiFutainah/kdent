@@ -108,4 +108,29 @@ class SendNotificationJob implements ShouldQueue
         }
     }
 }
+
+//         // 2. إرسال FCM بالـ HTTP v1 API
+//         $user = User::find($userId);
+//         if ($user && $user->fcm_token) {
+//             $this->sendFcm($user->fcm_token);
+//         }
+//     }
+// }
+
+// private function sendFcm(string $fcmToken): void
+// {
+//     try {
+//         $notifService = app(\App\Services\NotificationTestService::class);
+//         $notifService->sendNotification(
+//             $fcmToken,
+//             $this->title,
+//             $this->body,
+//             array_merge(['type' => $this->type], $this->data)
+//         );
+//     } catch (\Throwable $e) {
+//         \Illuminate\Support\Facades\Log::error('FCM Error', [
+//             'error' => $e->getMessage()
+//         ]);
+//     }
+// }
 }

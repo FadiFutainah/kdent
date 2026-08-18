@@ -29,6 +29,7 @@ return [
         'guards' => [
             'web',
             'api',
+            'sanctum',
         ],
         'resolver' => OwenIt\Auditing\Resolvers\UserResolver::class,
     ],
@@ -101,7 +102,7 @@ return [
     |
     */
 
-    'empty_values' => true,
+    'empty_values' => false,
     'allowed_empty_values' => [
         'retrieved',
     ],
@@ -164,7 +165,7 @@ return [
 
     'drivers' => [
         'database' => [
-            'table' => 'laravel_audits',
+            'table' => 'audits',
             'connection' => null,
         ],
     ],

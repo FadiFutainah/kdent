@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Contracts\Auditable;
 use OwenIt\Auditing\Auditable as AuditableTrait;
+
 class Payment extends Model implements Auditable
 {
     use FixJsonDateFormat;
-    // use \OwenIt\Auditing\Auditable;   // ← هاد بيفعّل التسجيل التلقائي
+    use \OwenIt\Auditing\Auditable;   // ← هاد بيفعّل التسجيل التلقائي
  use AuditableTrait;
     protected $table = 'payments';
      protected $appends = ['paid_at'];

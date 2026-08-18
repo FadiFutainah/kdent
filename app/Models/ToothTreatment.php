@@ -3,9 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class ToothTreatment extends Model
+
+class ToothTreatment extends Model implements Auditable
 {
+    use FixJsonDateFormat;
+    use \OwenIt\Auditing\Auditable;
+
     protected $table = 'tooth_treatments';
 
     protected $fillable = [

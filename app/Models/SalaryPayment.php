@@ -3,9 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class SalaryPayment extends Model
+
+class SalaryPayment extends Model implements Auditable
 {
+    use FixJsonDateFormat;
+    use \OwenIt\Auditing\Auditable;
+    protected $table = 'salary_payments';                                                                                   
+
      protected $fillable = [
         'user_id',
         'paid_by',
@@ -39,5 +45,4 @@ class SalaryPayment extends Model
     {
         return $this->belongsTo(Exchange_Rate::class, 'exchange_rate_id');
     }
-
 }

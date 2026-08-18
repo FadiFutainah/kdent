@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('audits', function (Blueprint $table) {
+        Schema::create('inventory_audits', function (Blueprint $table) {
             $table->id();
             $table->string('audit_number')->unique();
             $table->date('audit_date');
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('audits');
+        Schema::dropIfExists('inventory_audits');
     }
 };
