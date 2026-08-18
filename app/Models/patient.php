@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 
 
-class Patient extends Model
+class Patient extends Model implements Auditable
 {
     use FixJsonDateFormat;
     use SoftDeletes;
+    use \OwenIt\Auditing\Auditable;
     protected $table = 'patients';
       protected $fillable = [
         'user_id',

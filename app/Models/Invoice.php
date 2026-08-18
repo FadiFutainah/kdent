@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Invoice extends Model
+
+class Invoice extends Model implements Auditable
 {
     use FixJsonDateFormat;
+    use \OwenIt\Auditing\Auditable;
     protected $table = 'invoices';
     //protected $appends = []; // لكي تظهر النسبة تلقائياً في الريسبونس
     protected $hidden = ['patient'];

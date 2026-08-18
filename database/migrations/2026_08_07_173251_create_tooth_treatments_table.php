@@ -21,7 +21,7 @@ return new class extends Migration
             $table->json('selected_surfaces')->nullable(); // ["M","O",...]
             $table->text('notes')->nullable();
             $table->timestamps();
-             $table->unique(['patient_id', 'tooth_number']); // سن واحد = سجل واحد لكل مريض (updateOrCreate)
+            //$table->unique(['patient_id', 'tooth_number']); // سن واحد = سجل واحد لكل مريض (updateOrCreate)
         });
     }
 

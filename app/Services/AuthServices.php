@@ -190,7 +190,8 @@ public function login($data)
 
     return [
         'token'   => $token,
-        'role'    => $actualRole
+        'role'    => $actualRole,
+        'id'      => $user->id,
     ];
 }
     public function checkToken(): array

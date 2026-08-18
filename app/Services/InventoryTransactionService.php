@@ -15,7 +15,7 @@ use App\Events\InvoiceCreated;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Models\Disposal;
-use App\Models\Audit;
+use App\Models\InventoryAudit;
 use App\Models\DisposalItem;
 use App\Models\AuditItem;
 use Kreait\Firebase\Messaging\CloudMessage;
@@ -982,7 +982,7 @@ if ($updatedItem->current_stock <= $updatedItem->minimum_stock) {
 public function approveAudit(int $auditId)
 {
     return DB::transaction(function () use ($auditId) {
-        $audit = Audit::findOrFail($auditId);
+        $audit = InventoryAudit::findOrFail($auditId);
 
         if ($audit->status !== 'waiting_approval') {
             throw new \Exception('الجرد غير قابل للموافقة');

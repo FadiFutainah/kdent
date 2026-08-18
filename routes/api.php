@@ -87,6 +87,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::get('/patients/count', [AdminController::class, 'getPatientsCount']);
     Route::get('/plans/completed/count',[AdminController::class, 'getCompletedTreatmentPlansCount']);
 
+    Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
+
+
 });
 
 Route::middleware(['auth:sanctum', 'role:doctor'])->group(function(){

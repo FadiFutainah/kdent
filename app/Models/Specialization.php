@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Specialization extends Model
+
+class Specialization extends Model implements Auditable
 {
     use FixJsonDateFormat;
+    use \OwenIt\Auditing\Auditable;
     protected $table = 'specializations';
     protected $fillable = ['name','description'];
 

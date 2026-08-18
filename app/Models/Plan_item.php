@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Plan_Item extends Model
+
+class Plan_Item extends Model implements Auditable
 {
     use FixJsonDateFormat;
+    use \OwenIt\Auditing\Auditable;
 
     protected $table = 'plan_items';
 

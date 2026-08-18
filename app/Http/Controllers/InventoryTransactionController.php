@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\InventoryTransaction;
 use App\Services\InventoryTransactionService;
 use App\Models\MaterialRequest;
-use App\Models\Audit;
+use App\Models\InventoryAudit;
 use App\Models\AuditItem;
 use App\Models\Inventory;
 use App\Models\Item;
@@ -135,7 +135,7 @@ public function approveRequest(Request $request, int $requestId)
             'notes' => 'nullable|string',
         ]);
 
-        $audit = Audit::create([
+        $audit = InventoryAudit::create([
             'audit_number' => 'AUDIT-' . date('YmdHis'),
             'audit_date' => $validated['audit_date'],
             'status' => 'pending',
@@ -155,7 +155,7 @@ public function approveRequest(Request $request, int $requestId)
      */
     public function shows()
     {
-        $audits = Audit::with('items')
+        $audits = InventoryAudit::with('items')
             ->latest()
             ->get();
 
@@ -183,7 +183,7 @@ public function approveRequest(Request $request, int $requestId)
  */
 public function showss(int $id)
 {
-    $audit = Audit::with('items.item')->findOrFail($id);
+    $audit = InventoryAudit::with('items.item')->findOrFail($id);
 
     // تجميع العناصر بناءً على id المادة
     $aggregatedItems = $audit->items->groupBy('item_id')->map(function ($group) {
@@ -227,7 +227,7 @@ public function addItem(Request $request, int $auditId)
         'quantity_actual' => 'required|integer|min:0',
     ]);
 
-    $audit = Audit::findOrFail($auditId);
+    $audit = InventoryAudit::findOrFail($auditId);
     
     // تسجيل الإدخال كـ "سجل خام" (سجل عدّ)
     $entry = AuditItem::create([
@@ -408,7 +408,7 @@ public function updateVarianceReason(Request $request, $auditId, $itemId)
     // }
     public function complete(int $auditId)
 {
-    $audit = Audit::findOrFail($auditId);
+    $audit = InventoryAudit::findOrFail($auditId);
 
     if ($audit->status !== 'pending') {
         return response()->json([
@@ -509,7 +509,7 @@ public function updateVarianceReason(Request $request, $auditId, $itemId)
 // }
 public function getPendingAuditsReport()
 {
-    $pendingAudits = Audit::where('status', 'waiting_approval')->get();
+    $pendingAudits = InventoryAudit::where('status', 'waiting_approval')->get();
 
     $report = $pendingAudits->map(function ($audit) {
         

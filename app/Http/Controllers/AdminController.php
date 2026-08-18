@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\AdminService;
 
 
+
 class AdminController extends Controller
 {
      protected $service;
@@ -176,6 +177,27 @@ public function runBackupNow()
         return response()->json(
             $this->service->getCompletedTreatmentPlansCount()
         );
+    }
+
+    public function auditLogs(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'nullable|integer|exists:users,id',
+            'role' => 'nullable|string', // أو integer|exists:roles,id إذا عندك جدول roles
+            'user_name' => 'nullable|string|max:255',
+            'user_phone' => 'nullable|string|max:255',
+            'event' => 'nullable|string|in:created,updated,deleted,restored',
+            'auditable_type' => 'nullable|string|in:user,patient,doctor,doctor_schedule,doctor_payment,doctor_earning,treatment_plan,treatment_session,treatment_category,invoice,invoice_item,payment,item,inventory,inventory_transaction,inventory_audit,audit_item,supplier,supplier_item,material_request,material_request_item,disposal,disposal_item,exchange_rate,salary_payment,salary_adjustment,medical_report,tooth_treatment,plan_item,notification,appointment,specialization',            'ip_address' => 'nullable|string|max:45', // يدعم IPv6
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date|after_or_equal:from_date',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم جلب سجل التدقيق بنجاح',
+            'data' => $this->service->getAuditLogs($validated),
+        ]);
     }
     
 

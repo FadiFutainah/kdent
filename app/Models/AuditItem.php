@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class AuditItem extends Model
+class AuditItem extends Model implements Auditable  
 {
     use FixJsonDateFormat;
+    use \OwenIt\Auditing\Auditable;
     protected $table = 'audit_items';
      protected $fillable = [
         'audit_id',
@@ -18,7 +20,7 @@ class AuditItem extends Model
           'notes'];
     
     public function audit()
-     { return $this->belongsTo(Audit::class); }
+     { return $this->belongsTo(InventoryAudit::class); }
     public function item()
     { return $this->belongsTo(Item::class); }
 }

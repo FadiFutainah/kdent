@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class InventoryTransaction extends Model
+class InventoryTransaction extends Model implements Auditable
 {
     use FixJsonDateFormat;
+    use \OwenIt\Auditing\Auditable;
     protected $table = 'inventory_transactions';
      protected $fillable = [
         'item_id',
@@ -41,4 +43,5 @@ class InventoryTransaction extends Model
     {
         return $this->belongsTo(MaterialRequest::class, 'reference_id');
     }
+    
 }
