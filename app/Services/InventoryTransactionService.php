@@ -26,7 +26,7 @@ use Kreait\Firebase\Messaging\Notification;
 class InventoryTransactionService
 {
     
-    protected $messaging;
+   // protected $messaging;
      
       public function __construct(
         private ExchangeRateService $exchangeService,
@@ -256,18 +256,18 @@ $body  = 'تم إنشاء طلب مواد جديد في النظام.';
                         $item['quantity'],
                 ]); }
                 
-            $message = CloudMessage::new()
- ->withToken($fcmToken)
- ->withNotification(
- Notification::create(
- $title,
- $body
-)
-) ->withData([
- 'type' => 'test',
-'timestamp' => now()->toDateTimeString(),
- ]);
- $response = $this->messaging->send($message);
+//             $message = CloudMessage::new()
+//  ->withToken($fcmToken)
+//  ->withNotification(
+//  Notification::create(
+//  $title,
+//  $body
+// )
+// ) ->withData([
+//  'type' => 'test',
+// 'timestamp' => now()->toDateTimeString(),
+//  ]);
+//  $response = $this->messaging->send($message);
 
             event(new \App\Events\MaterialRequestCreated($request));
 
@@ -476,18 +476,18 @@ $updatedItem = Item::find($requestItem->item_id);
 $body  = 'تم خفض المادة عن الحد الأدنى';
 if ($updatedItem->current_stock <= $updatedItem->minimum_stock) {
 
-      $message = CloudMessage::new()
- ->withToken($fcmToken)
- ->withNotification(
- Notification::create(
- $title,
- $body
-)
-) ->withData([
- 'type' => 'test',
-'timestamp' => now()->toDateTimeString(),
- ]);
- $response = $this->messaging->send($message);
+//       $message = CloudMessage::new()
+//  ->withToken($fcmToken)
+//  ->withNotification(
+//  Notification::create(
+//  $title,
+//  $body
+// )
+// ) ->withData([
+//  'type' => 'test',
+// 'timestamp' => now()->toDateTimeString(),
+//  ]);
+//  $response = $this->messaging->send($message);
 
      event(new \App\Events\LowStockDetected($updatedItem));
 }

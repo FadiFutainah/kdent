@@ -25,9 +25,9 @@ class NotificationTestService
     {
         try {
 
-            $fcmToken = 'fXuRuNgBT7qvMeCITSQka2:APA91bGk8849MC6UpvBYGfKv6i6ZF6ggs41FHnJfCXQxnqD8tUp_nXWXBcJmwdk3dAaVs83c8elMmkoaoAAzA8plm-8uRea7F6Sf57pOU1H4623N-ZoKJDc';
+            $fcmToken = 'd4NNVi_eSg2s937sh5rQ9T:APA91bEM4gSFGqKdI6O-l2885skt7mD_Nuy7qcErZRXhLAToWMJu97VfBG-fFkeGengziPZUQ9K4dw8K7jxLyl173d6EdAMQLPrqITfYP9aBrJAmqnEydL4';
 
-            $title = 'Test Notification - إشعار تجريبي';
+            $title = 'Test Notification -  doaa إشعار تجريبي';
 
             $body = 'This is a test notification from Karam Dent system. نظام الإشعارات يعمل بنجاح!';
 

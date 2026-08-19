@@ -2,39 +2,32 @@
 
 namespace App\Listeners;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use App\Events\InvoiceCreated;
-use App\Models\User;
 use App\Jobs\SendNotificationJob;
+use App\Models\User;
 
 class SendInvoiceNotification
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
+    public function handle(InvoiceCreated $event): void
     {
-        //
+        $admins = User::role('admin')
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($admins)) {
+            return;
+        }
+
+        $invoice = $event->invoice;
+
+        SendNotificationJob::dispatch(
+            $admins,
+            'فاتورة مورد جديدة',
+            "تم إنشاء فاتورة مورد رقم {$invoice->invoice_number} وهي بانتظار موافقتك.",
+            'supplier_invoice_created',
+            [
+                'invoice_id' => $invoice->id,
+            ]
+        );
     }
-
-    /**
-     * Handle the event.
-     */
-    // public function handle(InvoiceCreated $event): void
-    // {
-    //       dispatch(new SendInvoiceNotificationJob($event->invoice));
-    // }|
-    public function handle($event)
-{
-    dispatch(new SendNotificationJob(
-        // User::where('role', 'accountant')->pluck('id'),
-          User::role('admin')->pluck('id'),
-        'فاتورة جديدة',
-        "تم إنشاء فاتورة جديدة",
-        'invoice',
-        ['invoice_id' => $event->invoice->id]
-    ));
-}
-
 }

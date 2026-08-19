@@ -25,7 +25,7 @@ use App\Http\Controllers\ExpenseStatsController;
 use App\Http\Controllers\ToothTreatmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationTestController;
-
+use App\Http\Controllers\FcmTokenController;
 
  Route::post('/test', [NotificationTestController::class, 'testMe'])
        ;
@@ -39,13 +39,17 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout']);
  //Route::post('/fcm/token',[NotificationController::class, 'updateFcmToken']);
  // آخر الملف
-Route::middleware('auth:sanctum')->post('/fcm/token',
-    [NotificationTestController::class, 'testMe']
-);
+// Route::middleware('auth:sanctum')->post('/fcm/token',
+//     [NotificationTestController::class, 'testMe']
+// );
  });// تسجيل الخروج
 
-Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::class, 'checkToken']
-);
+// //Route::middleware('auth:sanctum')->get('/auth/check-token',[AuthController::class, 'checkToken']
+
+// );
+
+//اشعاااارات 
+   
 
 Route::middleware(['auth:sanctum', 'role:patient'])->group(function () {
 //Route::get('/specializations', [SpecializationController::class,'index'])->middleware('role:patient');//عرض الاختصاصات
@@ -165,6 +169,7 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
 
 
 
+
 });
 
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
@@ -269,9 +274,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::post('/profile', [ProfileController::class, 'update']);
     Route::get('/reports/{reportId}/pdf',[MedicalReportController::class, 'downloadPdf']);
+// Route::middleware('auth:sanctum')->group(function () {
 
-
-
+    Route::post('/fcm-token', [
+        FcmTokenController::class,
+        'store'
+    ]);
 
 });
 
