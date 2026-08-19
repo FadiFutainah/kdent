@@ -7,12 +7,28 @@ use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\MaterialRequest;
 use App\Models\MaterialRequestItem;
+use App\Models\User;
+use App\Models\Notification;
 
 use App\Events\MaterialRequestCreated;
 use App\Models\Doctor;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Factory;
+use Illuminate\Support\Facades\Log;
 
 class DoctorService
 {
+        protected $messaging;
+  public function __construct()
+    {
+        $factory = (new Factory)
+            ->withServiceAccount(
+                config('services.firebase.credentials')
+            );
+
+        $this->messaging = $factory->createMessaging();
+    }
+
    public function addAvailableTime($data)
 {
     $doctor = Auth::user()->doctor;
@@ -221,7 +237,80 @@ public function searchPatientsByName(string $name)
         })
         ->values();
 }
+
 // طلب مواد
+// public function createRequest(array $data)
+// {
+//     return DB::transaction(function () use ($data) {
+//         // $request = MaterialRequest::create([
+//         //     'doctor_id' => Auth::id(),
+//         //     'notes' => $data['notes'] ?? null,
+//         // ]);
+//          $doctor = Doctor::where('user_id', Auth::id())->firstOrFail();
+// // توليد رقم طلب فريد (REQ-XXXX) مع قفل لمنع التضارب عند الطلبات المتزامنة
+// $lastId = MaterialRequest::lockForUpdate()->max('id') ?? 0;
+// $requisitionNumber = 'REQ-' . str_pad((string) ($lastId + 1), 4, '0', STR_PAD_LEFT);
+//         $request = MaterialRequest::create([
+//              'requisition_number' => $requisitionNumber, // ✅ أضيف
+//             'doctor_id' => $doctor->id, // ✅ هون الصح
+//              'requested_by' => Auth::id(),  
+//             'notes' => $data['notes'] ?? null,
+//         ]);
+
+//         foreach ($data['items'] as $item) {
+
+//             MaterialRequestItem::create([
+//                 'material_request_id' => $request->id,
+//                 'item_id' => $item['item_id'],
+//                  'quantity_requested'  => $item['quantity'],
+//             ]);
+//         }
+
+//       $warehouseManagers = User::role('storekeeper')
+//     ->pluck('id')
+//     ->toArray();
+
+//         Log::info('managers ...');
+        
+//         Log::info($warehouseManagers);
+// if (!empty($warehouseManagers)) {
+
+//     foreach ($warehouseManagers as $managerId) {
+
+//         $manager = User::find($managerId);
+
+//         // نتأكد أن المستخدم عنده FCM token
+//         if (!$manager || empty($manager->fcm_token)) {
+//             continue;
+//         }
+
+//         Log::info('notification sending...');
+//         $message = CloudMessage::new()
+//             ->toToken($manager->fcm_token)
+//             ->withNotification(
+//                 Notification::create(
+//                     'notification title',
+//                     'notification body'
+//                 )
+//             )
+//             ->withData([
+//                 'type' => 'test',
+//                 'timestamp' => now()->toDateTimeString(),
+//             ]);
+
+//         // إرسال الإشعار
+//         $this->messaging->send($message);
+//         Log::info('notification sent...');
+//     }
+// }
+
+//  event(new MaterialRequestCreated($request));
+
+
+//         return $request->load('items');
+//     });
+// }
+
 public function createRequest(array $data)
 {
     return DB::transaction(function () use ($data) {
@@ -256,6 +345,7 @@ $requisitionNumber = 'REQ-' . str_pad((string) ($lastId + 1), 4, '0', STR_PAD_LE
         return $request->load('items');
     });
 }
+
     public function getDoctors()
         {
             return Doctor::with(['user', 'specialization'])

@@ -167,6 +167,8 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/expenses/stats/yearly',  [ExpenseStatsController::class, 'yearly']);// إحصائيات سنة كاملة
     Route::get('/expenses/stats/monthly', [ExpenseStatsController::class, 'monthly']);// إحصائيات شهر محدد
 
+    Route::get('/employees/{userId}/base-salary',    [EmployeeSalaryController::class, 'getBaseSalary']);// عرض الراتب الاساسي 
+Route::get('/employees/{userId}/unpaid-months',  [EmployeeSalaryController::class, 'unpaidMonths']);//عرض الاشهر المستحقة الغير مدفوعة 
 
 
 
