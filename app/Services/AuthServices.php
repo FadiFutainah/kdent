@@ -178,8 +178,7 @@ public function login($data)
         {
     return [
         'success' => false,
-        'message' => 'هذا الحساب ليس {$role}، الدور الصحيح هو {$actualRole}'
-    ];
+        'message' => "هذا الحساب ليس {$role}، الدور الصحيح هو {$actualRole}"    ];
 }
     //      {
     //     throw new Exception("هذا الحساب ليس {$role}، الدور الصحيح هو {$actualRole}");
@@ -188,22 +187,43 @@ public function login($data)
     // ✅ دخول طبيعي
     $token = $user->createToken('auth_token')->plainTextToken;
 
-    return [
+    $response = [
         'token'   => $token,
         'role'    => $actualRole,
-        'id'      => $user->id,
+        'user_id' => $user->id,
     ];
+
+    if ($actualRole === 'patient') {
+        $response['patient_id'] = $user->patient?->id;
+    }
+
+    if ($actualRole === 'doctor') {
+        $response['doctor_id'] = $user->doctor?->id;
+    }
+
+    return $response;
 }
     public function checkToken(): array
     {
         $user = auth()->user();
+        $role = $user->getRoleNames()->first();
 
-        return [
+        $response = [
             'authenticated' => true,
             'user_id' => $user->id,
             'name' => $user->name,
-            'role' => $user->getRoleNames()->first(),
+            'role' => $role,
         ];
+
+        if ($role === 'patient') {
+            $response['patient_id'] = $user->patient?->id;
+        }
+
+        if ($role === 'doctor') {
+            $response['doctor_id'] = $user->doctor?->id;
+        }
+
+        return $response;
     }
 
 
