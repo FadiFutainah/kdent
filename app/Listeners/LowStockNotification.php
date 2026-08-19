@@ -2,34 +2,32 @@
 
 namespace App\Listeners;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
-use App\Models\User;
+use App\Events\LowStockDetected;
 use App\Jobs\SendNotificationJob;
+use App\Models\User;
 
 class LowStockNotification
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
+    public function handle(LowStockDetected $event): void
     {
-        //
-    }
+        $warehouseManagers = User::role('storekeeper')
+            ->pluck('id')
+            ->toArray();
 
-    /**
-     * Handle the event.
-     */
-    public function handle(object $event): void
-    {
-         dispatch(new SendNotificationJob(
-        // User::where('role', 'warehouse')->pluck('id'),
-          User::role('storekeeper')->pluck('id'),
-        'تنبيه مخزون',
-        "⚠️ {$event->item->name} قربت تخلص",
-        'low_stock',
-        ['item_id' => $event->item->id]
-    ));
+        if (empty($warehouseManagers)) {
+            return;
+        }
+
+        $item = $event->item;
+
+        SendNotificationJob::dispatch(
+            $warehouseManagers,
+            'مادة قاربت على النفاد',
+            "المادة {$item->name} وصلت إلى الحد الأدنى للمخزون. الكمية الحالية: {$item->current_stock}.",
+            'low_stock',
+            [
+                'item_id' => $item->id,
+            ]
+        );
     }
-    
 }

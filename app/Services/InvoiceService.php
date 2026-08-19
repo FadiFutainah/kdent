@@ -12,7 +12,7 @@ use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 class InvoiceService
 {
-  protected $messaging;
+ // protected $messaging;
 //عرض فواتير المورد
     public function getAll()
 {
@@ -453,44 +453,82 @@ public function getMonthlyRevenueBySpecificMonth($month, $year = null)
 }
 
 //اشعارات للمرضى بالفواتير المتأخرة بالدفع
+// public function sendPaymentReminders()
+// {
+//     $overdueInvoices = $this->getOverdueInvoices(); // الفواتير المتأخرة
+
+//     foreach ($overdueInvoices as $invoice) {
+//         // نتحقق: هل أرسلنا له خلال آخر 7 أيام؟
+//         if ($invoice->last_reminder_sent_at && $invoice->last_reminder_sent_at->greaterThan(now()->subDays(7))) {
+//             continue;
+//         }
+// $title ='تذكير بدفعة مستحقة';
+// $body  ='عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية ';
+//      $message = CloudMessage::new()
+//  ->withToken($fcmToken)
+//  ->withNotification(
+//  Notification::create(
+//  $title,
+//  $body
+// )
+// ) ->withData([
+//  'type' => 'test',
+// 'timestamp' => now()->toDateTimeString(),
+//  ]);
+//  $response = $this->messaging->send($message);
+
+
+//         // // إرسال الإشعار باستخدام الـ Job الموجود عندك
+//         // dispatch(new \App\Jobs\SendNotificationJob(
+//         //     [$invoice->patient->user->id],
+//         //     'تذكير بدفعة مستحقة',
+//         //     "عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية.",
+//         //     'payment_reminder',
+//         //     ['invoice_id' => $invoice->id]
+//         // ));
+
+//         // تسجيل تاريخ الإرسال
+//         $invoice->update(['last_reminder_sent_at' => now()]);
+//     }
+// }
 public function sendPaymentReminders()
 {
-    $overdueInvoices = $this->getOverdueInvoices(); // الفواتير المتأخرة
+    $overdueInvoices = $this->getOverdueInvoices();
 
     foreach ($overdueInvoices as $invoice) {
-        // نتحقق: هل أرسلنا له خلال آخر 7 أيام؟
-        if ($invoice->last_reminder_sent_at && $invoice->last_reminder_sent_at->greaterThan(now()->subDays(7))) {
+
+        // لا ترسل إذا تم إرسال تذكير خلال آخر 7 أيام
+        if (
+            $invoice->last_reminder_sent_at &&
+            $invoice->last_reminder_sent_at
+                ->greaterThanOrEqual(now()->subDays(7))
+        ) {
             continue;
         }
-$title ='تذكير بدفعة مستحقة';
-$body  ='عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية ';
-     $message = CloudMessage::new()
- ->withToken($fcmToken)
- ->withNotification(
- Notification::create(
- $title,
- $body
-)
-) ->withData([
- 'type' => 'test',
-'timestamp' => now()->toDateTimeString(),
- ]);
- $response = $this->messaging->send($message);
 
+        $user = $invoice->patient?->user;
 
-        // // إرسال الإشعار باستخدام الـ Job الموجود عندك
-        // dispatch(new \App\Jobs\SendNotificationJob(
-        //     [$invoice->patient->user->id],
-        //     'تذكير بدفعة مستحقة',
-        //     "عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية.",
-        //     'payment_reminder',
-        //     ['invoice_id' => $invoice->id]
-        // ));
+        if (!$user) {
+            continue;
+        }
 
-        // تسجيل تاريخ الإرسال
-        $invoice->update(['last_reminder_sent_at' => now()]);
+        dispatch(new \App\Jobs\SendNotificationJob(
+            [$user->id],
+            'تذكير بدفعة مستحقة',
+            'عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية.',
+            'payment_reminder',
+            [
+                'invoice_id' => $invoice->id,
+            ]
+        ));
+
+        // تسجيل وقت إرسال التذكير
+        $invoice->update([
+            'last_reminder_sent_at' => now(),
+        ]);
     }
 }
+
 //عرض لفواتير المتأخرة بالدفع
 public function getOverdueInvoices($fromDate = null, $toDate = null)
 {

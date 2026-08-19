@@ -2,33 +2,32 @@
 
 namespace App\Listeners;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use App\Events\MaterialRequestCreated;
-use App\Models\User;
 use App\Jobs\SendNotificationJob;
+use App\Models\User;
+
 class SendrequestNotification
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
+    public function handle(MaterialRequestCreated $event): void
     {
-        //
-    }
+       $warehouseManagers = User::role('storekeeper')
+            ->pluck('id')
+            ->toArray();
 
-    /**
-     * Handle the event.
-     */
-    public function handle($event): void
-    {
-          // 🔔 إشعار للمستودع
-        dispatch(new SendNotificationJob(
-            User::role('storekeeper')->pluck('id'),
+        if (empty($warehouseManagers)) {
+            return;
+        }
+
+        $request = $event->request;
+
+        SendNotificationJob::dispatch(
+            $warehouseManagers,
             'طلب مواد جديد',
-            'في طلب جديد من دكتور',
+            "لديك طلب مواد جديد من الطبيب. رقم الطلب: {$request->requisition_number}",
             'material_request',
-            ['request_id' => $event->request->id]
-        ));
+            [
+                'request_id' => $request->id,
+            ]
+        );
     }
 }

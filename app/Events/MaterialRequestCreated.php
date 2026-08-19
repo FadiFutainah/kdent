@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Events;
 
 use App\Models\MaterialRequest;
@@ -9,11 +10,7 @@ class MaterialRequestCreated
 {
     use Dispatchable, SerializesModels;
 
-    public MaterialRequest $request;
-
-    public function __construct(MaterialRequest $request)
-    {
-        $this->request = $request;
-    }
-    
+    public function __construct(
+        public MaterialRequest $request
+    ) {}
 }
