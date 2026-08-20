@@ -1,87 +1,159 @@
 <?php
 
-namespace App\Services;
+// namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
+// use Illuminate\Support\Facades\Log;
+// use Kreait\Firebase\Factory;
+// use Kreait\Firebase\Messaging\CloudMessage;
+// use Kreait\Firebase\Messaging\Notification;
+
+// class FirebaseNotificationService
+// {
+//     protected $messaging;
+
+//     public function __construct()
+//     {
+//         $factory = (new Factory)
+//             ->withServiceAccount(
+//                 config('services.firebase.credentials')
+//             );
+
+//         $this->messaging = $factory->createMessaging();
+//     }
+
+//     /**
+//      * إرسال إشعار لمستخدم واحد بواسطة FCM Token
+//      */
+//     public function sendToToken(
+//         string $fcmToken,
+//         string $title,
+//         string $body,
+//         array $data = []
+//     ): bool {
+//         try {
+
+//             $message = CloudMessage::new()
+//                 ->toToken($fcmToken)
+//                 ->withNotification(
+//                     Notification::create(
+//                         $title,
+//                         $body
+//                     )
+//                 )
+//                 ->withData(
+//                     array_merge(
+//                         [
+//                             'type' => 'general',
+//                         ],
+//                         $this->normalizeData($data)
+//                     )
+//                 );
+
+//             $this->messaging->send($message);
+
+//             return true;
+
+//         } catch (\Throwable $e) {
+
+//             Log::error('Firebase notification failed', [
+//                 'error' => $e->getMessage(),
+//                 'token' => substr($fcmToken, 0, 15) . '...',
+//             ]);
+
+//             return false;
+//         }
+//     }
+
+//     /**
+//      * تحويل بيانات الـ data إلى strings
+//      * لأن FCM Data Messages تحتاج قيم نصية.
+//      */
+//     private function normalizeData(array $data): array
+//     {
+//         return collect($data)
+//             ->map(function ($value) {
+//                 if (is_array($value) || is_object($value)) {
+//                     return json_encode($value);
+//                 }
+
+//                 if (is_bool($value)) {
+//                     return $value ? 'true' : 'false';
+//                 }
+
+//                 return (string) $value;
+//             })
+//             ->toArray();
+//     }
+// }
+////////////////////////////////////////////////////////////////////
+
+ 
+namespace App\Services;
+ 
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification;
-
+use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
+use Illuminate\Support\Facades\Log;
+ 
 class FirebaseNotificationService
 {
     protected $messaging;
-
+ 
     public function __construct()
     {
         $factory = (new Factory)
             ->withServiceAccount(
                 config('services.firebase.credentials')
             );
-
+ 
         $this->messaging = $factory->createMessaging();
     }
-
+ 
     /**
-     * إرسال إشعار لمستخدم واحد بواسطة FCM Token
+     * إرسال إشعار Push لتوكن واحد (مستخدم واحد)
      */
-    public function sendToToken(
-        string $fcmToken,
-        string $title,
-        string $body,
-        array $data = []
-    ): bool {
+    public function sendToToken(string $fcmToken, string $title, string $body, array $data = []): array
+    {
         try {
-
+            Log::info('🔔 Firebase: جاري إرسال الإشعار...', [
+                'title' => $title,
+                'token' => substr($fcmToken, 0, 20) . '...',
+            ]);
+ 
+            // FCM بيرفض أي قيمة مش string جوا data، فعم نحولهن كلهن
+            $stringData = array_map('strval', $data);
+ 
             $message = CloudMessage::new()
                 ->toToken($fcmToken)
                 ->withNotification(
-                    Notification::create(
-                        $title,
-                        $body
-                    )
+                    FirebaseNotification::create($title, $body)
                 )
-                ->withData(
-                    array_merge(
-                        [
-                            'type' => 'general',
-                        ],
-                        $this->normalizeData($data)
-                    )
-                );
-
-            $this->messaging->send($message);
-
-            return true;
-
-        } catch (\Throwable $e) {
-
-            Log::error('Firebase notification failed', [
-                'error' => $e->getMessage(),
-                'token' => substr($fcmToken, 0, 15) . '...',
+                ->withData($stringData);
+ 
+            $response = $this->messaging->send($message);
+ 
+            Log::info('✅ Firebase: تم إرسال الإشعار بنجاح', [
+                'title' => $title,
+                'firebase_response' => $response,
             ]);
-
-            return false;
+ 
+            return [
+                'success' => true,
+                'firebase_response' => $response,
+            ];
+ 
+        } catch (\Throwable $e) {
+ 
+            Log::error('❌ Firebase: فشل إرسال الإشعار', [
+                'title' => $title,
+                'token' => substr($fcmToken, 0, 20) . '...',
+                'error' => $e->getMessage(),
+            ]);
+ 
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
         }
-    }
-
-    /**
-     * تحويل بيانات الـ data إلى strings
-     * لأن FCM Data Messages تحتاج قيم نصية.
-     */
-    private function normalizeData(array $data): array
-    {
-        return collect($data)
-            ->map(function ($value) {
-                if (is_array($value) || is_object($value)) {
-                    return json_encode($value);
-                }
-
-                if (is_bool($value)) {
-                    return $value ? 'true' : 'false';
-                }
-
-                return (string) $value;
-            })
-            ->toArray();
     }
 }

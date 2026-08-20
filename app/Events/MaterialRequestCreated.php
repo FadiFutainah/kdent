@@ -13,4 +13,5 @@ class MaterialRequestCreated
     public function __construct(
         public MaterialRequest $request
     ) {}
+    
 }
