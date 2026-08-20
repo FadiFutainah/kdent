@@ -33,7 +33,7 @@ use App\Http\Controllers\FcmTokenController;
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1'); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify'])->middleware('throttle:5,1');
 Route::post('/resendOtp', [AuthController::class, 'resendOtp'])->middleware('throttle:3,1'); // للمريض فقط
-Route::post('/login', [AuthController::class, 'login']) ->middleware('throttle:5,1'); // 5 محاولات كحد أقصى كل دقيقة، بعدها لازم تنتظر       // للجميع مع إرسال الرول
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1'); // 5 محاولات كحد أقصى كل دقيقة، بعدها لازم تنتظر       // للجميع مع إرسال الرول
 
 Route::middleware('auth:sanctum')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout']);

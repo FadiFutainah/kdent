@@ -343,8 +343,17 @@ public function getEmployees()
         */
 
         if (!empty($filters['event'])) {
-            $query->where('event', $filters['event']);
-        }
+
+        $event = match (mb_strtolower(trim($filters['event']))) {
+            'created', 'انشاء' => 'created',
+            'updated', 'تعديل' => 'updated',
+            'deleted', 'حذف' => 'deleted',
+            'restored', 'استعادة' => 'restored',
+            default => $filters['event'],
+        };
+
+        $query->where('event', $event);
+    }
 
         /*
         |--------------------------------------------------------------------------
@@ -460,7 +469,7 @@ public function getEmployees()
     {
         return match ($event) {
 
-            'created' => 'إنشاء',
+            'created' => 'انشاء',
 
             'updated' => 'تعديل',
 
@@ -501,7 +510,7 @@ public function getEmployees()
 
             'Invoice_Item' => 'عنصر فاتورة',
 
-            'Payment' => 'دفعة',
+            'Payment' => 'دفعات فواتير المرضى',
 
             'Item' => 'مادة',
 
@@ -527,7 +536,7 @@ public function getEmployees()
 
             'Exchange_Rate' => 'سعر صرف',
 
-            'SalaryPayment' => 'دفعة راتب',
+            'SalaryPayment' => 'راتب موظف',
 
             'SalaryAdjustment' => 'تعديل راتب',
 
@@ -537,7 +546,7 @@ public function getEmployees()
 
             'Plan_Item' => 'عنصر خطة',
 
-            'Notification' => 'إشعار',
+            'Notification' => 'اشعار',
 
             'Appointment' => 'موعد',
 
@@ -549,39 +558,103 @@ public function getEmployees()
 
     private function resolveAuditableClass(string $key): ?string
     {
-        return match ($key) {
-            'user' => User::class,
-            'patient' => Patient::class,
-            'doctor' => Doctor::class,
-            'doctor_schedule' => \App\Models\Doctor_Schedule::class,
-            'doctor_payment' => \App\Models\Doctor_Payment::class,
-            'doctor_earning' => \App\Models\Doctor_Earning::class,
-            'treatment_plan' => Treatment_Plan::class,
-            'treatment_session' => Treatment_Session::class,
-            'treatment_category' => Treatment_Category::class,
-            'invoice' => \App\Models\Invoice::class,
-            'invoice_item' => \App\Models\Invoice_Item::class,
-            'payment' => \App\Models\Payment::class,
-            'item' => \App\Models\Item::class,
-            'inventory' => \App\Models\Inventory::class,
-            'inventory_transaction' => \App\Models\InventoryTransaction::class,
-            'inventory_audit' => \App\Models\InventoryAudit::class,
-            'audit_item' => \App\Models\AuditItem::class,
-            'supplier' => \App\Models\Supplier::class,
-            'supplier_item' => \App\Models\SupplierItem::class,
-            'material_request' => \App\Models\MaterialRequest::class,
-            'material_request_item' => \App\Models\MaterialRequestItem::class,
-            'disposal' => \App\Models\Disposal::class,
-            'disposal_item' => \App\Models\DisposalItem::class,
-            'exchange_rate' => \App\Models\Exchange_Rate::class,
-            'salary_payment' => \App\Models\SalaryPayment::class,
-            'salary_adjustment' => \App\Models\SalaryAdjustment::class,
-            'medical_report' => \App\Models\Medical_Report::class,
-            'tooth_treatment' => \App\Models\ToothTreatment::class,
-            'plan_item' => \App\Models\Plan_Item::class,
-            'notification' => \App\Models\Notification::class,
-            'appointment' => \App\Models\Appointment::class,
-            'specialization' => \App\Models\Specialization::class,
+        $key = trim($key);
+
+        return match (mb_strtolower($key)) {
+
+            'user', 'مستخدم' => User::class,
+
+            'patient', 'مريض' => Patient::class,
+
+            'doctor', 'طبيب' => Doctor::class,
+
+            'doctor_schedule', 'doctor schedule', 'أوقات طبيب'
+                => \App\Models\Doctor_Schedule::class,
+
+            'doctor_payment', 'doctor payment', 'دفعة طبيب'
+                => \App\Models\Doctor_Payment::class,
+
+            'doctor_earning', 'doctor earning', 'أرباح طبيب'
+                => \App\Models\Doctor_Earning::class,
+
+            'treatment_plan', 'treatment plan', 'خطة علاج'
+                => Treatment_Plan::class,
+
+            'treatment_session', 'treatment session', 'جلسة علاج'
+                => Treatment_Session::class,
+
+            'treatment_category', 'treatment category', 'تصنيف علاجي'
+                => Treatment_Category::class,
+
+            'invoice', 'فاتورة'
+                => \App\Models\Invoice::class,
+
+            'invoice_item', 'invoice item', 'عنصر فاتورة'
+                => \App\Models\Invoice_Item::class,
+
+            'payment', 'دفعات فواتير المرضى'
+                => \App\Models\Payment::class,
+
+            'item', 'مادة'
+                => \App\Models\Item::class,
+
+            'inventory', 'مخزون'
+                => \App\Models\Inventory::class,
+
+            'inventory_transaction', 'inventory transaction', 'حركة مخزون'
+                => \App\Models\InventoryTransaction::class,
+
+            'inventory_audit', 'inventory audit', 'جرد مخزون'
+                => \App\Models\InventoryAudit::class,
+
+            'audit_item', 'audit item', 'عنصر جرد'
+                => \App\Models\AuditItem::class,
+
+            'supplier', 'مورد'
+                => \App\Models\Supplier::class,
+
+            'supplier_item', 'supplier item', 'عنصر مورد'
+                => \App\Models\SupplierItem::class,
+
+            'material_request', 'material request', 'طلب مواد'
+                => \App\Models\MaterialRequest::class,
+
+            'material_request_item', 'material request item', 'عنصر طلب مواد'
+                => \App\Models\MaterialRequestItem::class,
+
+            'disposal', 'إتلاف'
+                => \App\Models\Disposal::class,
+
+            'disposal_item', 'disposal item', 'عنصر إتلاف'
+                => \App\Models\DisposalItem::class,
+
+            'exchange_rate', 'exchange rate', 'سعر صرف'
+                => \App\Models\Exchange_Rate::class,
+
+            'salary_payment', 'salary payment', 'راتب موظف'
+                => \App\Models\SalaryPayment::class,
+
+            'salary_adjustment', 'salary adjustment', 'تعديل راتب'
+                => \App\Models\SalaryAdjustment::class,
+
+            'medical_report', 'medical report', 'تقرير طبي'
+                => \App\Models\Medical_Report::class,
+
+            'tooth_treatment', 'tooth treatment', 'خارطة سنية'
+                => \App\Models\ToothTreatment::class,
+
+            'plan_item', 'plan item', 'عنصر خطة'
+                => \App\Models\Plan_Item::class,
+
+            'notification', 'اشعار'
+                => \App\Models\Notification::class,
+
+            'appointment', 'موعد'
+                => \App\Models\Appointment::class,
+
+            'specialization', 'اختصاص'
+                => \App\Models\Specialization::class,
+
             default => null,
         };
     }
