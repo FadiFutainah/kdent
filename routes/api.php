@@ -92,6 +92,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::get('/plans/completed/count',[AdminController::class, 'getCompletedTreatmentPlansCount']);
 
     Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
+    Route::delete('/delete-audits', [AdminController::class, 'deleteAuditsBeforeDate']);
 
 
 });
