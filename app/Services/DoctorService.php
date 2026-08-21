@@ -9,7 +9,6 @@ use App\Models\MaterialRequest;
 use App\Models\MaterialRequestItem;
 use App\Models\User;
 use App\Models\Notification;
-
 use App\Events\MaterialRequestCreated;
 use App\Models\Doctor;
 use Kreait\Firebase\Messaging\CloudMessage;

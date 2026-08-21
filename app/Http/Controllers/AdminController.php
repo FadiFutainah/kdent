@@ -1,9 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Process\Process;
+use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
 use App\Services\AdminService;
+use Throwable;
+use App\Jobs\RunManualBackup;
 
 
 
@@ -72,6 +75,7 @@ class AdminController extends Controller
             )
         ]);
     }
+
         public function getTreatmentCategories()
     {
         return response()->json(
@@ -91,6 +95,7 @@ class AdminController extends Controller
             201
         );
     }
+
 
     public function updateTreatmentCategory(Request $request, $id)
     {
@@ -152,25 +157,111 @@ class AdminController extends Controller
 // }
 
 
+// public function runBackupNow()
+// {
+//     $exitCode = Artisan::call('backup:run');
+//     $output = Artisan::output();
+
+//     if ($exitCode !== 0) {
+//         return response()->json([
+//             'status' => 'error',
+//             'message' => 'فشلت عملية النسخ الاحتياطي',
+//             'output' => $output,
+//         ], 500);
+//     }
+
+//     return response()->json([
+//         'status' => 'success',
+//         'message' => 'تم إنشاء نسخة احتياطية جديدة بنجاح',
+//         'output' => $output,
+//     ]);
+// }
+
+//   public function runBackupNow()
+// {
+//     // مجلد مؤقت خاص بالنسخ اليدوي.
+//     $temporaryDirectory = storage_path('app/temp');
+
+//     // ينشئ المجلد إذا لم يكن موجوداً.
+//     File::ensureDirectoryExists($temporaryDirectory, 0755, true);
+
+//     // يتأكد أنه قابل للكتابة.
+//     if (! is_writable($temporaryDirectory)) {
+//         return response()->json([
+//             'status' => 'error',
+//             'message' => 'مجلد النسخ المؤقت غير قابل للكتابة: ' . $temporaryDirectory,
+//         ], 500);
+//     }
+
+//     // نفس PHP CLI الذي يعمل معه الأمر اليدوي في Terminal.
+//     $phpCli = 'C:/xampp/php/php.exe';
+
+//     if (! file_exists($phpCli)) {
+//         return response()->json([
+//             'status' => 'error',
+//             'message' => 'لم يتم العثور على PHP CLI في: ' . $phpCli,
+//         ], 500);
+//     }
+
+//     $process = new Process(
+//         [
+//             $phpCli,
+//             base_path('artisan'),
+//             'backup:run',
+//             '--no-interaction',
+//         ],
+//         base_path(),
+//         [
+//             // يجعل tmpfile() يستخدم مجلد المشروع القابل للكتابة.
+//             'TEMP' => $temporaryDirectory,
+//             'TMP' => $temporaryDirectory,
+//             'TMPDIR' => $temporaryDirectory,
+//         ]
+//     );
+
+//     // النسخة قد تأخذ وقتاً، لذلك نسمح بـ10 دقائق.
+//     $process->setTimeout(600);
+
+//     try {
+//         $process->run();
+
+//         $output = trim($process->getOutput());
+//         $errorOutput = trim($process->getErrorOutput());
+
+//         if (! $process->isSuccessful()) {
+//             return response()->json([
+//                 'status' => 'error',
+//                 'message' => 'فشلت عملية النسخ الاحتياطي',
+//                 'exit_code' => $process->getExitCode(),
+//                 'output' => $output,
+//                 'error_output' => $errorOutput,
+//             ], 500);
+//         }
+
+//         return response()->json([
+//             'status' => 'success',
+//             'message' => 'تم إنشاء نسخة كاملة من قاعدة البيانات وملفات المشروع بنجاح',
+//             'output' => $output,
+//         ]);
+//     } catch (\Throwable $e) {
+//         report($e);
+
+//         return response()->json([
+//             'status' => 'error',
+//             'message' => $e->getMessage(),
+//         ], 500);
+//     }
+// }
 public function runBackupNow()
 {
-    $exitCode = Artisan::call('backup:run');
-    $output = Artisan::output();
-
-    if ($exitCode !== 0) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'فشلت عملية النسخ الاحتياطي',
-            'output' => $output,
-        ], 500);
-    }
+    RunManualBackup::dispatch();
 
     return response()->json([
-        'status' => 'success',
-        'message' => 'تم إنشاء نسخة احتياطية جديدة بنجاح',
-        'output' => $output,
-    ]);
+        'status' => 'queued',
+        'message' => 'تم طلب النسخة الاحتياطية. ستبدأ الآن في الخلفية، وستشمل قاعدة البيانات وملفات المشروع.',
+    ], 202);
 }
+
 
     public function getCompletedTreatmentPlansCount()
     {

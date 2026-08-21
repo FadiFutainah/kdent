@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::command('inventory:check-expired')->daily();
 Schedule::command('reminders:send-payment')->dailyAt('09:00');
 // نسخة احتياطية كاملة لقاعدة البيانات شهرياً في اليوم الأول الساعة 3 فجراً
-Schedule::command('backup:run')->monthly();
+Schedule::command('backup:run')->monthlyOn(1, '03:00');
+
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
