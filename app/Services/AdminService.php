@@ -629,6 +629,47 @@ public function getEmployees()
             default => null,
         };
     }
+
+
+        public function deleteAuditsBeforeDate(string $date): array
+    {
+        $date = Carbon::parse($date)->startOfDay();
+
+        // عدد السجلات التي سيتم حذفها
+        $count = Audit::where('created_at', '<', $date)->count();
+
+        if ($count === 0) {
+            return [
+                'success' => false,
+                'message' => 'لا توجد سجلات تدقيق قبل التاريخ المحدد.',
+                'deleted_count' => 0,
+            ];
+        }
+
+        // حذف على دفعات حتى لا نضغط على قاعدة البيانات
+        $deleted = 0;
+
+        do {
+            $ids = Audit::where('created_at', '<', $date)
+                ->orderBy('id')
+                ->limit(1000)
+                ->pluck('id');
+
+            if ($ids->isEmpty()) {
+                break;
+            }
+
+            $deleted += Audit::whereIn('id', $ids)->delete();
+
+        } while ($ids->count() === 1000);
+
+        return [
+            'success' => true,
+            'message' => "تم حذف سجلات التدقيق الأقدم من {$date->format('Y-m-d')} بنجاح.",
+            'deleted_count' => $deleted,
+        ];
+    }
+
 }
     /*
     private array $fieldMappings = [
