@@ -174,12 +174,12 @@ Route::get('/employees/{userId}/unpaid-months',  [EmployeeSalaryController::clas
 
 
 });
-
+/*
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
    // Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
 
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
-});
+});*/
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
 
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى
