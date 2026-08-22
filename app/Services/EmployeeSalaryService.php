@@ -215,4 +215,55 @@ public function paySalary(int $userId, array $data): array
 
         return $query->latest('payment_date')->get();
     }
+
+    // عرض الراتب الأساسي
+public function getBaseSalary(int $userId): array
+{
+    $employee = User::whereHas('roles', fn ($q) => $q->whereIn('name', $this->salariedRoles))
+        ->findOrFail($userId);
+
+    return [
+        'user_id'         => $employee->id,
+        'name'            => $employee->name,
+        'role'            => $employee->roles->first()?->name,
+        'base_salary_usd' => $employee->base_salary_usd,
+    ];
+}
+
+// عرض الأشهر غير المدفوعة — من تاريخ تعيينه لليوم
+public function getUnpaidMonths(int $userId): array
+{
+    $employee = User::findOrFail($userId);
+
+    // الأشهر المدفوعة
+    $paidMonths = SalaryPayment::where('user_id', $userId)
+        ->pluck('salary_month')
+        ->map(fn ($m) => Carbon::parse($m)->format('Y-m'))
+        ->toArray();
+
+    // من أول شهر بعد التعيين لهاي اللحظة
+    $start = Carbon::parse($employee->created_at)->startOfMonth();
+    $end   = Carbon::now()->startOfMonth();
+
+    $unpaid = [];
+    $current = $start->copy();
+
+    while ($current->lte($end)) {
+        $monthStr = $current->format('Y-m');
+        if (!in_array($monthStr, $paidMonths)) {
+            $unpaid[] = [
+                'month'    => $monthStr,
+                'label'    => $current->translatedFormat('F Y'),
+            ];
+        }
+        $current->addMonth();
+    }
+
+    return [
+        'user_id'       => $employee->id,
+        'name'          => $employee->name,
+        'unpaid_months' => $unpaid,
+        'total_unpaid'  => count($unpaid),
+    ];
+}
 }

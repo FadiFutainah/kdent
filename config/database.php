@@ -61,8 +61,11 @@ return [
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
              'dump' => [
-        'dump_binary_path' => 'C:\xampp\mysql\bin', // المسار بدون اسم الملف، بس المجلد
-    ],
+    'dump_binary_path' => 'C:/xampp/mysql/bin',
+    'timeout' => 600,
+],
+
+
         ],
 
         'mariadb' => [

@@ -33,7 +33,7 @@ use App\Http\Controllers\FcmTokenController;
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1'); // للمريض فقط
 Route::post('/verify', [AuthController::class, 'verify'])->middleware('throttle:5,1');
 Route::post('/resendOtp', [AuthController::class, 'resendOtp'])->middleware('throttle:3,1'); // للمريض فقط
-Route::post('/login', [AuthController::class, 'login']) ->middleware('throttle:5,1'); // 5 محاولات كحد أقصى كل دقيقة، بعدها لازم تنتظر       // للجميع مع إرسال الرول
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1'); // 5 محاولات كحد أقصى كل دقيقة، بعدها لازم تنتظر       // للجميع مع إرسال الرول
 
 Route::middleware('auth:sanctum')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout']);
@@ -92,6 +92,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function(){
     Route::get('/plans/completed/count',[AdminController::class, 'getCompletedTreatmentPlansCount']);
 
     Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
+    Route::delete('/delete-audits', [AdminController::class, 'deleteAuditsBeforeDate']);
 
 
 });
@@ -167,16 +168,18 @@ Route::middleware(['auth:sanctum', 'role:admin|accountant'])->group(function () 
     Route::get('/expenses/stats/yearly',  [ExpenseStatsController::class, 'yearly']);// إحصائيات سنة كاملة
     Route::get('/expenses/stats/monthly', [ExpenseStatsController::class, 'monthly']);// إحصائيات شهر محدد
 
+    Route::get('/employees/{userId}/base-salary',    [EmployeeSalaryController::class, 'getBaseSalary']);// عرض الراتب الاساسي 
+Route::get('/employees/{userId}/unpaid-months',  [EmployeeSalaryController::class, 'unpaidMonths']);//عرض الاشهر المستحقة الغير مدفوعة 
 
 
 
 });
-
+/*
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
    // Route::get('/doctors-finance',[DoctorFinanceController::class, 'centerSummary']);
 
     Route::get('/index', [InvoiceController::class, 'index']);//عرض فواتير المورد
-});
+});*/
 Route::middleware(['auth:sanctum', 'role:accountant'])->group(function () {
 
     Route::get('/indexs', [InvoiceController::class, 'indexs']);//عرض فواتير المرضى

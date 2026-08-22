@@ -238,36 +238,7 @@ public function applyDiscount($invoiceId, $discount)
     ];
 }
 
-// public function createForPatient(array $data)
-// {
-//     return DB::transaction(function () use ($data) {
 
-//         $patient = Patient::findOrFail($data['patient_id']);
-//         $plan = Treatment_Plan::findOrFail($data['plan_id']);
-
-//         $rate = app(ExchangeRateService::class)->getCurrentUsdToSypRate();
-
-//         // 1️⃣ إنشاء الفاتورة بدون رقم نهائي
-//         $invoice = Invoice::create([
-//             'type' => 'patient',
-//             'patient_id' => $patient->id,
-//             'plan_id' => $plan->id,
-//             'status' => 'draft',
-//             'paid_amount' => 0,
-//             'total_amount_USD' => 0,
-//             'total_amount_SYP' => 0,
-//             'exchange_rate' => $rate->rate,
-//             'issued_at' => $data['issued_at'] ?? now(),
-//             'created_by' => Auth::id(),
-//         ]);
-
-//         // 2️⃣ توليد الرقم بعد ما صار عندنا ID
-//         $invoice->invoice_number =  'INV-' . date('Ymd') . '-' . strtoupper(uniqid());
-//         $invoice->save();
-
-//         return $invoice;
-//     });
-// }
 //انشاء فاتورة المريض 
 public function createPatientInvoice(array $data)
 {
@@ -452,45 +423,7 @@ public function getMonthlyRevenueBySpecificMonth($month, $year = null)
         ->sum('amount'); // نستخدم sum مباشرة للحصول على الرقم النهائي
 }
 
-//اشعارات للمرضى بالفواتير المتأخرة بالدفع
-// public function sendPaymentReminders()
-// {
-//     $overdueInvoices = $this->getOverdueInvoices(); // الفواتير المتأخرة
 
-//     foreach ($overdueInvoices as $invoice) {
-//         // نتحقق: هل أرسلنا له خلال آخر 7 أيام؟
-//         if ($invoice->last_reminder_sent_at && $invoice->last_reminder_sent_at->greaterThan(now()->subDays(7))) {
-//             continue;
-//         }
-// $title ='تذكير بدفعة مستحقة';
-// $body  ='عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية ';
-//      $message = CloudMessage::new()
-//  ->withToken($fcmToken)
-//  ->withNotification(
-//  Notification::create(
-//  $title,
-//  $body
-// )
-// ) ->withData([
-//  'type' => 'test',
-// 'timestamp' => now()->toDateTimeString(),
-//  ]);
-//  $response = $this->messaging->send($message);
-
-
-//         // // إرسال الإشعار باستخدام الـ Job الموجود عندك
-//         // dispatch(new \App\Jobs\SendNotificationJob(
-//         //     [$invoice->patient->user->id],
-//         //     'تذكير بدفعة مستحقة',
-//         //     "عزيزي المريض، يرجى مراجعة المركز لإتمام الدفعة المستحقة على خطتك العلاجية.",
-//         //     'payment_reminder',
-//         //     ['invoice_id' => $invoice->id]
-//         // ));
-
-//         // تسجيل تاريخ الإرسال
-//         $invoice->update(['last_reminder_sent_at' => now()]);
-//     }
-// }
 public function sendPaymentReminders()
 {
     $overdueInvoices = $this->getOverdueInvoices();

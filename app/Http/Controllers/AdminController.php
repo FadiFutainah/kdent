@@ -1,9 +1,13 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Process\Process;
+use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
 use App\Services\AdminService;
+use Throwable;
+use App\Jobs\RunManualBackup;
+use Carbon\Carbon;
 
 
 
@@ -72,6 +76,7 @@ class AdminController extends Controller
             )
         ]);
     }
+
         public function getTreatmentCategories()
     {
         return response()->json(
@@ -91,6 +96,7 @@ class AdminController extends Controller
             201
         );
     }
+
 
     public function updateTreatmentCategory(Request $request, $id)
     {
@@ -152,25 +158,111 @@ class AdminController extends Controller
 // }
 
 
+// public function runBackupNow()
+// {
+//     $exitCode = Artisan::call('backup:run');
+//     $output = Artisan::output();
+
+//     if ($exitCode !== 0) {
+//         return response()->json([
+//             'status' => 'error',
+//             'message' => 'فشلت عملية النسخ الاحتياطي',
+//             'output' => $output,
+//         ], 500);
+//     }
+
+//     return response()->json([
+//         'status' => 'success',
+//         'message' => 'تم إنشاء نسخة احتياطية جديدة بنجاح',
+//         'output' => $output,
+//     ]);
+// }
+
+//   public function runBackupNow()
+// {
+//     // مجلد مؤقت خاص بالنسخ اليدوي.
+//     $temporaryDirectory = storage_path('app/temp');
+
+//     // ينشئ المجلد إذا لم يكن موجوداً.
+//     File::ensureDirectoryExists($temporaryDirectory, 0755, true);
+
+//     // يتأكد أنه قابل للكتابة.
+//     if (! is_writable($temporaryDirectory)) {
+//         return response()->json([
+//             'status' => 'error',
+//             'message' => 'مجلد النسخ المؤقت غير قابل للكتابة: ' . $temporaryDirectory,
+//         ], 500);
+//     }
+
+//     // نفس PHP CLI الذي يعمل معه الأمر اليدوي في Terminal.
+//     $phpCli = 'C:/xampp/php/php.exe';
+
+//     if (! file_exists($phpCli)) {
+//         return response()->json([
+//             'status' => 'error',
+//             'message' => 'لم يتم العثور على PHP CLI في: ' . $phpCli,
+//         ], 500);
+//     }
+
+//     $process = new Process(
+//         [
+//             $phpCli,
+//             base_path('artisan'),
+//             'backup:run',
+//             '--no-interaction',
+//         ],
+//         base_path(),
+//         [
+//             // يجعل tmpfile() يستخدم مجلد المشروع القابل للكتابة.
+//             'TEMP' => $temporaryDirectory,
+//             'TMP' => $temporaryDirectory,
+//             'TMPDIR' => $temporaryDirectory,
+//         ]
+//     );
+
+//     // النسخة قد تأخذ وقتاً، لذلك نسمح بـ10 دقائق.
+//     $process->setTimeout(600);
+
+//     try {
+//         $process->run();
+
+//         $output = trim($process->getOutput());
+//         $errorOutput = trim($process->getErrorOutput());
+
+//         if (! $process->isSuccessful()) {
+//             return response()->json([
+//                 'status' => 'error',
+//                 'message' => 'فشلت عملية النسخ الاحتياطي',
+//                 'exit_code' => $process->getExitCode(),
+//                 'output' => $output,
+//                 'error_output' => $errorOutput,
+//             ], 500);
+//         }
+
+//         return response()->json([
+//             'status' => 'success',
+//             'message' => 'تم إنشاء نسخة كاملة من قاعدة البيانات وملفات المشروع بنجاح',
+//             'output' => $output,
+//         ]);
+//     } catch (\Throwable $e) {
+//         report($e);
+
+//         return response()->json([
+//             'status' => 'error',
+//             'message' => $e->getMessage(),
+//         ], 500);
+//     }
+// }
 public function runBackupNow()
 {
-    $exitCode = Artisan::call('backup:run');
-    $output = Artisan::output();
-
-    if ($exitCode !== 0) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'فشلت عملية النسخ الاحتياطي',
-            'output' => $output,
-        ], 500);
-    }
+    RunManualBackup::dispatch();
 
     return response()->json([
-        'status' => 'success',
-        'message' => 'تم إنشاء نسخة احتياطية جديدة بنجاح',
-        'output' => $output,
-    ]);
+        'status' => 'queued',
+        'message' => 'تم طلب النسخة الاحتياطية. ستبدأ الآن في الخلفية، وستشمل قاعدة البيانات وملفات المشروع.',
+    ], 202);
 }
+
 
     public function getCompletedTreatmentPlansCount()
     {
@@ -186,8 +278,8 @@ public function runBackupNow()
             'role' => 'nullable|string', // أو integer|exists:roles,id إذا عندك جدول roles
             'user_name' => 'nullable|string|max:255',
             'user_phone' => 'nullable|string|max:255',
-            'event' => 'nullable|string|in:created,updated,deleted,restored',
-            'auditable_type' => 'nullable|string|in:user,patient,doctor,doctor_schedule,doctor_payment,doctor_earning,treatment_plan,treatment_session,treatment_category,invoice,invoice_item,payment,item,inventory,inventory_transaction,inventory_audit,audit_item,supplier,supplier_item,material_request,material_request_item,disposal,disposal_item,exchange_rate,salary_payment,salary_adjustment,medical_report,tooth_treatment,plan_item,notification,appointment,specialization',            'ip_address' => 'nullable|string|max:45', // يدعم IPv6
+            'event' => 'nullable|string',
+            'auditable_type' => 'nullable|string',
             'from_date' => 'nullable|date',
             'to_date' => 'nullable|date|after_or_equal:from_date',
             'per_page' => 'nullable|integer|min:1|max:100',
@@ -198,6 +290,30 @@ public function runBackupNow()
             'message' => 'تم جلب سجل التدقيق بنجاح',
             'data' => $this->service->getAuditLogs($validated),
         ]);
+    }
+
+
+    public function deleteAuditsBeforeDate(Request $request)
+    {
+        $request->validate([
+            'date' => ['required', 'date'],
+        ]);
+
+        try {
+            $result = $this->service->deleteAuditsBeforeDate(
+                $request->date
+            );
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء حذف سجلات التدقيق.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
     
 

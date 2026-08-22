@@ -88,4 +88,19 @@ public function deleteAdjustment(int $adjustmentId)
         return response()->json(['message' => $e->getMessage()], 422);
     }
 }
+// عرض الراتب الأساسي لموظف
+public function getBaseSalary(int $userId)
+{
+    return response()->json(
+        $this->service->getBaseSalary($userId)
+    );
+}
+
+// عرض الأشهر غير المدفوعة لموظف
+public function unpaidMonths(int $userId)
+{
+    return response()->json(
+        $this->service->getUnpaidMonths($userId)
+    );
+}
 }
